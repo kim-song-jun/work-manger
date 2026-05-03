@@ -1,3 +1,4 @@
+import { jsx as _jsx } from "react/jsx-runtime";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
@@ -8,21 +9,8 @@ import { applyStoredTweaks } from "./pages/m/TweaksPanel";
 import "./styles/tokens.css";
 import "./styles/index.css";
 import "./i18n";
-
 applyStoredTweaks();
-
 const qc = new QueryClient({
-  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
+    defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
-
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <QueryClientProvider client={qc}>
-      <ToastProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </ToastProvider>
-    </QueryClientProvider>
-  </React.StrictMode>,
-);
+ReactDOM.createRoot(document.getElementById("root")).render(_jsx(React.StrictMode, { children: _jsx(QueryClientProvider, { client: qc, children: _jsx(ToastProvider, { children: _jsx(BrowserRouter, { children: _jsx(App, {}) }) }) }) }));

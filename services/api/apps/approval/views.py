@@ -83,7 +83,9 @@ def _ensure_approver(task: ApprovalTask, membership) -> None:
 
 
 def _apply_decision(task: ApprovalTask, decision: str, reason: str = "") -> None:
-    """Propagates the decision to the underlying domain object."""
+    """Propagates the decision to the underlying domain object + notifies requester."""
+    from apps.notification import services as notif_svc
+
     if task.target_type == ApprovalTask.TargetType.LEAVE:
         from apps.leave.models import LeaveRequest, LeaveBalance
         from decimal import Decimal
@@ -105,6 +107,17 @@ def _apply_decision(task: ApprovalTask, decision: str, reason: str = "") -> None
                 related_request_id=r.id,
                 note=f"신청 승인: {r.start_date} ~ {r.end_date}",
             )
+        notif_svc.dispatch(
+            task.requester,
+            event_kind="LEAVE_DECISION",
+            payload={
+                "request_id": str(r.id),
+                "decision": decision,
+                "start_date": r.start_date.isoformat(),
+                "end_date": r.end_date.isoformat(),
+                "reason": reason,
+            },
+        )
     elif task.target_type == ApprovalTask.TargetType.OVERTIME:
         from apps.attendance.models import OvertimeRequest
 
@@ -117,6 +130,16 @@ def _apply_decision(task: ApprovalTask, decision: str, reason: str = "") -> None
         r.decided_by = task.approver
         r.decided_at = django_tz.now()
         r.save(update_fields=["status", "decided_by", "decided_at", "updated_at"])
+        notif_svc.dispatch(
+            task.requester,
+            event_kind="OVERTIME_DECISION",
+            payload={
+                "request_id": str(r.id),
+                "decision": decision,
+                "minutes": r.requested_minutes,
+                "reason": reason,
+            },
+        )
 
 
 class DecisionSerializer(serializers.Serializer):

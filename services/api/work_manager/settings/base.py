@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.approval",
     "apps.notification",
     "apps.team",
+    "apps.admin_api",
 ]
 
 MIDDLEWARE = [

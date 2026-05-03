@@ -25,6 +25,11 @@ from django.utils import timezone as django_tz
 
 from apps.identity.models import Company, Location, Membership
 
+from .builders import (
+    ClockInBuilder,
+    InvalidClockInPayload as BuilderInvalidPayload,
+    LocationOutOfRange as BuilderLocationOutOfRange,
+)
 from .models import AttendanceRecord, BreakRecord, WorkSchedule
 
 IDEMPOTENCY_TTL_SECONDS = 60 * 60 * 24  # 24h
@@ -249,10 +254,11 @@ def clock_in(
             replayed=True,
         )
 
-    now = django_tz.now()
-    work_date = work_date_for(company, now)
-
-    matched: Optional[Location] = None
+    # 2) Pre-validate kind and location matching at the service layer to
+    #    preserve existing error details (nearest_location_id / distance_m)
+    #    and the closest-pick semantics. The Builder is then handed an
+    #    already-narrowed candidate list so its match is identical.
+    available_locations: list[Location] = []
     if kind in (AttendanceRecord.Kind.OFFICE, AttendanceRecord.Kind.WFH):
         if latitude is None or longitude is None:
             raise LocationOutOfRange("위치 정보가 필요합니다.")
@@ -267,16 +273,45 @@ def clock_in(
                     "distance_m": match.distance_m,
                 },
             )
-        matched = match.location
+        available_locations = [match.location] if match.location else []
     elif kind == AttendanceRecord.Kind.MANUAL:
         if not allow_manual:
             raise ManualApprovalRequired()
     else:
         raise AttendanceError("지원하지 않는 출근 종류입니다.")
 
+    # 3) Compose the validated plan via the Builder. Builder must NOT touch
+    #    the DB; it returns a ClockInPlan value object.
     schedule = get_or_default_schedule(membership)
+    builder = (
+        ClockInBuilder(membership)
+        .with_kind(kind)
+        .with_schedule(schedule.start_time)
+        .allow_manual(allow_manual)
+    )
+    if latitude is not None and longitude is not None:
+        builder = builder.at_location(latitude, longitude)
+    if available_locations:
+        builder = builder.with_available_locations(available_locations)
+    if client_time is not None:
+        builder = builder.at(client_time)
+
+    try:
+        plan = builder.build()
+    except BuilderLocationOutOfRange as exc:
+        # Preserve existing service-level error semantics / HTTP code.
+        raise LocationOutOfRange(str(exc) or LocationOutOfRange.message) from exc
+    except BuilderInvalidPayload as exc:
+        raise InvalidState(str(exc) or InvalidState.message) from exc
+
+    # 4) Persist within transaction; preserve uniqueness -> AlreadyClockedIn.
+    #    Recompute is_late at the service layer to keep prior semantics
+    #    (server clock + grace), independent of any client_time supplied.
+    now = django_tz.now()
+    work_date = work_date_for(company, now)
     clock_in_local = now.astimezone(company_tz(company))
     late = is_late(schedule, clock_in_local)
+    matched = plan.matched_location
 
     try:
         with transaction.atomic():
@@ -286,7 +321,7 @@ def clock_in(
                 work_date=work_date,
                 clock_in_at=now,
                 clock_in_location=matched,
-                clock_in_kind=kind,
+                clock_in_kind=plan.kind,
                 is_late=late,
                 status=AttendanceRecord.Status.WORKING,
             )

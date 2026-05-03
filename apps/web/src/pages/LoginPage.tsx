@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/Button";
 import { TextField } from "@/components/TextField";
 import { api, HttpError, setAccessToken } from "@/lib/api";
+import { fetchMe } from "@/lib/me";
 
 type LoginResponse = {
   data: { access_token: string; refresh_token: string };
@@ -27,7 +28,16 @@ export function LoginPage() {
         json: { email, password },
       });
       setAccessToken(r.data.access_token);
-      nav("/__health");
+      try {
+        const me = await fetchMe();
+        if (me && me.memberships && me.memberships.length > 0) {
+          nav("/m/home", { replace: true });
+        } else {
+          nav("/onboarding/welcome", { replace: true });
+        }
+      } catch {
+        nav("/m/home", { replace: true });
+      }
     } catch (err) {
       if (err instanceof HttpError) setError(t("auth.invalid"));
       else setError(String(err));
@@ -40,7 +50,12 @@ export function LoginPage() {
     <main className="min-h-screen grid place-items-center px-5">
       <form
         onSubmit={onSubmit}
-        className="w-full max-w-[360px] bg-white rounded-lg shadow-2 p-6"
+        className="w-full max-w-[360px] p-6"
+        style={{
+          background: "var(--white)",
+          borderRadius: "var(--r-md)",
+          boxShadow: "var(--shadow-2)",
+        }}
       >
         <h1 className="text-[22px] font-bold mb-6 text-ink-900">{t("auth.login")}</h1>
         <div className="space-y-3">
@@ -65,9 +80,14 @@ export function LoginPage() {
             {loading ? "…" : t("auth.submit")}
           </Button>
         </div>
+        <div className="mt-3 text-center">
+          <Link to="/forgot" className="text-[13px] font-semibold" style={{ color: "var(--brand)" }}>
+            {t("auth.forgot")}
+          </Link>
+        </div>
         <p className="mt-4 text-center text-[13px] text-ink-600">
           {t("auth.no_account")}{" "}
-          <Link to="/signup" className="text-brand font-medium">
+          <Link to="/signup" className="font-semibold" style={{ color: "var(--brand)" }}>
             {t("auth.signup")}
           </Link>
         </p>

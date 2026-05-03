@@ -24,6 +24,8 @@ urlpatterns = [
     path("v1/", include("apps.leave.urls")),
     path("v1/", include("apps.approval.urls")),
     path("v1/", include("apps.team.urls")),
+    path("v1/", include("apps.notification.urls")),
+    path("v1/", include("apps.admin_api.urls")),
     path("v1/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "v1/schema/swagger/",
