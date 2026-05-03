@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "apps.leave",
     "apps.approval",
     "apps.notification",
+    "apps.team",
 ]
 
 MIDDLEWARE = [
@@ -108,6 +109,7 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 20,
+    "EXCEPTION_HANDLER": "core.errors.exception_handler",
 }
 
 SIMPLE_JWT = {
