@@ -1,10 +1,18 @@
-"""TDD tests for notification dispatch service.
-
-Behavior:
-- dispatch(membership, event_kind, payload, channels=...) writes a NotificationLog
-  row per requested channel that is enabled in NotificationPreference (default true).
-- Disabling a channel via preference suppresses that channel's row.
-- mark_read flips read_at to now() and is idempotent.
+"""
+Test: notification · dispatch + inbox
+Type: Integration (real Postgres for log rows, real preference table)
+Why:  알림은 비즈니스 결과(연차 결정, 초과근무 승인)를 사용자에게 즉시 전달하는 마지막 마일.
+      사용자 선호(채널 OFF)를 무시하면 GDPR/스팸 위험.
+      mark_read 멱등성이 깨지면 알림 카운트 UI 가 영원히 깜빡인다.
+Covers:
+  - apps.notification.services.dispatch — 기본 채널, 채널 필터, preference 비활성화 존중,
+    PUSH 디바이스 토큰 유무에 따른 delivered/failed 분기
+  - apps.notification.services.mark_read — 멱등성 (이미 읽은 항목 재호출 시 timestamp 보존)
+  - GET /v1/notifications — 미읽음 우선 정렬 (NULLS first)
+Out of scope:
+  - 외부 FCM/APNs/SES 호출 (tasks.py 가 별도 처리, 통합 테스트는 stub 채널만)
+  - 푸시 페이로드 포맷 (provider 어댑터별 단위 테스트)
+Coverage target: ≥ 95% for apps/notification/services.py
 """
 from __future__ import annotations
 

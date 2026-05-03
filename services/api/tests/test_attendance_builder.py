@@ -1,4 +1,20 @@
-"""Unit tests for the ClockInBuilder (no DB required where possible)."""
+"""
+Test: attendance · ClockInBuilder
+Type: Unit (Builder 패턴 자체 — 일부 케이스는 Membership/Location ORM 픽스처 필요)
+Why:  Builder 가 위치 검증 + 지각 판정 + 입력 검증을 한곳에서 책임진다.
+      Service / View 어떤 진입점이든 동일한 룰이 적용되도록 Builder 단독 회귀 보호.
+      위치 룰이 깨지면 사용자가 사무실 안에서도 "위치 범위 외" 오류를 받는다.
+Covers:
+  - haversine_m — 거리 계산 (Seoul ↔ Busan 알려진 거리 검증)
+  - ClockInBuilder.OFFICE 모드 — 반경 내 매칭, 정확도 보정 적용
+  - LocationOutOfRange — 범위 밖일 때 raise
+  - InvalidClockInPayload — kind 누락 / unknown / OFFICE without location
+  - allow_manual=True 가 MANUAL 모드 활성화
+  - 지각 판정 (정규 시간 + 10분 grace 룰)
+Out of scope:
+  - DB 영속 / Idempotency Redis (test_attendance.py 가 다룸)
+Coverage target: ≥ 95% for apps/attendance/builders.py
+"""
 from __future__ import annotations
 
 from datetime import datetime, time

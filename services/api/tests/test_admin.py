@@ -1,3 +1,20 @@
+"""
+Test: admin_api · 관리자 핵심 엔드포인트 회귀
+Type: Integration (real Postgres, JWT auth, role-based permissions)
+Why:  관리자 화면이 멈추면 운영팀이 사용자 신청을 처리하지 못한다.
+      권한 가드(403)와 잘못된 입력(422) 분기가 자주 회귀하므로 핵심 케이스만 우선 커버.
+Covers:
+  - GET  /v1/admin/dashboard                       — 오늘의 운영 KPI
+  - GET  /v1/admin/employees?q=...                 — 검색
+  - PATCH /v1/admin/employees/{id}/update          — 권한/직책 변경
+  - POST /v1/admin/employees/{id}/deactivate       — 비활성화
+  - GET  /v1/admin/reports/monthly?ym=YYYY-MM      — 입력 검증 + 기본값
+  - 권한: EMPLOYEE → 403 (ADMIN/OWNER 만 통과)
+Out of scope:
+  - CSV 일괄 등록 (별도 테스트)
+  - 컴플라이언스 보드 / 실시간 보드 (별도 도메인)
+Coverage target: ≥ 80% for apps/admin_api/views.py
+"""
 from __future__ import annotations
 
 from datetime import date, timedelta

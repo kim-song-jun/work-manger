@@ -1,4 +1,16 @@
-"""Tests for shared base patterns (Builder, Specification)."""
+"""
+Test: core · Builder + Specification base patterns
+Type: Unit (pure Python, no DB / no I/O — sub-millisecond)
+Why:  엔지니어링 가이드라인 §3 에서 Builder 와 Specification 을 도메인 전반에 사용.
+      베이스 자체가 깨지면 attendance.builders / leave.strategies 등 파생 코드가 모두 무너진다.
+      회귀 비용이 가장 높은 1차 의존성이라 최우선 보호 대상.
+Covers:
+  - core.builders.Builder — 빌드 호출 흐름, 검증 단계, 체이닝 self 반환
+  - core.specifications.Specification — AND / OR / NOT 결합, Predicate 어댑터
+Out of scope:
+  - 도메인 빌더 (attendance.builders 는 test_attendance_builder.py)
+Coverage target: 100% for core/builders.py + core/specifications.py
+"""
 from __future__ import annotations
 
 import pytest

@@ -1,3 +1,21 @@
+"""
+Test: identity · onboarding + admin company-codes
+Type: Integration (real Postgres, settings.DEBUG toggling for dev bootstrap)
+Why:  사용자가 회사에 합류하는 경로가 깨지면 신규 가입자 모두 막힌다.
+      관리자 측 코드 발급 / 회수 / 만료 / 사용 한도 룰을 한 번에 회귀 보호.
+Covers:
+  - POST /v1/dev/bootstrap-company   — 개발 편의 부트스트랩 (DEBUG only)
+  - POST /v1/admin/company-codes     — 코드 발급 (ADMIN+)
+  - POST /v1/onboarding/join-company — 코드로 합류 + 부서 lazy 생성
+  - POST 중복 가입 → 409 ALREADY_MEMBER
+  - POST 잘못된 코드 → 404 JOIN_CODE_INVALID
+  - DELETE 코드 회수 → revoked_at 세팅
+  - 권한 가드: EMPLOYEE 가 admin endpoint 호출 시 403
+Out of scope:
+  - 이메일 인증 (verify 별도 PR)
+  - 위치 / 스케줄 / 알림 단계 (각각 별도 단위 테스트)
+Coverage target: ≥ 90% for apps/identity/onboarding_views.py
+"""
 from __future__ import annotations
 
 import pytest
