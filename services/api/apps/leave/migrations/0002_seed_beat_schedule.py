@@ -54,7 +54,9 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("leave", "0001_initial"),
-        ("django_celery_beat", "0001_initial"),
+        # CrontabSchedule.timezone field is added in 0016; pin to the latest
+        # known dceb migration to ensure full schema is present at run time.
+        ("django_celery_beat", "0019_alter_periodictasks_options"),
     ]
 
     operations = [

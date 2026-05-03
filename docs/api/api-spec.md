@@ -72,12 +72,18 @@ GET /attendance/records?cursor=eyJ...&limit=20
 | POST | `/auth/login` | 로그인 (Access + Refresh 발급) |
 | POST | `/auth/refresh` | Access token 재발급 |
 | POST | `/auth/logout` | Refresh token 무효화 |
+| POST | `/auth/password/change` | 비밀번호 변경 (인증된 사용자) |
+| POST | `/auth/2fa/enable` | TOTP 시크릿 발급 (활성화 전) |
+| POST | `/auth/2fa/verify` | TOTP 코드 검증 → 활성화 + 복구코드 |
+| POST | `/auth/2fa/disable` | TOTP 비활성화 (현재 코드 필요) |
+| POST | `/auth/2fa/challenge` | 로그인 후 2FA 토큰 + 코드 → 액세스 발급 |
 | POST | `/auth/email/verify` | 이메일 인증 |
 | POST | `/auth/email/resend` | 인증 메일 재발송 |
 | POST | `/auth/password/forgot` | 비밀번호 찾기 메일 |
 | POST | `/auth/password/reset` | 비밀번호 재설정 |
 | GET  | `/auth/oauth/{provider}/start` | OAuth 시작 (`google`, `kakao`) |
 | GET  | `/auth/oauth/{provider}/callback` | OAuth 콜백 |
+| GET  | `/admin/audit` | 감사 로그 조회 (ADMIN+) |
 
 ### POST /auth/signup
 **Request**
@@ -109,6 +115,37 @@ GET /attendance/records?cursor=eyJ...&limit=20
 }
 ```
 에러: `INVALID_CREDENTIALS`, `EMAIL_NOT_VERIFIED`, `ACCOUNT_LOCKED`
+
+> **Lockout 정책**: 5회 연속 실패 시 15분간 423 ACCOUNT_LOCKED. 성공 시 카운터 리셋.
+> **2FA 켠 사용자**: 위 응답 대신 `{ "two_fa_required": true, "two_fa_token": "<60s 서명 토큰>" }` 반환 → `/auth/2fa/challenge` 호출 필요.
+
+### POST /auth/logout
+현재 refresh token 을 블랙리스트에 등록하고 audit `auth.logout` 기록.
+**Request** `{ "refresh_token": "..." }` → **200** `{ "data": { "logged_out": true } }`
+
+### POST /auth/password/change
+인증된 사용자가 비밀번호 변경. 검증 통과 시 해당 사용자의 모든 refresh 토큰 즉시 블랙리스트.
+**Request** `{ "old_password": "...", "new_password": "..." }` → **200** `{ "data": { "changed": true } }`
+에러: `INVALID_CREDENTIALS` (old 불일치), `VALIDATION_ERROR` (정책 미달)
+
+### POST /auth/2fa/enable
+TOTP 시크릿 + provisioning URI 반환. 사용자는 이 시점에서 *아직 활성화되지 않음* — `verify` 호출 시에만 켜진다.
+**Response** `{ "data": { "secret": "BASE32...", "otpauth_uri": "otpauth://totp/..." } }`
+
+### POST /auth/2fa/verify
+**Request** `{ "code": "123456" }` → **200** `{ "data": { "enabled": true, "recovery_codes": ["xxxx-xxxx", ...] } }` (10개, 1회용, 평문은 이때만 노출)
+
+### POST /auth/2fa/disable
+**Request** `{ "code": "123456" }` → **200** `{ "data": { "enabled": false } }`. 시크릿 + 복구 코드 모두 삭제.
+
+### POST /auth/2fa/challenge
+**Request** `{ "two_fa_token": "...", "code": "123456" }` (코드는 TOTP 또는 복구 코드)
+**Response 200** `{ "data": { "access_token": "...", "refresh_token": "...", ... } }`
+에러: `TOKEN_EXPIRED` (60초 만료), `INVALID_CREDENTIALS`
+
+### GET /admin/audit (ADMIN+)
+필터: `action`, `actor`, `from`, `to` (ISO-8601), 커서 페이지네이션 (`cursor`, `limit` 1~200, default 50).
+**Response** `{ "data": [ { "id": "...", "action": "auth.login.success", "actor_id": "...", "ip": "...", "user_agent": "...", "payload": {...}, "created_at": "..." } ], "next_cursor": "..." }`
 
 ---
 

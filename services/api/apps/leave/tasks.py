@@ -107,49 +107,47 @@ def notify_expiring() -> int:
     """Create in-app notification log rows for upcoming expirations.
 
     Push delivery itself is handled by the ``notification.dispatch`` task —
-    here we only record the inbox entry.
+    here we only record the inbox entry. Cohort lookups are delegated to
+    :class:`apps.leave.repositories.BalanceRepository`.
     """
+    from .repositories import BalanceRepository  # local import → avoid cycle
+
     today = django_tz.localdate()
     created = 0
 
     for company in Company.objects.all():
         policy = services.get_or_create_default_policy(company)
         days_list = policy.notify_days_before or services.DEFAULT_NOTIFY_DAYS
-        for delta in days_list:
-            target = today + timedelta(days=int(delta))
-            rows = (
-                LeaveBalance.objects.filter(
-                    company=company,
-                    kind=LeaveBalance.Kind.GRANTED,
-                    expires_at=target,
+        memberships = Membership.objects.filter(company=company, is_active=True)
+        for membership in memberships:
+            for delta in days_list:
+                rows = BalanceRepository.expiring_soon(
+                    membership, before_days=int(delta), as_of=today
                 )
-                .select_related("membership")
-            )
-            for row in rows:
-                payload = {
-                    "kind": "leave.expiring",
-                    "days": str(Decimal(row.days)),
-                    "expires_at": row.expires_at.isoformat(),
-                    "delta_days": int(delta),
-                }
-                # Prevent duplicate logging for the same (membership, balance row, delta).
-                exists = NotificationLog.objects.filter(
-                    membership=row.membership,
-                    event_kind="leave.expiring",
-                    payload_json__contains={
+                for row in rows:
+                    payload = {
+                        "kind": "leave.expiring",
+                        "days": str(row.days),
                         "expires_at": row.expires_at.isoformat(),
                         "delta_days": int(delta),
-                    },
-                ).exists()
-                if exists:
-                    continue
-                NotificationLog.objects.create(
-                    membership=row.membership,
-                    event_kind="leave.expiring",
-                    channel="INAPP",
-                    payload_json=payload,
-                )
-                created += 1
+                    }
+                    exists = NotificationLog.objects.filter(
+                        membership=membership,
+                        event_kind="leave.expiring",
+                        payload_json__contains={
+                            "expires_at": row.expires_at.isoformat(),
+                            "delta_days": int(delta),
+                        },
+                    ).exists()
+                    if exists:
+                        continue
+                    NotificationLog.objects.create(
+                        membership=membership,
+                        event_kind="leave.expiring",
+                        channel="INAPP",
+                        payload_json=payload,
+                    )
+                    created += 1
     return created
 
 

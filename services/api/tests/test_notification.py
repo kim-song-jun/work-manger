@@ -79,7 +79,11 @@ def test_dispatch_explicit_channel_filter():
     assert {log.channel for log in logs} == {"INAPP"}
 
 
-def test_dispatch_skips_push_when_no_device_tokens():
+def test_dispatch_creates_push_log_pending_when_no_device_tokens():
+    """Without a DeviceToken the outbox attempt fails transiently — the Log row
+    is created (delivered_at NULL) and the Outbox row records the failure for
+    a later retry. failed_at is only set after max_attempts (DEAD).
+    """
     svc = _import_service()
     m = MembershipFactory()
     logs = svc.dispatch(
@@ -88,10 +92,11 @@ def test_dispatch_skips_push_when_no_device_tokens():
         payload={"days": 1},
         channels=["PUSH", "INAPP"],
     )
-    # PUSH row may exist with failed_at if no device tokens
     push = [log for log in logs if log.channel == "PUSH"]
-    if push:
-        assert push[0].failed_at is not None
+    assert len(push) == 1
+    # Single attempt under eager Celery; not yet terminal (max_attempts=5).
+    assert push[0].failed_at is None
+    assert push[0].delivered_at is None
 
 
 def test_dispatch_push_writes_log_when_device_present():
@@ -101,7 +106,10 @@ def test_dispatch_push_writes_log_when_device_present():
     logs = svc.dispatch(
         m, event_kind="LEAVE_EXPIRING", payload={}, channels=["PUSH"]
     )
-    assert len(logs) == 1 and logs[0].channel == "PUSH" and logs[0].failed_at is None
+    assert len(logs) == 1 and logs[0].channel == "PUSH"
+    # Outbox worker (eager) calls the push stub which succeeds when a token exists.
+    assert logs[0].failed_at is None
+    assert logs[0].delivered_at is not None
 
 
 def test_mark_read_is_idempotent():

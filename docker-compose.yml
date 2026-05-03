@@ -77,6 +77,28 @@ services:
       timeout: 3s
       retries: 10
 
+  ws:
+    build:
+      context: ./services/api
+    container_name: wm-ws
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      api: { condition: service_started }
+    environment:
+      DJANGO_SETTINGS_MODULE: work_manager.settings.dev
+      DJANGO_DEBUG: "true"
+      DJANGO_SECRET_KEY: dev-insecure-change-me
+      DJANGO_ALLOWED_HOSTS: "*"
+      DATABASE_URL: postgres://wm:wm@db:5432/work_manager
+      REDIS_URL: redis://redis:6379/1
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    command: ["daphne", "-b", "0.0.0.0", "-p", "4456", "work_manager.asgi:application"]
+    networks: [wm-net]
+    # No host port — internal-only; nginx (web) proxies /v1/ws/ → ws:4456
+
   worker:
     build:
       context: ./services/api
@@ -111,6 +133,25 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
     command: ["celery", "-A", "work_manager", "beat", "-l", "info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
+    networks: [wm-net]
+
+  seed:
+    # One-shot demo seeder. Run with:
+    #   docker compose run --rm seed
+    # Idempotent — re-running wipes the demo company first, then re-seeds.
+    build:
+      context: ./services/api
+    profiles: ["seed"]
+    depends_on:
+      api: { condition: service_started }
+      db: { condition: service_healthy }
+    environment:
+      DJANGO_SETTINGS_MODULE: work_manager.settings.dev
+      DJANGO_SECRET_KEY: dev-insecure-change-me
+      DATABASE_URL: postgres://wm:wm@db:5432/work_manager
+      REDIS_URL: redis://redis:6379/1
+    entrypoint: []
+    command: ["python", "manage.py", "seed_demo"]
     networks: [wm-net]
 
   web:

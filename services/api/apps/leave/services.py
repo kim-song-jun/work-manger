@@ -86,41 +86,16 @@ def compute_balance(membership: Membership, as_of: date | None = None) -> dict:
     """Return ``{granted_total, used, remaining, expiring_soon[]}`` for membership.
 
     ``granted_total`` excludes rows already past their ``expires_at``.
+    Heavy aggregation logic lives in :class:`apps.leave.repositories.BalanceRepository`.
     """
-    today = as_of or django_tz.localdate()
-    qs = LeaveBalance.objects.filter(membership=membership)
+    from .repositories import BalanceRepository  # local import → avoid cycle
 
-    granted_active_q = Q(kind=LeaveBalance.Kind.GRANTED) & (
-        Q(expires_at__isnull=True) | Q(expires_at__gte=today)
-    )
-    granted_total = _decimal_sum(qs.filter(granted_active_q))
-    used = _decimal_sum(qs.filter(kind=LeaveBalance.Kind.USED))
-    expired = _decimal_sum(qs.filter(kind=LeaveBalance.Kind.EXPIRED))
-    adjusted = _decimal_sum(qs.filter(kind=LeaveBalance.Kind.ADJUSTED))
-
-    remaining = granted_total - used - expired + adjusted
-
-    soon_window = today + timedelta(days=60)
-    soon_rows = (
-        qs.filter(
-            kind=LeaveBalance.Kind.GRANTED,
-            expires_at__isnull=False,
-            expires_at__gte=today,
-            expires_at__lte=soon_window,
-        )
-        .order_by("expires_at")
-        .values("days", "expires_at")
-    )
-    expiring_soon = [
-        {"days": Decimal(r["days"]), "expires_at": r["expires_at"]}
-        for r in soon_rows
-    ]
-
+    snap = BalanceRepository.compute_for(membership, as_of=as_of)
     return {
-        "granted_total": granted_total,
-        "used": used,
-        "remaining": remaining,
-        "expiring_soon": expiring_soon,
+        "granted_total": snap.granted_total,
+        "used": snap.used,
+        "remaining": snap.remaining,
+        "expiring_soon": snap.expiring_soon,
     }
 
 
@@ -156,66 +131,30 @@ def apply_grant_rules(
 ) -> list[BalanceCreate]:
     """Compute grants for *membership* on *as_of* under *policy*.
 
-    Returns a list (possibly empty) of :class:`BalanceCreate` records describing
-    what should be inserted as ``GRANTED`` :class:`LeaveBalance` rows.
-    Pure function — does not write to the database. Idempotency is enforced
-    by callers checking for an existing grant on the same calendar period.
+    Delegates to a :class:`apps.leave.strategies.LeaveAccrualStrategy` selected
+    by ``policy.rules_json["strategy"]`` (default: ``korean_labor_law``). Pure
+    function — does not write to the database. Idempotency is enforced by
+    callers checking for an existing grant on the same calendar period.
+
+    The return type is the legacy :class:`BalanceCreate` so existing callers
+    (``tasks.grant_monthly``, ``tasks.grant_annual``) need no changes.
     """
-    rules = _rules(policy)
-    hired = membership.hired_at
-    if hired is None or as_of < hired:
-        return []
+    from .strategies import get_strategy  # local import → avoid cycle
 
-    expiry_months = int(policy.expiry_months or 12)
-    expires_at = _add_months(as_of, expiry_months)
-
-    # Tenure in whole months from hired_at to as_of
-    tenure_months = (as_of.year - hired.year) * 12 + (as_of.month - hired.month)
-    if as_of.day < hired.day:
-        tenure_months -= 1
-
-    grants: list[BalanceCreate] = []
-
-    if tenure_months < 12:
-        # Monthly accrual under 1년 미만 (max month_until_year days).
-        if tenure_months >= 1:
-            cap = int(rules["month_until_year"])
-            already = LeaveBalance.objects.filter(
-                membership=membership,
-                kind=LeaveBalance.Kind.GRANTED,
-                note__startswith="monthly:",
-            ).count()
-            if already < cap:
-                grants.append(
-                    BalanceCreate(
-                        membership=membership,
-                        days=ONE_DAY,
-                        granted_at=as_of,
-                        expires_at=expires_at,
-                        note=f"monthly:{as_of.isoformat()}",
-                    )
-                )
-    else:
-        # Annual block — base + step.
-        years_completed = tenure_months // 12
-        base = int(rules["annual_base"])
-        step_years = int(rules["annual_step_years"])
-        max_days = int(rules["annual_max"])
-
-        extra = 0
-        if years_completed >= 3:
-            extra = ((years_completed - 1) // step_years)
-        days = min(base + extra, max_days)
-        grants.append(
-            BalanceCreate(
-                membership=membership,
-                days=Decimal(days),
-                granted_at=as_of,
-                expires_at=expires_at,
-                note=f"annual:{as_of.year}",
-            )
+    strategy = get_strategy(policy)
+    raw = strategy.accrue(membership, as_of, policy)
+    # Adapt strategy's BalanceCreate (same shape) to this module's dataclass so
+    # downstream type-checks see a single canonical type.
+    return [
+        BalanceCreate(
+            membership=g.membership,
+            days=g.days,
+            granted_at=g.granted_at,
+            expires_at=g.expires_at,
+            note=g.note,
         )
-    return grants
+        for g in raw
+    ]
 
 
 # ---------------------------------------------------------------------------

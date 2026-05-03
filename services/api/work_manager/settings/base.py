@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_spectacular",
     "django_celery_beat",
@@ -33,6 +34,8 @@ INSTALLED_APPS = [
     "apps.notification",
     "apps.team",
     "apps.admin_api",
+    "apps.audit",
+    "apps.realtime",
 ]
 
 MIDDLEWARE = [
@@ -117,11 +120,19 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "sub",
 }
+
+# Auth lockout policy — docs/api/authentication.md §2
+AUTH_LOCKOUT_THRESHOLD = 5
+AUTH_LOCKOUT_DURATION = timedelta(minutes=15)
+
+# 2FA challenge token TTL (seconds) — docs/api/authentication.md §8
+TWO_FA_CHALLENGE_TTL_SECONDS = 60
+TWO_FA_RECOVERY_CODE_COUNT = 10
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Work Manager API",

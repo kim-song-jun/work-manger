@@ -11,6 +11,7 @@ from core.errors import Conflict, Forbidden, NotFound
 from core.permissions import IsActiveMember, active_membership
 
 from .models import ApprovalTask
+from .specifications import IsApprover, IsAlreadyDecided
 
 
 class InboxItemSerializer(serializers.ModelSerializer):
@@ -76,9 +77,17 @@ def inbox(request):
 
 
 def _ensure_approver(task: ApprovalTask, membership) -> None:
-    if task.approver_id != membership.id:
+    """Authorisation guard composed from two Specifications.
+
+    - :class:`IsApprover` checks ownership of the inbox slot.
+    - :class:`IsAlreadyDecided` flags a duplicate decision attempt.
+
+    We surface them as two distinct HTTP errors (403 vs 409) on purpose so
+    clients can show different toasts.
+    """
+    if not IsApprover(membership).is_satisfied_by(task):
         raise Forbidden(message="이 항목을 승인할 권한이 없습니다.")
-    if task.status != ApprovalTask.Status.PENDING:
+    if IsAlreadyDecided().is_satisfied_by(task):
         raise Conflict(code="ALREADY_DECIDED", message="이미 처리된 항목입니다.")
 
 
@@ -146,6 +155,27 @@ class DecisionSerializer(serializers.Serializer):
     reason = serializers.CharField(required=False, allow_blank=True, default="")
 
 
+def _broadcast_decided(task: ApprovalTask, decision: str, reason: str) -> None:
+    """Best-effort WS push to the requester's inbox channel."""
+    try:
+        from apps.realtime import broadcast as _ws_broadcast
+
+        _ws_broadcast.notify_inbox(
+            task.requester,
+            "inbox.task.decided",
+            {
+                "task_id": str(task.id),
+                "target_type": task.target_type,
+                "target_id": str(task.target_id),
+                "decision": decision,
+                "reason": reason,
+                "decided_at": task.decided_at.isoformat() if task.decided_at else None,
+            },
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
+
 @api_view(["POST"])
 @permission_classes([IsActiveMember])
 def approve(request, task_id: str):
@@ -161,6 +191,7 @@ def approve(request, task_id: str):
         task.decided_at = django_tz.now()
         task.save(update_fields=["status", "decided_at"])
         _apply_decision(task, "APPROVE", s.validated_data["reason"])
+    _broadcast_decided(task, "APPROVE", s.validated_data["reason"])
     return Response({"data": {"id": str(task.id), "status": task.status}})
 
 
@@ -179,4 +210,5 @@ def reject(request, task_id: str):
         task.decided_at = django_tz.now()
         task.save(update_fields=["status", "decided_at"])
         _apply_decision(task, "REJECT", s.validated_data["reason"])
+    _broadcast_decided(task, "REJECT", s.validated_data["reason"])
     return Response({"data": {"id": str(task.id), "status": task.status}})

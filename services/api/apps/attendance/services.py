@@ -26,15 +26,46 @@ from django.utils import timezone as django_tz
 from apps.identity.models import Company, Location, Membership
 
 from .builders import (
+    BreakSpan,
     ClockInBuilder,
+    ClockOutBuilder,
     InvalidClockInPayload as BuilderInvalidPayload,
+    InvalidClockOutPayload as BuilderInvalidClockOut,
     LocationOutOfRange as BuilderLocationOutOfRange,
+    NoOpenAttendance as BuilderNoOpenAttendance,
 )
 from .models import AttendanceRecord, BreakRecord, WorkSchedule
 
 IDEMPOTENCY_TTL_SECONDS = 60 * 60 * 24  # 24h
 LATE_GRACE_MINUTES = 10
 LOCATION_DEFAULT_RADIUS_M = 100
+
+
+def _broadcast_team_status(company: Company, membership: Membership, record: "AttendanceRecord") -> None:
+    """Best-effort WS push to ``team:{company_id}`` after clock-in/out."""
+    try:
+        from apps.realtime import broadcast as _ws_broadcast
+
+        if record.status == AttendanceRecord.Status.COMPLETED:
+            new_status = "off"
+        elif record.status == AttendanceRecord.Status.ON_BREAK:
+            new_status = "break"
+        elif record.clock_in_kind == AttendanceRecord.Kind.WFH:
+            new_status = "wfh"
+        else:
+            new_status = "office"
+        _ws_broadcast.notify_team(
+            company,
+            "team.status.changed",
+            {
+                "membership_id": str(membership.id),
+                "status": new_status,
+                "clock_in_at": record.clock_in_at.isoformat() if record.clock_in_at else None,
+                "clock_out_at": record.clock_out_at.isoformat() if record.clock_out_at else None,
+            },
+        )
+    except Exception:  # noqa: BLE001
+        pass
 
 
 # ---------- Errors ----------
@@ -329,6 +360,7 @@ def clock_in(
         raise AlreadyClockedIn() from exc
 
     store_idempotent_record(membership.id, idempotency_key, record.id)
+    _broadcast_team_status(company, membership, record)
     return ClockInResult(record=record, matched_location=matched, replayed=False)
 
 
@@ -342,35 +374,61 @@ def get_today_record(membership: Membership, company: Company) -> Optional[Atten
 
 
 def clock_out(*, membership: Membership, company: Company) -> AttendanceRecord:
+    """Idempotent-ish clock-out using :class:`ClockOutBuilder`.
+
+    The builder owns the validation + computation; this service:
+      1. resolves today's record + break list,
+      2. composes the builder, mapping its errors to the existing service codes,
+      3. persists the resulting :class:`ClockOutPlan` inside one transaction.
+    """
     rec = get_today_record(membership, company)
     if rec is None or rec.clock_in_at is None:
         raise NoActiveAttendance()
-    if rec.status == AttendanceRecord.Status.COMPLETED:
-        raise InvalidState("이미 퇴근 처리되었습니다.")
-    # close any open break automatically
-    open_break = rec.breaks.filter(ended_at__isnull=True).first()
-    now = django_tz.now()
-    if open_break is not None:
-        open_break.ended_at = now
-        open_break.save(update_fields=["ended_at"])
-
-    rec.clock_out_at = now
-    rec.total_break_minutes = aggregate_break_minutes(rec)
-    rec.total_work_minutes = compute_total_work_minutes(rec)
 
     schedule = get_or_default_schedule(membership)
-    rec.is_early_leave = is_early_leave(schedule, now.astimezone(company_tz(company)))
-    rec.status = AttendanceRecord.Status.COMPLETED
-    rec.save(
-        update_fields=[
-            "clock_out_at",
-            "total_break_minutes",
-            "total_work_minutes",
-            "is_early_leave",
-            "status",
-            "updated_at",
-        ]
+    break_rows = list(BreakRecord.objects.filter(attendance_record=rec))
+    spans = [BreakSpan(started_at=br.started_at, ended_at=br.ended_at) for br in break_rows]
+
+    builder = (
+        ClockOutBuilder(membership)
+        .with_open_record(rec.clock_in_at, rec.status)
+        .with_breaks(spans)
+        .with_schedule(schedule.end_time)
+        .at(django_tz.now())
     )
+    try:
+        plan = builder.build()
+    except BuilderNoOpenAttendance as exc:
+        raise NoActiveAttendance() from exc
+    except BuilderInvalidClockOut as exc:
+        if "completed" in str(exc):
+            raise InvalidState("이미 퇴근 처리되었습니다.") from exc
+        raise InvalidState(str(exc) or InvalidState.message) from exc
+
+    with transaction.atomic():
+        if plan.open_break_to_close is not None:
+            BreakRecord.objects.filter(
+                attendance_record=rec,
+                started_at=plan.open_break_to_close.started_at,
+                ended_at__isnull=True,
+            ).update(ended_at=plan.clock_out_at)
+
+        rec.clock_out_at = plan.clock_out_at
+        rec.total_break_minutes = plan.total_break_minutes
+        rec.total_work_minutes = plan.total_work_minutes
+        rec.is_early_leave = plan.is_early_leave
+        rec.status = AttendanceRecord.Status.COMPLETED
+        rec.save(
+            update_fields=[
+                "clock_out_at",
+                "total_break_minutes",
+                "total_work_minutes",
+                "is_early_leave",
+                "status",
+                "updated_at",
+            ]
+        )
+    _broadcast_team_status(company, membership, rec)
     return rec
 
 

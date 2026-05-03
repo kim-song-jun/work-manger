@@ -1,7 +1,8 @@
 """Attendance domain builders — Builder pattern.
 
-Encapsulates the construction + validation of an `AttendanceRecord` for clock-in.
-Service layer composes this with idempotency, persistence, and notifications.
+Encapsulates the construction + validation of `AttendanceRecord` for clock-in
+and clock-out. Service layer composes these with idempotency, persistence, and
+notifications.
 """
 from __future__ import annotations
 
@@ -161,3 +162,146 @@ class ClockInBuilder(Builder[ClockInPlan]):
             if d <= loc.radius_m + (self._accuracy or 0):
                 return loc
         return None
+
+
+# ─── Clock-out ────────────────────────────────────────────────
+
+
+class NoOpenAttendance(ValueError):
+    pass
+
+
+class InvalidClockOutPayload(ValueError):
+    pass
+
+
+@dataclass(frozen=True)
+class BreakSpan:
+    """Lightweight projection of a BreakRecord used by the builder.
+
+    Service layer feeds these in via :meth:`ClockOutBuilder.with_breaks` so the
+    builder stays decoupled from the ORM.
+    """
+
+    started_at: datetime
+    ended_at: datetime | None
+
+
+@dataclass(frozen=True)
+class ClockOutPlan:
+    """Pure value object describing a validated clock-out outcome.
+
+    Fields:
+      - ``clock_out_at``: timezone-aware datetime to persist
+      - ``total_break_minutes``: aggregated from supplied :class:`BreakSpan` rows
+      - ``total_work_minutes``: span(in→out) − breaks, clamped at 0
+      - ``is_early_leave``: True iff clock-out is strictly before scheduled end
+      - ``open_break_to_close``: an open BreakSpan the service must close, if any
+    """
+
+    membership: Membership
+    clock_in_at: datetime
+    clock_out_at: datetime
+    total_break_minutes: int
+    total_work_minutes: int
+    is_early_leave: bool
+    open_break_to_close: BreakSpan | None
+
+
+class ClockOutBuilder(Builder[ClockOutPlan]):
+    """Fluent construction of a validated clock-out plan.
+
+        plan = (
+            ClockOutBuilder(membership)
+              .with_open_record(clock_in_at, status)
+              .with_breaks(break_spans)
+              .with_schedule(end_time)
+              .at(now)
+              .build()
+        )
+
+    Validation rules (mirror the service layer):
+      - An "open" attendance record must exist (clock_in_at set, status != COMPLETED).
+      - clock_out_at must be ≥ clock_in_at.
+      - is_early_leave is True iff clock_out (in company tz) < scheduled end of day.
+    """
+
+    def __init__(self, membership: Membership) -> None:
+        self._membership = membership
+        self._clock_in_at: datetime | None = None
+        self._status: str | None = None
+        self._client_time: datetime | None = None
+        self._breaks: list[BreakSpan] = []
+        self._scheduled_end: time | None = None
+
+    # ── chainable setters ───────────────────────────────────
+    def with_open_record(self, clock_in_at: datetime | None, status: str | None):
+        self._clock_in_at = clock_in_at
+        self._status = status
+        return self
+
+    def with_breaks(self, breaks):
+        self._breaks = list(breaks or [])
+        return self
+
+    def with_schedule(self, end: time | None):
+        self._scheduled_end = end
+        return self
+
+    def at(self, when: datetime | None):
+        if when is not None and django_tz.is_naive(when):
+            when = django_tz.make_aware(when, django_tz.get_current_timezone())
+        self._client_time = when
+        return self
+
+    # ── validation ──────────────────────────────────────────
+    def _validate(self) -> None:
+        if self._clock_in_at is None:
+            raise NoOpenAttendance("no active clock-in record")
+        if self._status == "COMPLETED":
+            raise InvalidClockOutPayload("attendance already completed")
+
+    # ── build ───────────────────────────────────────────────
+    def _build(self) -> ClockOutPlan:
+        out_at = self._client_time or django_tz.now()
+        in_at = self._clock_in_at  # type: ignore[assignment]
+        if out_at < in_at:  # type: ignore[operator]
+            raise InvalidClockOutPayload("clock_out precedes clock_in")
+
+        # Aggregate break minutes; an open break (no ended_at) is treated as
+        # closing at clock-out time.
+        open_to_close: BreakSpan | None = None
+        total_break = 0
+        for br in self._breaks:
+            ended = br.ended_at
+            if ended is None:
+                ended = out_at
+                open_to_close = br
+            if br.started_at and ended:
+                delta = int((ended - br.started_at).total_seconds() // 60)
+                total_break += max(0, delta)
+
+        span_min = int((out_at - in_at).total_seconds() // 60)
+        total_work = max(0, span_min - total_break)
+
+        is_early = False
+        if self._scheduled_end is not None:
+            tz = django_tz.get_current_timezone()
+            local_out = out_at.astimezone(tz)
+            scheduled_end_dt = local_out.replace(
+                hour=self._scheduled_end.hour,
+                minute=self._scheduled_end.minute,
+                second=0,
+                microsecond=0,
+            )
+            is_early = local_out < scheduled_end_dt
+
+        return ClockOutPlan(
+            membership=self._membership,
+            clock_in_at=in_at,
+            clock_out_at=out_at,
+            total_break_minutes=total_break,
+            total_work_minutes=total_work,
+            is_early_leave=is_early,
+            open_break_to_close=open_to_close,
+        )

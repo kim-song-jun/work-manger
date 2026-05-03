@@ -46,6 +46,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     failed_login_count = models.PositiveIntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
+    totp_secret = models.CharField(max_length=64, blank=True, default="")
+    totp_enabled = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=django_tz.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
@@ -166,3 +168,17 @@ class CompanyJoinCode(models.Model):
 
     class Meta:
         db_table = "company_join_code"
+
+
+class RecoveryCode(models.Model):
+    """One-time TOTP recovery codes (bcrypt-hashed)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="recovery_codes")
+    code_hash = models.CharField(max_length=128)
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=django_tz.now, editable=False)
+
+    class Meta:
+        db_table = "user_recovery_code"
+        indexes = [models.Index(fields=["user"], name="idx_recovery_user")]

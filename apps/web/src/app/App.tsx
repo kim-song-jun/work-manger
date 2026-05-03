@@ -1,23 +1,23 @@
 import { Route, Routes, Navigate } from "react-router-dom";
-import { LoginPage } from "@/pages/LoginPage";
-import { SignupPage } from "@/pages/SignupPage";
-import { HealthPage } from "@/pages/HealthPage";
-import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
+import { LoginPage } from "@pages/login";
+import { SignupPage } from "@pages/signup";
+import { HealthPage } from "@pages/health";
+import { ForgotPasswordPage } from "@pages/forgot";
 
-import { MobileShell } from "@/layouts/MobileShell";
-import { HomePage } from "@/pages/m/HomePage";
-import { TeamPage } from "@/pages/m/TeamPage";
-import { LeavePage } from "@/pages/m/LeavePage";
-import { MyPage } from "@/pages/m/MyPage";
+import { MobileShell } from "@widgets/mobile-shell";
+import { HomePage } from "@pages/m-home";
+import { TeamPage } from "@pages/m-team";
+import { LeavePage } from "@pages/m-leave";
+import { MyPage } from "@pages/m-my";
 
-import { WelcomePage } from "@/pages/onboarding/WelcomePage";
-import { CompanyCodePage } from "@/pages/onboarding/CompanyCodePage";
-import { ProfilePage } from "@/pages/onboarding/ProfilePage";
-import { LocationPage } from "@/pages/onboarding/LocationPage";
-import { SchedulePage } from "@/pages/onboarding/SchedulePage";
-import { NotificationsPage } from "@/pages/onboarding/NotificationsPage";
-import { WidgetPage } from "@/pages/onboarding/WidgetPage";
-import { DonePage } from "@/pages/onboarding/DonePage";
+import { WelcomePage } from "@pages/onboarding-welcome";
+import { CompanyCodePage } from "@pages/onboarding-company-code";
+import { ProfilePage } from "@pages/onboarding-profile";
+import { LocationPage } from "@pages/onboarding-location";
+import { SchedulePage } from "@pages/onboarding-schedule";
+import { NotificationsPage } from "@pages/onboarding-notifications";
+import { WidgetPage } from "@pages/onboarding-widget";
+import { DonePage } from "@pages/onboarding-done";
 
 export function App() {
   return (

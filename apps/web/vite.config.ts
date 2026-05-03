@@ -21,6 +21,11 @@ export default defineConfig({
     port: 4444,
     strictPort: true,
     proxy: {
+      "/v1/ws": {
+        target: process.env.VITE_WS_URL ?? "http://ws:4456",
+        changeOrigin: true,
+        ws: true,
+      },
       "/v1": {
         target: process.env.VITE_API_URL ?? "http://api:4455",
         changeOrigin: true,
