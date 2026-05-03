@@ -1,0 +1,74 @@
+# Node / pnpm
+node_modules/
+.pnpm-store/
+dist/
+build/
+.next/
+.turbo/
+.vite/
+*.tsbuildinfo
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3
+staticfiles/
+media/
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Flutter
+.flutter-plugins
+.flutter-plugins-dependencies
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+ios/Pods/
+ios/Flutter/Generated.xcconfig
+android/.gradle/
+android/local.properties
+android/key.properties
+*.iml
+
+# Electron
+out/
+release/
+app/dist/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Editor / OS
+.vscode/
+!.vscode/settings.shared.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs / temp
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.tmp/
+tmp/
+
+# Design handoff bundle (kept locally for reference, not versioned)
+_design/handoff.tar.gz
+_design/headers.txt
