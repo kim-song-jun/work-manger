@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>몰큐브 워크 · 디자인 가이드</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="hifi/tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #F0EEE9; color: #191F28;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+    font-feature-settings: 'ss01', 'cv01'; font-variant-numeric: tabular-nums;
+  }
+  .doc { max-width: 960px; margin: 0 auto; padding: 64px 32px 120px; }
+  .eyebrow { font-size: 13px; font-weight: 700; color: var(--brand); letter-spacing: 0.5px; text-transform: uppercase; }
+  h1 { font-size: 56px; font-weight: 800; letter-spacing: -1.8px; line-height: 1.1; margin: 12px 0 16px; }
+  .lede { font-size: 20px; color: #4E5968; line-height: 1.55; max-width: 640px; }
+  h2 { font-size: 36px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.2; margin: 80px 0 8px; padding-top: 32px; border-top: 1px solid #E5E8EB; }
+  h2 .num { color: #B0B8C1; font-variant-numeric: tabular-nums; margin-right: 12px; font-weight: 700; }
+  .h2-sub { font-size: 16px; color: #6B7684; margin: 6px 0 32px; }
+  h3 { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; margin: 40px 0 10px; }
+  h4 { font-size: 15px; font-weight: 700; color: #4E5968; margin: 16px 0 4px; text-transform: uppercase; letter-spacing: 0.4px; font-size: 12px; }
+  p { font-size: 16px; line-height: 1.65; color: #333D4B; margin: 8px 0; }
+  code, .mono { font-family: 'SF Mono', 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; background: #F2F4F6; padding: 1px 6px; border-radius: 4px; color: #191F28; }
+  .card { background: #fff; border-radius: 18px; padding: 28px; box-shadow: 0 1px 3px rgba(0,22,48,0.04); margin: 16px 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+  /* Color swatches */
+  .swatch { background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 1px 3px rgba(0,22,48,0.04); }
+  .swatch-color { height: 72px; border-radius: 10px; margin-bottom: 10px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05); }
+  .swatch-name { font-size: 13px; font-weight: 700; }
+  .swatch-hex { font-size: 12px; color: #8B95A1; font-family: 'SF Mono', monospace; margin-top: 2px; }
+
+  /* Typography examples */
+  .type-row { display: grid; grid-template-columns: 140px 1fr 180px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid #F2F4F6; gap: 16px; }
+  .type-row:last-child { border-bottom: none; }
+  .type-label { font-size: 12px; font-weight: 700; color: #8B95A1; text-transform: uppercase; letter-spacing: 0.5px; }
+  .type-specs { font-size: 11px; color: #B0B8C1; font-family: 'SF Mono', monospace; text-align: right; }
+
+  /* Principle cards */
+  .pcard { padding: 24px; background: #fff; border-radius: 16px; }
+  .pcard-num { display: inline-block; padding: 2px 10px; background: var(--brand-soft); color: var(--brand); border-radius: 8px; font-size: 12px; font-weight: 800; }
+  .pcard h3 { font-size: 18px; margin: 12px 0 6px; }
+  .pcard p { font-size: 14px; color: #4E5968; margin: 0; }
+
+  /* DO / DON'T */
+  .do-dont { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+  .do-dont > div { padding: 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+  .do { background: #E6F9F1; color: #00704A; }
+  .do::before { content: '✓ '; font-weight: 800; }
+  .dont { background: #FEECEE; color: #B42318; }
+  .dont::before { content: '✗ '; font-weight: 800; }
+
+  .anchor { display: block; position: relative; top: -20px; visibility: hidden; }
+  .toc { background: #fff; border-radius: 14px; padding: 18px 22px; margin-bottom: 48px; }
+  .toc a { display: block; padding: 6px 0; color: #4E5968; text-decoration: none; font-size: 14px; }
+  .toc a:hover { color: var(--brand); }
+
+  /* Component gallery */
+  .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+  .cbox { background: #fff; border-radius: 12px; padding: 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; min-height: 140px; }
+  .cbox-name { font-size: 12px; font-weight: 700; color: #4E5968; margin-top: 12px; }
+
+  .btn-preview { padding: 12px 20px; border-radius: 12px; font-weight: 700; display: inline-block; font-size: 14px; }
+
+  .spacing-row { display: flex; align-items: center; gap: 16px; margin: 10px 0; font-size: 13px; color: #4E5968; }
+  .spacing-bar { height: 28px; background: linear-gradient(90deg, var(--brand), #5E83F1); border-radius: 4px; }
+
+  .avatar-demo { width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+
+  .callout { background: linear-gradient(135deg, #E8F2FE, #F4F8FE); border-radius: 14px; padding: 20px 24px; margin: 20px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .callout-dot { width: 24px; height: 24px; border-radius: 12px; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 800; font-size: 13px; }
+  .callout p { margin: 0; font-size: 14px; color: #1B64DA; line-height: 1.55; }
+
+  .logo-dot { width: 40px; height: 40px; border-radius: 12px; background: var(--brand); display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
+  .logo-dot > div { width: 14px; height: 14px; border-radius: 7px; background: #fff; }
+
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--brand); text-decoration: none; font-weight: 700; font-size: 14px; margin-bottom: 24px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th { text-align: left; padding: 10px 12px; background: #F2F4F6; font-weight: 700; font-size: 12px; color: #4E5968; text-transform: uppercase; letter-spacing: 0.4px; }
+  th:first-child { border-radius: 8px 0 0 8px; }
+  th:last-child { border-radius: 0 8px 8px 0; }
+  td { padding: 12px 12px; border-bottom: 1px solid #F2F4F6; color: #333D4B; }
+  td code { font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="doc">
+  <a href="근무 관리 하이파이.html" class="back-link">← 디자인 캔버스로 돌아가기</a>
+
+  <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+    <span class="logo-dot"><div></div></span>
+    <div>
+      <div class="eyebrow">Design Guidelines · v1.0</div>
+    </div>
+  </div>
+  <h1>몰큐브 워크<br/>디자인 가이드</h1>
+  <p class="lede">
+    간단함을 신뢰하고, 단 한 번의 탭으로 끝내는 근무 관리 경험.
+    이 문서는 디자이너·개발자가 함께 읽는 살아있는 시스템 가이드입니다.
+  </p>
+
+  <!-- ─── TOC ─── -->
+  <div class="toc" style="margin-top: 40px;">
+    <div style="font-size: 12px; font-weight: 700; color: #8B95A1; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">목차</div>
+    <a href="#principles">01. 디자인 원칙</a>
+    <a href="#brand">02. 브랜드 · 로고</a>
+    <a href="#color">03. 컬러 시스템</a>
+    <a href="#type">04. 타이포그래피</a>
+    <a href="#space">05. 간격 · 레이아웃</a>
+    <a href="#radius">06. 라운딩 · 그림자</a>
+    <a href="#components">07. 컴포넌트</a>
+    <a href="#icons">08. 아이콘</a>
+    <a href="#motion">09. 모션</a>
+    <a href="#voice">10. 보이스 · 카피</a>
+    <a href="#i18n">11. 다국어 규칙</a>
+    <a href="#a11y">12. 접근성</a>
+  </div>
+
+  <!-- ─── 01. 원칙 ─── -->
+  <h2 id="principles"><span class="num">01</span>디자인 원칙</h2>
+  <p class="h2-sub">모든 화면은 이 5가지 원칙을 지켜야 합니다.</p>
+
+  <div class="grid-2">
+    <div class="pcard">
+      <span class="pcard-num">01</span>
+      <h3>한 화면, 한 가지 일</h3>
+      <p>출근이 목적이면 출근만 보여주세요. 부가 정보는 2차 화면으로. 인지 부하가 쌓이면 사용자는 이탈합니다.</p>
+    </div>
+    <div class="pcard">
+      <span class="pcard-num">02</span>
+      <h3>숫자보다 맥락</h3>
+      <p>"9h 22m" 대신 "정상 근무". 수치는 필요할 때만, 상태 배지는 항상. 눈으로 훑어도 이해되는 UI.</p>
+    </div>
+    <div class="pcard">
+      <span class="pcard-num">03</span>
+      <h3>자동 감지 + 사용자 확인</h3>
+      <p>시스템이 먼저 추측하고, 사용자는 확인/수정만. 매번 수동 입력을 요구하지 마세요.</p>
+    </div>
+    <div class="pcard">
+      <span class="pcard-num">04</span>
+      <h3>선명한 위계</h3>
+      <p>한 화면에 Bold 18px+ 텍스트는 하나. 색상 강조도 하나. 계속 강조하면 아무것도 강조되지 않습니다.</p>
+    </div>
+    <div class="pcard">
+      <span class="pcard-num">05</span>
+      <h3>Graceful 에러</h3>
+      <p>GPS 실패, 네트워크 단절은 반드시 대체 경로를 제공하세요. "다시 시도" 버튼만 두지 말 것.</p>
+    </div>
+    <div class="pcard" style="background: linear-gradient(135deg, #191F28, #333D4B); color: #fff;">
+      <span class="pcard-num" style="background: rgba(255,255,255,0.15); color: #fff;">핵심</span>
+      <h3 style="color: #fff;">"이게 전부인가?" 라는<br/>질문이 최고의 칭찬</h3>
+      <p style="color: rgba(255,255,255,0.7);">기능이 단순해 보인다면 성공한 겁니다. 복잡함은 백엔드에 숨기세요.</p>
+    </div>
+  </div>
+
+  <!-- ─── 02. 브랜드 ─── -->
+  <h2 id="brand"><span class="num">02</span>브랜드 · 로고</h2>
+  <p class="h2-sub">몰큐브 워크의 아이덴티티는 깔끔한 점 하나. 출근 신호등처럼.</p>
+
+  <div class="card">
+    <div style="display: flex; gap: 32px; align-items: center; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="logo-dot"><div></div></span>
+        <span style="font-size: 22px; font-weight: 800; letter-spacing: -0.6px;">몰큐브 워크</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="logo-dot" style="width: 28px; height: 28px; border-radius: 8px;"><div style="width: 10px; height: 10px; border-radius: 5px;"></div></span>
+        <span style="font-size: 16px; font-weight: 800; letter-spacing: -0.4px;">몰큐브 워크</span>
+      </div>
+      <span class="logo-dot"><div></div></span>
+      <span class="logo-dot" style="background: #191F28;"><div></div></span>
+    </div>
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #F2F4F6; font-size: 13px; color: #6B7684;">
+      <strong>최소 크기:</strong> 파비콘 16px / 앱 아이콘 40px · <strong>여백:</strong> 심볼 높이의 50% 이상 확보
+    </div>
+  </div>
+
+  <div class="do-dont" style="margin-top: 24px;">
+    <div class="do">심볼과 워드마크 사이 간격 유지 (8-10px)</div>
+    <div class="dont">로고를 회전하거나 비율 변형하지 마세요</div>
+    <div class="do">브랜드 컬러(파랑) · 검정 · 흰색만 사용</div>
+    <div class="dont">그라디언트, 글로우, 그림자 효과 금지</div>
+  </div>
+
+  <!-- ─── 03. 컬러 ─── -->
+  <h2 id="color"><span class="num">03</span>컬러 시스템</h2>
+  <p class="h2-sub">토스 그레이스케일 기반. 의미가 담긴 색만 사용하세요.</p>
+
+  <h3>브랜드</h3>
+  <div class="grid-4">
+    <div class="swatch"><div class="swatch-color" style="background:#3182F6"></div><div class="swatch-name">Brand / Primary</div><div class="swatch-hex">#3182F6</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#1B64DA"></div><div class="swatch-name">Brand / Hover</div><div class="swatch-hex">#1B64DA</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#E8F2FE"></div><div class="swatch-name">Brand / Soft</div><div class="swatch-hex">#E8F2FE</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#F4F8FE"></div><div class="swatch-name">Brand / Softer</div><div class="swatch-hex">#F4F8FE</div></div>
+  </div>
+
+  <h3 style="margin-top: 32px;">뉴트럴 (9단계)</h3>
+  <div class="grid-4">
+    <div class="swatch"><div class="swatch-color" style="background:#191F28"></div><div class="swatch-name">Grey 900</div><div class="swatch-hex">#191F28 · 본문</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#333D4B"></div><div class="swatch-name">Grey 800</div><div class="swatch-hex">#333D4B</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#4E5968"></div><div class="swatch-name">Grey 700</div><div class="swatch-hex">#4E5968</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#6B7684"></div><div class="swatch-name">Grey 600</div><div class="swatch-hex">#6B7684 · 보조</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#8B95A1"></div><div class="swatch-name">Grey 500</div><div class="swatch-hex">#8B95A1 · 힌트</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#B0B8C1"></div><div class="swatch-name">Grey 400</div><div class="swatch-hex">#B0B8C1</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#D1D6DB"></div><div class="swatch-name">Grey 300</div><div class="swatch-hex">#D1D6DB</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#E5E8EB"></div><div class="swatch-name">Grey 200</div><div class="swatch-hex">#E5E8EB · 선</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#F2F4F6"></div><div class="swatch-name">Grey 100</div><div class="swatch-hex">#F2F4F6 · 배경</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#F9FAFB"></div><div class="swatch-name">Grey 50</div><div class="swatch-hex">#F9FAFB</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#FFFFFF; box-shadow: inset 0 0 0 1px #E5E8EB;"></div><div class="swatch-name">White</div><div class="swatch-hex">#FFFFFF · 카드</div></div>
+  </div>
+
+  <h3 style="margin-top: 32px;">의미 색 (Semantic)</h3>
+  <div class="grid-4">
+    <div class="swatch"><div class="swatch-color" style="background:#00C471"></div><div class="swatch-name">Success</div><div class="swatch-hex">#00C471 · 출근 · 승인</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#FF9500"></div><div class="swatch-name">Warn</div><div class="swatch-hex">#FF9500 · 휴게 · 소멸임박</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#F04452"></div><div class="swatch-name">Danger</div><div class="swatch-hex">#F04452 · 반려 · 오류</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#5E83F1"></div><div class="swatch-name">Info</div><div class="swatch-hex">#5E83F1 · 재택 · 안내</div></div>
+  </div>
+
+  <h3 style="margin-top: 32px;">근무 상태 (Team)</h3>
+  <div class="grid-4">
+    <div class="swatch"><div class="swatch-color" style="background:#00C471"></div><div class="swatch-name">본사 출근</div><div class="swatch-hex">#00C471</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#5E83F1"></div><div class="swatch-name">재택</div><div class="swatch-hex">#5E83F1</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#FF9500"></div><div class="swatch-name">연차</div><div class="swatch-hex">#FF9500</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#FF6B35"></div><div class="swatch-name">휴게</div><div class="swatch-hex">#FF6B35</div></div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-dot">!</div>
+    <p><strong>컬러 사용 규칙:</strong> 한 화면에 브랜드 파랑은 <strong>주요 CTA 1개</strong>에만. 나머지 요소는 그레이스케일로. 알림 배지·상태 점 외에 의미 색을 산발적으로 쓰지 마세요.</p>
+  </div>
+
+  <!-- ─── 04. 타입 ─── -->
+  <h2 id="type"><span class="num">04</span>타이포그래피</h2>
+  <p class="h2-sub">Pretendard Variable. 숫자는 tabular-nums로 시간이 흔들리지 않아요.</p>
+
+  <div class="card">
+    <div class="type-row">
+      <div class="type-label">Display</div>
+      <div style="font-size: 36px; font-weight: 800; letter-spacing: -1px;">좋은 아침이에요</div>
+      <div class="type-specs">36 / 800 / -1.0</div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">Title 1</div>
+      <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.6px;">연차 잔여 8.5일</div>
+      <div class="type-specs">24 / 800 / -0.6</div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">Title 2</div>
+      <div style="font-size: 18px; font-weight: 800; letter-spacing: -0.4px;">승인 대기 2건</div>
+      <div class="type-specs">18 / 800 / -0.4</div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">Body</div>
+      <div style="font-size: 15px; font-weight: 500;">오늘도 수고했어요. 지금 퇴근하시겠어요?</div>
+      <div class="type-specs">15 / 500</div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">Caption</div>
+      <div style="font-size: 13px; color: #6B7684;">11월 12일 · 수요일</div>
+      <div class="type-specs">13 / 500 / G600</div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">Label</div>
+      <div style="font-size: 11px; font-weight: 700; color: #8B95A1; text-transform: uppercase; letter-spacing: 0.5px;">TODAY · 오늘</div>
+      <div class="type-specs">11 / 700 / G500</div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">Numeric</div>
+      <div style="font-size: 32px; font-weight: 800; letter-spacing: -0.8px; font-variant-numeric: tabular-nums;">09:02</div>
+      <div class="type-specs">tabular-nums</div>
+    </div>
+  </div>
+
+  <h3>최소 크기</h3>
+  <table>
+    <tr><th>용도</th><th>최소</th><th>이유</th></tr>
+    <tr><td>모바일 본문</td><td><code>14px</code></td><td>작은 화면에서 가독성 확보</td></tr>
+    <tr><td>웹 본문</td><td><code>15px</code></td><td>데스크탑 기준 편안한 읽기</td></tr>
+    <tr><td>캡션·라벨</td><td><code>11px</code></td><td>이보다 작으면 금지</td></tr>
+    <tr><td>터치 타겟 내 텍스트</td><td><code>12px</code></td><td>44×44px 영역 기준</td></tr>
+  </table>
+
+  <!-- ─── 05. Spacing ─── -->
+  <h2 id="space"><span class="num">05</span>간격 · 레이아웃</h2>
+  <p class="h2-sub">4px 베이스 그리드. 0.5배 단위는 쓰지 마세요.</p>
+
+  <div class="card">
+    <div class="spacing-row"><div style="width: 60px;"><code>4</code></div><div class="spacing-bar" style="width: 4px;"></div><div>최소 간격 — 인라인 요소 사이</div></div>
+    <div class="spacing-row"><div style="width: 60px;"><code>8</code></div><div class="spacing-bar" style="width: 8px;"></div><div>아이콘 ↔ 텍스트</div></div>
+    <div class="spacing-row"><div style="width: 60px;"><code>12</code></div><div class="spacing-bar" style="width: 12px;"></div><div>카드 내부 요소 간격</div></div>
+    <div class="spacing-row"><div style="width: 60px;"><code>16</code></div><div class="spacing-bar" style="width: 16px;"></div><div>카드 패딩 (기본)</div></div>
+    <div class="spacing-row"><div style="width: 60px;"><code>20</code></div><div class="spacing-bar" style="width: 20px;"></div><div>모바일 화면 좌우 여백</div></div>
+    <div class="spacing-row"><div style="width: 60px;"><code>24</code></div><div class="spacing-bar" style="width: 24px;"></div><div>섹션 사이</div></div>
+    <div class="spacing-row"><div style="width: 60px;"><code>32</code></div><div class="spacing-bar" style="width: 32px;"></div><div>웹 카드 패딩</div></div>
+    <div class="spacing-row"><div style="width: 60px;"><code>48</code></div><div class="spacing-bar" style="width: 48px;"></div><div>큰 섹션 구분</div></div>
+  </div>
+
+  <h3>터치 타겟</h3>
+  <p>모든 터치 가능 요소는 <strong>최소 44×44px</strong>. 텍스트 버튼이라도 투명 패딩으로 영역을 확보하세요.</p>
+
+  <!-- ─── 06. Radius / Shadow ─── -->
+  <h2 id="radius"><span class="num">06</span>라운딩 · 그림자</h2>
+
+  <h3>모서리 반경</h3>
+  <div class="grid-4">
+    <div class="swatch">
+      <div style="height: 72px; background: #fff; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,22,48,0.08); margin-bottom: 10px;"></div>
+      <div class="swatch-name">XS · 4px</div>
+      <div class="swatch-hex">배지 · 태그</div>
+    </div>
+    <div class="swatch">
+      <div style="height: 72px; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,22,48,0.08); margin-bottom: 10px;"></div>
+      <div class="swatch-name">S · 8px</div>
+      <div class="swatch-hex">인풋 · 작은 버튼</div>
+    </div>
+    <div class="swatch">
+      <div style="height: 72px; background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,22,48,0.08); margin-bottom: 10px;"></div>
+      <div class="swatch-name">M · 12px</div>
+      <div class="swatch-hex">카드 · CTA 버튼</div>
+    </div>
+    <div class="swatch">
+      <div style="height: 72px; background: #fff; border-radius: 18px; box-shadow: 0 1px 3px rgba(0,22,48,0.08); margin-bottom: 10px;"></div>
+      <div class="swatch-name">L · 18px</div>
+      <div class="swatch-hex">큰 카드 · 바텀시트</div>
+    </div>
+  </div>
+
+  <h3 style="margin-top: 32px;">그림자</h3>
+  <div class="grid-3">
+    <div class="card" style="box-shadow: 0 1px 2px rgba(0,22,48,0.06); padding: 24px;">
+      <div style="font-weight: 700; margin-bottom: 6px;">XS</div>
+      <div style="font-size: 12px; color: #8B95A1;">기본 카드 · <code style="font-size: 11px;">0 1px 2px rgba(0,22,48,.06)</code></div>
+    </div>
+    <div class="card" style="box-shadow: 0 4px 16px rgba(0,22,48,0.08); padding: 24px;">
+      <div style="font-weight: 700; margin-bottom: 6px;">M</div>
+      <div style="font-size: 12px; color: #8B95A1;">플로팅 · <code style="font-size: 11px;">0 4px 16px rgba(0,22,48,.08)</code></div>
+    </div>
+    <div class="card" style="box-shadow: 0 20px 40px rgba(0,22,48,0.14); padding: 24px;">
+      <div style="font-weight: 700; margin-bottom: 6px;">L</div>
+      <div style="font-size: 12px; color: #8B95A1;">모달 · <code style="font-size: 11px;">0 20px 40px rgba(0,22,48,.14)</code></div>
+    </div>
+  </div>
+
+  <!-- ─── 07. Components ─── -->
+  <h2 id="components"><span class="num">07</span>컴포넌트</h2>
+  <p class="h2-sub">핵심 컴포넌트 체계. 자세한 변형은 디자인 캔버스 참고.</p>
+
+  <h3>버튼</h3>
+  <div class="card" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+    <div class="btn-preview" style="background: var(--brand); color: #fff;">기본 · Primary</div>
+    <div class="btn-preview" style="background: #F2F4F6; color: #4E5968;">보조 · Secondary</div>
+    <div class="btn-preview" style="background: transparent; color: var(--brand);">텍스트 · Tertiary</div>
+    <div class="btn-preview" style="background: #191F28; color: #fff;">강조 · Emphasis</div>
+    <div class="btn-preview" style="background: #F04452; color: #fff;">위험 · Danger</div>
+  </div>
+
+  <h3 style="margin-top: 32px;">상태 배지</h3>
+  <div class="card" style="display: flex; gap: 8px; flex-wrap: wrap;">
+    <span style="padding: 4px 10px; background: #E6F9F1; color: #00704A; border-radius: 8px; font-size: 12px; font-weight: 700;">● 본사 출근</span>
+    <span style="padding: 4px 10px; background: #EEF2FE; color: #3A5BC8; border-radius: 8px; font-size: 12px; font-weight: 700;">● 재택</span>
+    <span style="padding: 4px 10px; background: #FFF4E5; color: #B45E00; border-radius: 8px; font-size: 12px; font-weight: 700;">● 연차</span>
+    <span style="padding: 4px 10px; background: #FEECEE; color: #B42318; border-radius: 8px; font-size: 12px; font-weight: 700;">● 미출근</span>
+    <span style="padding: 4px 10px; background: #F2F4F6; color: #6B7684; border-radius: 8px; font-size: 12px; font-weight: 700;">● 퇴근</span>
+  </div>
+
+  <h3 style="margin-top: 32px;">아바타</h3>
+  <div class="card" style="display: flex; gap: 8px; align-items: center;">
+    <span class="avatar-demo" style="background: #CFE8FF; color: #1B64DA;">김</span>
+    <span class="avatar-demo" style="background: #FFE4B5; color: #B45E00;">박</span>
+    <span class="avatar-demo" style="background: #D4F4E2; color: #00704A;">이</span>
+    <span class="avatar-demo" style="background: #F5D4E6; color: #9A2567;">최</span>
+    <span class="avatar-demo" style="background: #E8DEFD; color: #5A3FB8;">정</span>
+    <span style="margin-left: 12px; font-size: 12px; color: #6B7684;">이름 첫 글자 · 자동 색상 (해시)</span>
+  </div>
+
+  <!-- ─── 08. Icons ─── -->
+  <h2 id="icons"><span class="num">08</span>아이콘</h2>
+  <p class="h2-sub">24×24 viewBox · stroke-width 2 · 라운드 캡. 일관성이 전부입니다.</p>
+
+  <div class="cgrid">
+    <div class="cbox">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#191F28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>
+      <div class="cbox-name">home</div>
+    </div>
+    <div class="cbox">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#191F28" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5M17 11a3 3 0 1 0 0-6M21 20c-.3-2.2-1.6-3.9-3.5-4.7"/></svg>
+      <div class="cbox-name">team</div>
+    </div>
+    <div class="cbox">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#191F28" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      <div class="cbox-name">calendar</div>
+    </div>
+    <div class="cbox">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#191F28" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <div class="cbox-name">clock</div>
+    </div>
+    <div class="cbox">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#191F28" stroke-width="2" stroke-linecap="round"><path d="M12 22s-7-7-7-12a7 7 0 1 1 14 0c0 5-7 12-7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <div class="cbox-name">map</div>
+    </div>
+    <div class="cbox">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#191F28" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a2 2 0 0 0 3.4 0"/></svg>
+      <div class="cbox-name">bell</div>
+    </div>
+    <div class="cbox">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#191F28" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>
+      <div class="cbox-name">lock</div>
+    </div>
+    <div class="cbox">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#191F28" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg>
+      <div class="cbox-name">chart</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-dot">i</div>
+    <p><strong>아이콘 색상:</strong> 의미가 있을 때만 컬러 사용. 대부분은 <code>currentColor</code>로 부모 텍스트 색을 따라가게 두세요.</p>
+  </div>
+
+  <!-- ─── 09. Motion ─── -->
+  <h2 id="motion"><span class="num">09</span>모션</h2>
+  <p class="h2-sub">빠르고 자연스럽게. 모션은 장식이 아니라 피드백입니다.</p>
+
+  <table>
+    <tr><th>상황</th><th>Duration</th><th>Easing</th></tr>
+    <tr><td>버튼 호버·탭 피드백</td><td><code>120ms</code></td><td><code>ease-out</code></td></tr>
+    <tr><td>토글 · 스위치</td><td><code>180ms</code></td><td><code>cubic-bezier(.2, .7, .3, 1)</code></td></tr>
+    <tr><td>모달·바텀시트 열림</td><td><code>280ms</code></td><td><code>cubic-bezier(.16, 1, .3, 1)</code></td></tr>
+    <tr><td>페이지 전환</td><td><code>320ms</code></td><td><code>cubic-bezier(.22, 1, .36, 1)</code></td></tr>
+    <tr><td>출근 확정 체크 애니메이션</td><td><code>500ms</code></td><td><code>spring (k=180, damping=20)</code></td></tr>
+  </table>
+
+  <div class="do-dont" style="margin-top: 24px;">
+    <div class="do">출근 완료시 체크 + 살짝 진동 (haptic)</div>
+    <div class="dont">모든 요소에 fade-in 넣지 마세요</div>
+    <div class="do">스와이프 제스처는 실제 물리처럼 관성</div>
+    <div class="dont">500ms 넘는 트랜지션은 지루해요</div>
+  </div>
+
+  <!-- ─── 10. Voice ─── -->
+  <h2 id="voice"><span class="num">10</span>보이스 · 카피</h2>
+  <p class="h2-sub">정중하지만 가깝게. "합니다"보다 "해요", "입니다"보다 "이에요".</p>
+
+  <div class="do-dont">
+    <div class="do">좋은 아침이에요, 지우 님</div>
+    <div class="dont">안녕하십니까, 김지우 사용자님</div>
+    <div class="do">지금 퇴근하시겠어요?</div>
+    <div class="dont">퇴근을 진행하시겠습니까?</div>
+    <div class="do">연차 3일이 곧 사라져요</div>
+    <div class="dont">연차 3일이 만료 예정입니다</div>
+    <div class="do">위치를 확인할 수 없어요</div>
+    <div class="dont">위치 정보를 가져오지 못했습니다</div>
+    <div class="do">승인 대기 중이에요</div>
+    <div class="dont">요청이 대기열에 등록되었습니다</div>
+  </div>
+
+  <h3>숫자 쓰기</h3>
+  <table>
+    <tr><th>상황</th><th>권장</th><th>피하기</th></tr>
+    <tr><td>근무 시간</td><td><code>9h 22m</code> / <code>9시간 22분</code></td><td><code>9.37시간</code></td></tr>
+    <tr><td>연차 잔여</td><td><code>8.5일</code></td><td><code>8일 4시간</code></td></tr>
+    <tr><td>시각</td><td><code>09:02</code> (24h)</td><td><code>오전 9:02</code></td></tr>
+    <tr><td>날짜</td><td><code>11월 12일 (수)</code></td><td><code>2025-11-12</code></td></tr>
+  </table>
+
+  <!-- ─── 11. i18n ─── -->
+  <h2 id="i18n"><span class="num">11</span>다국어 규칙</h2>
+  <p class="h2-sub">한국어와 영어는 길이·톤·문법이 달라요. 디자인도 함께 바뀌어야 합니다.</p>
+
+  <table>
+    <tr><th>항목</th><th>한국어</th><th>English</th></tr>
+    <tr><td>폰트</td><td>Pretendard Variable</td><td>Pretendard Variable (동일)</td></tr>
+    <tr><td>자간</td><td><code>letter-spacing: -0.4</code></td><td><code>letter-spacing: -0.2</code></td></tr>
+    <tr><td>버튼 라벨 최대 길이</td><td>6자</td><td>12 chars</td></tr>
+    <tr><td>출근 라벨</td><td>출근</td><td>Clock in</td></tr>
+    <tr><td>경어 처리</td><td>해요체</td><td>Direct, no honorifics</td></tr>
+  </table>
+
+  <div class="callout">
+    <div class="callout-dot">!</div>
+    <p><strong>레이아웃 주의:</strong> 영어는 한국어보다 보통 1.3–1.5배 깁니다. 버튼·배지는 <code>min-width</code>로, 줄바꿈 가능한 본문은 <code>text-wrap: pretty</code>로.</p>
+  </div>
+
+  <!-- ─── 12. A11y ─── -->
+  <h2 id="a11y"><span class="num">12</span>접근성</h2>
+  <p class="h2-sub">모두가 쓸 수 있어야 좋은 제품입니다.</p>
+
+  <table>
+    <tr><th>기준</th><th>요구사항</th></tr>
+    <tr><td>색 대비</td><td>본문 <strong>4.5:1</strong> 이상 · 큰 텍스트 <strong>3:1</strong> 이상</td></tr>
+    <tr><td>터치 타겟</td><td><strong>44×44px</strong> 이상 (시각 크기와 별개)</td></tr>
+    <tr><td>포커스 링</td><td>키보드 <code>Tab</code> 시 2px 브랜드 컬러 outline</td></tr>
+    <tr><td>색만으로 정보 전달 금지</td><td>색 + 아이콘 + 텍스트 조합 사용</td></tr>
+    <tr><td>스크린리더</td><td>아이콘 버튼엔 <code>aria-label</code> 필수</td></tr>
+    <tr><td>애니메이션 민감성</td><td><code>prefers-reduced-motion</code> 대응</td></tr>
+    <tr><td>글자 크기 설정</td><td>시스템 글꼴 크기 설정 존중 + 앱 내 3단계</td></tr>
+  </table>
+
+  <!-- ─── Footer ─── -->
+  <div style="margin-top: 96px; padding-top: 32px; border-top: 1px solid #E5E8EB; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span class="logo-dot" style="width: 28px; height: 28px; border-radius: 8px;"><div style="width: 10px; height: 10px; border-radius: 5px;"></div></span>
+      <div style="font-size: 13px; color: #6B7684;">
+        <div style="font-weight: 700; color: #191F28;">몰큐브 워크 디자인 가이드</div>
+        <div>v1.0 · 2025.11</div>
+      </div>
+    </div>
+    <div style="font-size: 13px; color: #8B95A1;">Designed in Korea · Simple by conviction</div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>근무 관리 프로그램 · 와이어프레임</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Gaegu:wght@400;700&family=Kalam:wght@300;400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="sketch.css" />
+<style>
+  body { margin: 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="i18n.jsx"></script>
+<script type="text/babel" src="screens-attendance.jsx"></script>
+<script type="text/babel" src="screens-overtime.jsx"></script>
+<script type="text/babel" src="screens-team.jsx"></script>
+<script type="text/babel" src="screens-web.jsx"></script>
+<script type="text/babel" src="screens-admin.jsx"></script>
+<script type="text/babel" src="screens-widgets.jsx"></script>
+
+<script type="text/babel">
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "lang": "ko",
+  "role": "all",
+  "fidelity": "low"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [lang, setLang] = React.useState(TWEAKS.lang);
+  const [role, setRole] = React.useState(TWEAKS.role);
+  const [fidelity, setFidelity] = React.useState(TWEAKS.fidelity);
+  const [editMode, setEditMode] = React.useState(false);
+
+  // edit mode protocol
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      const d = e.data || {};
+      if (d.type === '__activate_edit_mode') setEditMode(true);
+      if (d.type === '__deactivate_edit_mode') setEditMode(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const persist = (k, v) => {
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [k]: v } }, '*');
+  };
+
+  React.useEffect(() => {
+    document.body.classList.toggle('mid', fidelity === 'mid');
+  }, [fidelity]);
+
+  const showEmployee = role === 'all' || role === 'employee';
+  const showAdmin = role === 'all' || role === 'manager';
+
+  return (
+    <AppCtx.Provider value={{ lang, role, fidelity }}>
+      <DesignCanvas>
+        {showEmployee && <>
+          <DCSection id="attendance" title="모바일 · 출퇴근 체크 (홈)" subtitle="3 variations · 위치 자동감지 포함">
+            <DCArtboard id="att-a" label="A · 밀어서 출근 (slide)" width={300} height={620}><MobA_Slide /></DCArtboard>
+            <DCArtboard id="att-b" label="B · 큰 원형 탭 + 자동감지" width={300} height={620}><MobB_Tap /></DCArtboard>
+            <DCArtboard id="att-c" label="C · 카드 스택 (출근→휴게→퇴근)" width={300} height={620}><MobC_Cards /></DCArtboard>
+          </DCSection>
+
+          <DCSection id="overtime" title="모바일 · 초과근무 승인 요청" subtitle="정규 시간 이후 자동 트리거">
+            <DCArtboard id="ot-a" label="A · 자동 바텀시트" width={300} height={620}><MobOT_A_Sheet /></DCArtboard>
+            <DCArtboard id="ot-b" label="B · 상세 요청 폼" width={300} height={620}><MobOT_B_Form /></DCArtboard>
+            <DCArtboard id="ot-c" label="C · 전송 후 진행 상태" width={300} height={620}><MobOT_C_Sent /></DCArtboard>
+          </DCSection>
+
+          <DCSection id="team" title="모바일 · 전 직원 근무 상태" subtitle="실시간 · 한 화면에서 확인">
+            <DCArtboard id="team-a" label="A · 아바타 그리드" width={300} height={620}><MobTeam_A_Grid /></DCArtboard>
+            <DCArtboard id="team-b" label="B · 팀별 그룹 뷰" width={300} height={620}><MobTeam_B_Teams /></DCArtboard>
+            <DCArtboard id="team-c" label="C · 실시간 타임라인" width={300} height={620}><MobTeam_C_Timeline /></DCArtboard>
+          </DCSection>
+
+          <DCSection id="web" title="웹 · 내 대시보드" subtitle="데스크탑 사용자용">
+            <DCArtboard id="web-a" label="A · 사이드바 + 그리드" width={900} height={580}><WebDash_A_Classic /></DCArtboard>
+            <DCArtboard id="web-b" label="B · 상단 탭 + 넓은 캘린더" width={900} height={580}><WebDash_B_Wide /></DCArtboard>
+            <DCArtboard id="web-c" label="C · 집중 모드 (큰 시계)" width={900} height={580}><WebDash_C_Focus /></DCArtboard>
+          </DCSection>
+        </>}
+
+        <DCSection id="widgets" title="모바일 홈 위젯" subtitle="iOS / Android · Small · Medium · Large">
+          <DCArtboard id="w-s" label="Small (2×2)" width={200} height={200}>
+            <div style={{ padding: 22, background: 'var(--paper-2)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <WidgetSmall />
+            </div>
+          </DCArtboard>
+          <DCArtboard id="w-m" label="Medium (4×2)" width={380} height={200}>
+            <div style={{ padding: 22, background: 'var(--paper-2)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <WidgetMedium />
+            </div>
+          </DCArtboard>
+          <DCArtboard id="w-l" label="Large (4×4)" width={380} height={380}>
+            <div style={{ padding: 22, background: 'var(--paper-2)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <WidgetLarge />
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="desktop" title="데스크탑 앱 · 메뉴바 / 작업표시줄" subtitle="macOS + Windows · 항시 표시 + 드롭다운">
+          <DCArtboard id="mac-bar" label="macOS · 메뉴바 (접힘)" width={900} height={140}>
+            <MacMenuBar open={false} />
+          </DCArtboard>
+          <DCArtboard id="mac-open" label="macOS · 메뉴바 (펼침)" width={900} height={460}>
+            <MacMenuBar open={true} />
+          </DCArtboard>
+          <DCArtboard id="win-bar" label="Windows · 작업표시줄 (접힘)" width={900} height={360}>
+            <WinTaskbar open={false} />
+          </DCArtboard>
+          <DCArtboard id="win-open" label="Windows · 트레이 플라이아웃" width={900} height={360}>
+            <WinTaskbar open={true} />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="notif" title="시스템 알림" subtitle="근무 시간 · 승인 · 위치 감지 · 연차 소멸">
+          <DCArtboard id="notif-a" label="알림 스택" width={360} height={500}>
+            <div style={{ padding: 10, background: 'var(--paper-2)', height: '100%' }}>
+              <NotifStack />
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        {showAdmin && <>
+          <DCSection id="admin-emp" title="관리자 · 직원 관리" subtitle="3 variations">
+            <DCArtboard id="emp-a" label="A · 테이블 뷰" width={900} height={580}><AdminEmp_A_Table /></DCArtboard>
+            <DCArtboard id="emp-b" label="B · 카드 뷰" width={900} height={580}><AdminEmp_B_Cards /></DCArtboard>
+            <DCArtboard id="emp-c" label="C · 직원 상세 (캘린더 포함)" width={900} height={580}><AdminEmp_C_Detail /></DCArtboard>
+          </DCSection>
+
+          <DCSection id="admin-appr" title="관리자 · 연차 승인/소멸 안내" subtitle="승인함 + 자동 안내">
+            <DCArtboard id="appr-a" label="A · 승인함 (통합 인박스)" width={900} height={580}><AdminAppr_A_Inbox /></DCArtboard>
+            <DCArtboard id="appr-b" label="B · 소멸 예정 연차" width={900} height={580}><AdminAppr_B_Expiring /></DCArtboard>
+            <DCArtboard id="appr-c" label="C · 승인 상세 (맥락 포함)" width={900} height={580}><AdminAppr_C_Decision /></DCArtboard>
+          </DCSection>
+
+          <DCSection id="admin-rpt" title="관리자 · 근태 리포트" subtitle="월간/주간/인사이트">
+            <DCArtboard id="rpt-a" label="A · 월간 리포트" width={900} height={580}><AdminRpt_A_Monthly /></DCArtboard>
+            <DCArtboard id="rpt-b" label="B · 주간 히트맵" width={900} height={580}><AdminRpt_B_Weekly /></DCArtboard>
+            <DCArtboard id="rpt-c" label="C · 자동 인사이트" width={900} height={580}><AdminRpt_C_Insights /></DCArtboard>
+          </DCSection>
+        </>}
+      </DesignCanvas>
+
+      {editMode && (
+        <div style={{
+          position: 'fixed', bottom: 20, right: 20, zIndex: 200,
+          background: 'var(--paper)', border: '1.5px solid var(--line)',
+          borderRadius: '10px 8px 12px 9px',
+          padding: 14, width: 220, fontFamily: 'var(--body)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+        }}>
+          <div className="sk-hand" style={{ fontSize: 16, marginBottom: 10 }}>Tweaks</div>
+
+          <div className="sk-label" style={{ fontSize: 11 }}>언어</div>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+            {[['ko','한국어'],['en','English']].map(([k, l]) => (
+              <button key={k} onClick={() => { setLang(k); persist('lang', k); }}
+                className="sk-chip" style={{
+                  flex: 1, justifyContent: 'center', padding: '4px 0', fontSize: 12,
+                  background: lang === k ? 'var(--ink)' : 'var(--paper)',
+                  color: lang === k ? 'var(--paper)' : 'var(--ink)' }}>{l}</button>
+            ))}
+          </div>
+
+          <div className="sk-label" style={{ fontSize: 11 }}>역할</div>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 10, flexWrap: 'wrap' }}>
+            {[['all','전체'],['employee','직원'],['manager','관리자']].map(([k,l]) => (
+              <button key={k} onClick={() => { setRole(k); persist('role', k); }}
+                className="sk-chip" style={{
+                  flex: '1 1 auto', justifyContent: 'center', padding: '4px 6px', fontSize: 11,
+                  background: role === k ? 'var(--ink)' : 'var(--paper)',
+                  color: role === k ? 'var(--paper)' : 'var(--ink)' }}>{l}</button>
+            ))}
+          </div>
+
+          <div className="sk-label" style={{ fontSize: 11 }}>와이어프레임 충실도</div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[['low','low-fi (sketchy)'],['mid','mid-fi (clean)']].map(([k,l]) => (
+              <button key={k} onClick={() => { setFidelity(k); persist('fidelity', k); }}
+                className="sk-chip" style={{
+                  flex: 1, justifyContent: 'center', padding: '4px 0', fontSize: 11,
+                  background: fidelity === k ? 'var(--ink)' : 'var(--paper)',
+                  color: fidelity === k ? 'var(--paper)' : 'var(--ink)' }}>{l}</button>
+            ))}
+          </div>
+
+          <div className="sk-hr" style={{ margin: '10px 0 6px' }} />
+          <div className="sk-label" style={{ fontSize: 10, lineHeight: 1.3 }}>
+            💡 팁: 섹션 아트보드를 클릭하면 전체화면으로 볼 수 있어요.
+          </div>
+        </div>
+      )}
+    </AppCtx.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

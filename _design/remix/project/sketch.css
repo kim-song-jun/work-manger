@@ -1,0 +1,244 @@
+/* Sketchy wireframe tokens */
+:root {
+  --paper: #faf7f0;
+  --paper-2: #f2ede0;
+  --ink: #1a1a1a;
+  --ink-2: #3d3d3d;
+  --ink-3: #6b6b6b;
+  --muted: #a8a39a;
+  --line: #2a2a2a;
+  --accent: #d9733a;
+  --accent-soft: #f2d4bd;
+  --good: #4a7a4a;
+  --good-soft: #cde0cd;
+  --warn: #b8862c;
+  --warn-soft: #f0e0b8;
+  --danger: #b84a3a;
+  --danger-soft: #f0cdc6;
+  --sky: #6b8fa8;
+  --sky-soft: #d1dee6;
+  --hand: 'Caveat', 'Gaegu', cursive;
+  --hand-kr: 'Gaegu', 'Caveat', cursive;
+  --body: 'Kalam', 'Gaegu', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+.sk { font-family: var(--body); color: var(--ink); }
+.sk-hand { font-family: var(--hand); font-variant-numeric: tabular-nums; }
+.sk-hand-kr { font-family: var(--hand-kr); font-variant-numeric: tabular-nums; }
+
+/* Rough box: slightly irregular radius + subtle double-border feel */
+.sk-box {
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  border-radius: 14px 11px 15px 10px / 10px 14px 11px 13px;
+  position: relative;
+}
+.sk-box-sm {
+  border: 1.2px solid var(--line);
+  border-radius: 8px 10px 7px 9px / 9px 7px 10px 8px;
+  background: var(--paper);
+}
+.sk-box-dashed {
+  border: 1.5px dashed var(--line);
+  background: transparent;
+  border-radius: 12px 9px 13px 8px / 8px 12px 9px 11px;
+}
+
+/* Rough buttons */
+.sk-btn {
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-family: var(--hand);
+  font-size: 18px;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.sk-btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+.sk-btn-accent {
+  background: var(--accent);
+  color: var(--paper);
+  border-color: var(--line);
+}
+
+/* Status dots */
+.sk-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 1px solid var(--line);
+  display: inline-block;
+}
+.sk-dot.on { background: var(--good); }
+.sk-dot.off { background: var(--muted); }
+.sk-dot.wfh { background: var(--sky); }
+.sk-dot.leave { background: var(--warn); }
+.sk-dot.break { background: var(--accent); }
+
+/* Chip */
+.sk-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1.2px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-family: var(--hand);
+  font-size: 13px;
+  background: var(--paper);
+  white-space: nowrap;
+}
+.sk-chip.filled { background: var(--accent-soft); }
+.sk-chip.good { background: var(--good-soft); }
+.sk-chip.warn { background: var(--warn-soft); }
+.sk-chip.sky { background: var(--sky-soft); }
+.sk-chip.danger { background: var(--danger-soft); }
+
+/* Placeholder image box */
+.sk-img {
+  background-image: repeating-linear-gradient(
+    -45deg, transparent 0 8px, rgba(26,26,26,0.08) 8px 9px
+  );
+  border: 1.2px solid var(--line);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-3); font-family: ui-monospace, monospace; font-size: 10px;
+}
+
+/* Scribble underline */
+.sk-underline {
+  background-image: linear-gradient(to right, var(--ink) 0, var(--ink) 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 1.5px;
+  background-position: 0 95%;
+}
+
+/* Ensure nav is above content */
+.sk-phone-inner > div:last-child { background: var(--paper); }
+.sk-phone-inner { padding-bottom: 48px; }
+
+/* Rough avatar circle */
+.sk-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: var(--paper-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--hand); font-size: 16px; color: var(--ink);
+}
+
+/* Device frame */
+.sk-phone {
+  width: 300px; height: 620px;
+  border: 2px solid var(--line);
+  border-radius: 38px 34px 38px 36px / 36px 38px 34px 38px;
+  background: var(--paper);
+  padding: 42px 16px 22px;
+  position: relative;
+  overflow: hidden;
+}
+.sk-phone::before {
+  content: '';
+  position: absolute; top: 14px; left: 50%;
+  transform: translateX(-50%);
+  width: 80px; height: 14px;
+  background: var(--ink);
+  border-radius: 10px;
+}
+.sk-phone::after {
+  content: '';
+  position: absolute; bottom: 8px; left: 50%;
+  transform: translateX(-50%);
+  width: 90px; height: 3px;
+  background: var(--ink-3); border-radius: 3px;
+}
+.sk-phone-inner {
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Web frame */
+.sk-web {
+  width: 900px; height: 580px;
+  border: 2px solid var(--line);
+  border-radius: 10px 8px 10px 9px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.sk-web-bar {
+  height: 28px;
+  border-bottom: 1.2px solid var(--line);
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 10px;
+  background: var(--paper-2);
+}
+.sk-web-bar i {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 1px solid var(--line);
+  display: inline-block;
+}
+
+/* Wobbly divider */
+.sk-hr {
+  border: 0;
+  height: 1.2px;
+  background: repeating-linear-gradient(to right,
+    var(--line) 0 6px, transparent 6px 10px,
+    var(--line) 10px 14px, transparent 14px 18px);
+  margin: 8px 0;
+}
+
+/* Annotations handwritten */
+.sk-note {
+  font-family: var(--hand);
+  color: var(--accent);
+  font-size: 14px;
+  font-style: italic;
+}
+.sk-label {
+  font-family: var(--hand);
+  font-size: 13px;
+  color: var(--ink-3);
+  letter-spacing: 0.2px;
+}
+
+/* Subtle paper grid overlay — optional per-artboard */
+.sk-grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(26,26,26,0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(26,26,26,0.05) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Progress bar (hand-drawn) */
+.sk-progress {
+  height: 10px;
+  border: 1.2px solid var(--line);
+  border-radius: 8px 6px 7px 6px;
+  background: var(--paper-2);
+  overflow: hidden;
+}
+.sk-progress > span {
+  display: block; height: 100%;
+  background: var(--accent);
+  border-right: 1px solid var(--line);
+}
+
+/* For mid-fidelity mode */
+.mid .sk-box, .mid .sk-box-sm {
+  border-radius: 14px !important;
+}
+.mid .sk-phone { border-radius: 36px !important; }
+.mid .sk-btn { border-radius: 12px; }
+.mid .sk-progress { border-radius: 8px; }
+.mid .sk { font-family: 'Inter', -apple-system, system-ui, sans-serif; }
+.mid .sk-hand, .mid .sk-hand-kr, .mid .sk-note, .mid .sk-label { font-family: 'Inter', sans-serif; font-style: normal; }
+.mid .sk-btn { font-family: 'Inter', sans-serif; font-weight: 500; }
+.mid .sk-chip { font-family: 'Inter', sans-serif; font-weight: 500; }
+.mid .sk-avatar { font-family: 'Inter', sans-serif; font-weight: 600; }

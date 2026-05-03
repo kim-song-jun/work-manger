@@ -1,0 +1,15 @@
+HTTP/2 200 
+date: Sun, 03 May 2026 17:27:25 GMT
+content-type: application/gzip
+cache-control: no-store
+content-disposition: attachment; filename="_ _ _ _Remix_-handoff.tar.gz"; filename*=UTF-8''%EA%B7%BC%EB%AC%B4%20%EA%B4%80%EB%A6%AC%20%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%A8%20%28Remix%29-handoff.tar.gz
+request-id: req_011Cag2cS96uvKSUbA4NWXjd
+x-robots-tag: none
+x-envoy-upstream-service-time: 725
+server: cloudflare
+server-timing: x-originResponse;dur=727
+set-cookie: _cfuvid=yl9ADpVm8iw5bsdK79hgn.0awqV95YYGqDR95QzghaQ-1777829244.8983033-1.0.1.1-Heo1NIAnVEtMSuUnNtG0ivfzz94uKlHuDV_RqFM.598; HttpOnly; SameSite=None; Secure; Path=/; Domain=api.anthropic.com
+content-security-policy: default-src 'none'; frame-ancestors 'none'
+cf-cache-status: DYNAMIC
+cf-ray: 9f60f9ec9dfcf0ac-ICN
+

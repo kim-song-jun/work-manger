@@ -1,0 +1,131 @@
+name: work-manager
+
+networks:
+  wm-net:
+    driver: bridge
+    name: wm-net
+
+volumes:
+  pg-data:
+  redis-data:
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: wm-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: work_manager
+      POSTGRES_USER: wm
+      POSTGRES_PASSWORD: wm
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks: [wm-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wm -d work_manager"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # No host port — db is internal-only
+
+  redis:
+    image: redis:7-alpine
+    container_name: wm-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    networks: [wm-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # No host port — redis is internal-only
+
+  api:
+    build:
+      context: ./services/api
+    container_name: wm-api
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      DJANGO_SETTINGS_MODULE: work_manager.settings.dev
+      DJANGO_DEBUG: "true"
+      DJANGO_SECRET_KEY: dev-insecure-change-me
+      DJANGO_ALLOWED_HOSTS: "*"
+      DATABASE_URL: postgres://wm:wm@db:5432/work_manager
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      REDIS_URL: redis://redis:6379/1
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CORS_ALLOWED_ORIGINS: http://localhost:4444,http://127.0.0.1:4444
+      DJANGO_CREATE_SUPERUSER: "1"
+      DJANGO_SUPERUSER_EMAIL: admin@molcube.com
+      DJANGO_SUPERUSER_PASSWORD: admin1234!
+    entrypoint: ["bash", "/app/entrypoint.sh"]
+    command: ["gunicorn", "work_manager.wsgi:application", "--bind", "0.0.0.0:4455", "--workers", "3", "--access-logfile", "-"]
+    ports:
+      - "4455:4455"
+    networks: [wm-net]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:4455/v1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  worker:
+    build:
+      context: ./services/api
+    container_name: wm-worker
+    restart: unless-stopped
+    depends_on:
+      api: { condition: service_started }
+      redis: { condition: service_healthy }
+    environment:
+      DJANGO_SETTINGS_MODULE: work_manager.settings.dev
+      DJANGO_SECRET_KEY: dev-insecure-change-me
+      DATABASE_URL: postgres://wm:wm@db:5432/work_manager
+      REDIS_URL: redis://redis:6379/1
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    command: ["celery", "-A", "work_manager", "worker", "-l", "info"]
+    networks: [wm-net]
+
+  beat:
+    build:
+      context: ./services/api
+    container_name: wm-beat
+    restart: unless-stopped
+    depends_on:
+      api: { condition: service_started }
+      redis: { condition: service_healthy }
+    environment:
+      DJANGO_SETTINGS_MODULE: work_manager.settings.dev
+      DJANGO_SECRET_KEY: dev-insecure-change-me
+      DATABASE_URL: postgres://wm:wm@db:5432/work_manager
+      REDIS_URL: redis://redis:6379/1
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    command: ["celery", "-A", "work_manager", "beat", "-l", "info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
+    networks: [wm-net]
+
+  web:
+    build:
+      context: ./apps/web
+      target: dev
+    container_name: wm-web
+    restart: unless-stopped
+    depends_on:
+      api: { condition: service_started }
+    environment:
+      VITE_API_URL: http://api:4455
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    ports:
+      - "4444:4444"
+    networks: [wm-net]

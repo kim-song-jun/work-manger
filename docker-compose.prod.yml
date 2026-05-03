@@ -1,0 +1,18 @@
+# Production overlay: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+name: work-manager
+
+services:
+  api:
+    environment:
+      DJANGO_SETTINGS_MODULE: work_manager.settings.prod
+      DJANGO_DEBUG: "false"
+      DJANGO_CREATE_SUPERUSER: "0"
+    ports: []   # only via reverse proxy
+
+  web:
+    build:
+      context: ./apps/web
+      target: prod
+    environment: {}
+    volumes: []
+    command: ["nginx", "-g", "daemon off;"]

@@ -1,0 +1,47 @@
+/* Toss-style design tokens — mirror of _design/remix/project/hifi/tokens.css */
+:root {
+  --blue-50:  #E8F3FF;
+  --blue-100: #D3E6FE;
+  --blue-500: #3182F6;
+  --blue-600: #2272EB;
+  --blue-700: #1B64DA;
+
+  --brand:        var(--blue-500);
+  --brand-hover:  var(--blue-600);
+  --brand-soft:   var(--blue-50);
+  --brand-softer: #F4F8FE;
+
+  --grey-900: #191F28;
+  --grey-800: #333D4B;
+  --grey-700: #4E5968;
+  --grey-600: #6B7684;
+  --grey-500: #8B95A1;
+  --grey-400: #B0B8C1;
+  --grey-300: #D1D6DB;
+  --grey-200: #E5E8EB;
+  --grey-100: #F2F4F6;
+  --grey-50:  #F9FAFB;
+  --white:    #FFFFFF;
+
+  --success: #03B26C; --success-soft: #E4F6ED;
+  --warn:    #FE9800; --warn-soft:    #FFF1DD;
+  --caution: #FFC342; --caution-soft: #FFF6E0;
+  --danger:  #F04452; --danger-soft:  #FDE7E9;
+  --info:    #18A5A5; --info-soft:    #DFF1F1;
+
+  --shadow-1: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-2: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-3: 0 4px 12px rgba(0,0,0,0.12);
+  --shadow-4: 0 8px 24px rgba(0,0,0,0.16);
+
+  --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px; --r-pill: 9999px;
+
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
+  --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+
+  --motion-fast: 150ms; --motion-standard: 250ms; --motion-slow: 400ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --font-kr: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+             'Apple SD Gothic Neo', 'SF Pro Display', Roboto, 'Noto Sans KR', sans-serif;
+}

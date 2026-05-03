@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>근무 관리 · 하이파이 디자인</title>
+<meta name="viewport" content="width=1280, initial-scale=1"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="hifi/tokens.css">
+<style>
+body { background: #F0EEE9; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="hifi/i18n.jsx"></script>
+<script type="text/babel" src="hifi/atoms.jsx"></script>
+<script type="text/babel" src="hifi/mobile.jsx"></script>
+<script type="text/babel" src="hifi/web.jsx"></script>
+<script type="text/babel" src="hifi/admin.jsx"></script>
+<script type="text/babel" src="hifi/desktop-and-settings.jsx"></script>
+
+<script type="text/babel">
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "lang": "ko",
+  "theme": "light",
+  "brand": "blue",
+  "font": "md"
+}/*EDITMODE-END*/;
+
+function applyTheme(t) {
+  document.body.classList.remove('theme-dark','theme-mint','theme-violet','theme-coral');
+  if (t.theme === 'dark') document.body.classList.add('theme-dark');
+  if (t.brand === 'mint') document.body.classList.add('theme-mint');
+  if (t.brand === 'violet') document.body.classList.add('theme-violet');
+  if (t.brand === 'coral') document.body.classList.add('theme-coral');
+  document.body.classList.remove('font-sm','font-md','font-lg');
+  document.body.classList.add('font-' + (t.font || 'md'));
+}
+
+function App() {
+  const [tweaks, setTweaks] = React.useState(TWEAKS);
+  const [editMode, setEditMode] = React.useState(false);
+  React.useEffect(() => { applyTheme(tweaks); }, [tweaks]);
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setEditMode(true);
+      if (e.data?.type === '__deactivate_edit_mode') setEditMode(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const set = (k, v) => {
+    const next = { ...tweaks, [k]: v };
+    setTweaks(next);
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [k]: v } }, '*');
+  };
+
+  return (
+    <HiCtx.Provider value={{ lang: tweaks.lang, theme: tweaks.theme, font: tweaks.font }}>
+      <DesignCanvas>
+        <DCSection id="mobile-home" title="① 모바일 · 홈 (출퇴근)" subtitle="3가지 UX 방향 — 슬라이드 / 큰 버튼 / 카드 스택">
+          <DCArtboard id="login" label="로그인" width={320} height={680}><MobLogin/></DCArtboard>
+          <DCArtboard id="home-a" label="A · 밀어서 출근" width={320} height={680}><MobHomeSlide/></DCArtboard>
+          <DCArtboard id="home-b" label="B · 탭하여 출근" width={320} height={680}><MobHomeTap/></DCArtboard>
+          <DCArtboard id="home-c" label="C · 카드 스택" width={320} height={680}><MobHomeCards/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="mobile-ot" title="② 모바일 · 초과근무" subtitle="정규 시간 초과 시 자동 안내 시트">
+          <DCArtboard id="ot" label="초과근무 요청 시트" width={320} height={680}><MobOvertime/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="mobile-team" title="③ 모바일 · 전 직원 근무 상태" subtitle="3가지 뷰 — 그리드 / 팀별 / 타임라인">
+          <DCArtboard id="team-a" label="A · 그리드" width={320} height={680}><MobTeamGrid/></DCArtboard>
+          <DCArtboard id="team-b" label="B · 팀별 그룹" width={320} height={680}><MobTeamGrouped/></DCArtboard>
+          <DCArtboard id="team-c" label="C · 타임라인" width={320} height={680}><MobTeamTimeline/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="mobile-leave" title="④ 모바일 · 연차" subtitle="잔여/소멸 시각화 + 신청 플로우">
+          <DCArtboard id="leave-home" label="연차 대시보드" width={320} height={680}><MobLeaveCalendar/></DCArtboard>
+          <DCArtboard id="leave-apply" label="연차 신청" width={320} height={680}><MobLeaveApply/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="mobile-settings" title="⑤ 모바일 · 마이 & 꾸미기" subtitle="설정 + 사용자가 직접 꾸미는 화면">
+          <DCArtboard id="settings" label="설정 (마이)" width={320} height={680}><MobSettings/></DCArtboard>
+          <DCArtboard id="customize" label="화면 꾸미기" width={320} height={680}><MobCustomize/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="web" title="⑥ 웹 · 개인 대시보드" subtitle="로그인한 직원 본인의 뷰">
+          <DCArtboard id="web-dash" label="대시보드" width={1280} height={800}><WebDashboard/></DCArtboard>
+          <DCArtboard id="web-team" label="팀 연차 캘린더" width={1280} height={800}><WebTeamLeave/></DCArtboard>
+          <DCArtboard id="web-records" label="근무 기록 상세" width={1280} height={800}><WebRecords/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="admin" title="⑦ 관리자 페이지" subtitle="승인 · 연차 소멸 · 리포트 · 직원">
+          <DCArtboard id="a-approve" label="승인 대기 한눈에" width={1280} height={800}><AdminApprovals/></DCArtboard>
+          <DCArtboard id="a-leave" label="연차 소멸 안내" width={1280} height={800}><AdminExpiringLeave/></DCArtboard>
+          <DCArtboard id="a-reports" label="월간 근태 리포트" width={1280} height={800}><AdminReports/></DCArtboard>
+          <DCArtboard id="a-emps" label="직원 관리" width={1280} height={800}><AdminEmployees/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="desktop" title="⑧ 데스크탑 · 메뉴바 트레이" subtitle="macOS 상단바에서 바로 퇴근 체크">
+          <DCArtboard id="menubar" label="트레이 드롭다운" width={1280} height={800}><DesktopMenubar/></DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+
+      {editMode && (
+        <div style={{
+          position: 'fixed', bottom: 20, right: 20, zIndex: 1000,
+          width: 280, background: '#fff', borderRadius: 14,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.08)',
+          padding: 16, fontFamily: 'Pretendard, sans-serif',
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>Tweaks</div>
+          <div style={{ fontSize: 11, color: '#8B95A1', fontWeight: 700, margin: '6px 0 4px' }}>언어</div>
+          <div style={{ display: 'flex', gap: 4, padding: 3, background: '#F2F4F6', borderRadius: 8 }}>
+            {[['ko','한국어'],['en','English']].map(([k, l]) => (
+              <div key={k} onClick={() => set('lang', k)} style={{
+                flex: 1, textAlign: 'center', padding: '6px 0', borderRadius: 6,
+                background: tweaks.lang === k ? '#fff' : 'transparent',
+                boxShadow: tweaks.lang === k ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              }}>{l}</div>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 11, color: '#8B95A1', fontWeight: 700, margin: '12px 0 4px' }}>테마 모드</div>
+          <div style={{ display: 'flex', gap: 4, padding: 3, background: '#F2F4F6', borderRadius: 8 }}>
+            {[['light','라이트'],['dark','다크']].map(([k, l]) => (
+              <div key={k} onClick={() => set('theme', k)} style={{
+                flex: 1, textAlign: 'center', padding: '6px 0', borderRadius: 6,
+                background: tweaks.theme === k ? '#fff' : 'transparent',
+                boxShadow: tweaks.theme === k ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              }}>{l}</div>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 11, color: '#8B95A1', fontWeight: 700, margin: '12px 0 4px' }}>브랜드 컬러</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[['blue','#3182F6'],['mint','#00B894'],['violet','#7C5CFF'],['coral','#FF5A5F']].map(([k, c]) => (
+              <div key={k} onClick={() => set('brand', k)} style={{
+                flex: 1, aspectRatio: '1', borderRadius: 8, background: c, cursor: 'pointer',
+                border: tweaks.brand === k ? '3px solid #191F28' : '3px solid transparent',
+                boxShadow: tweaks.brand === k ? '0 0 0 1px #191F28' : 'inset 0 0 0 1px rgba(0,0,0,0.08)',
+              }}/>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 11, color: '#8B95A1', fontWeight: 700, margin: '12px 0 4px' }}>글자 크기</div>
+          <div style={{ display: 'flex', gap: 4, padding: 3, background: '#F2F4F6', borderRadius: 8 }}>
+            {[['sm','작게'],['md','보통'],['lg','크게']].map(([k, l]) => (
+              <div key={k} onClick={() => set('font', k)} style={{
+                flex: 1, textAlign: 'center', padding: '6px 0', borderRadius: 6,
+                background: tweaks.font === k ? '#fff' : 'transparent',
+                boxShadow: tweaks.font === k ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              }}>{l}</div>
+            ))}
+          </div>
+        </div>
+      )}
+    </HiCtx.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>근무 관리 · 하이파이 디자인 (Print)</title>
+<meta name="viewport" content="width=1280, initial-scale=1"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="hifi/tokens.css?v=3">
+<style>
+  body { background: #F0EEE9; margin: 0; font-family: 'Pretendard Variable', Pretendard, sans-serif; }
+  .pg-section-title {
+    font-size: 22px; font-weight: 800; color: #191F28;
+    margin: 0 0 4px;
+  }
+  .pg-section-sub {
+    font-size: 13px; color: #6B7684; margin: 0 0 18px;
+  }
+  .pg-section {
+    padding: 32px 40px;
+    page-break-before: always;
+    break-before: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .pg-section:first-child {
+    page-break-before: auto;
+    break-before: auto;
+  }
+  .pg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 24px;
+    align-items: start;
+  }
+  .pg-grid.wide {
+    grid-template-columns: 1fr;
+  }
+  .pg-art {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+    overflow: hidden;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .pg-art-label {
+    font-size: 11px; font-weight: 700;
+    color: #6B7684;
+    padding: 10px 14px 0;
+    letter-spacing: -0.1px;
+  }
+  .pg-art-frame {
+    padding: 14px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .pg-art-inner {
+    overflow: hidden;
+    border-radius: 8px;
+    transform-origin: top center;
+  }
+  .pg-cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: linear-gradient(180deg, #fff 0%, #F0EEE9 100%);
+    padding: 40px;
+  }
+  .pg-cover h1 {
+    font-size: 44px; font-weight: 800; color: #191F28;
+    margin: 0 0 12px; letter-spacing: -0.6px;
+  }
+  .pg-cover p { font-size: 16px; color: #4E5968; margin: 4px 0; }
+  .pg-cover .meta { font-size: 13px; color: #8B95A1; margin-top: 24px; }
+
+  @page { size: A4 landscape; margin: 12mm; }
+  @media print {
+    body { background: #fff; }
+    .pg-section { padding: 0; }
+    .pg-art { box-shadow: 0 0 0 1px #E5E8EB; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel">
+// Override DesignCanvas + DCSection + DCArtboard with print-friendly static layout
+window.DesignCanvas = function({ children }) {
+  return <div>
+    <div className="pg-cover">
+      <h1>근무 관리 프로그램</h1>
+      <p>하이파이 디자인 시스템 + 전체 화면 모음</p>
+      <p className="meta">Toss-스타일 디자인 시스템 · 모바일 / 웹 / 데스크탑 / 관리자 / 위젯</p>
+    </div>
+    {children}
+  </div>;
+};
+window.DCSection = function({ title, subtitle, children }) {
+  // Detect if any child artboard width > 600 → wide grid
+  const arr = React.Children.toArray(children);
+  const anyWide = arr.some(c => c && c.props && c.props.width && c.props.width > 600);
+  return <div className="pg-section">
+    <h2 className="pg-section-title">{title}</h2>
+    {subtitle && <p className="pg-section-sub">{subtitle}</p>}
+    <div className={"pg-grid" + (anyWide ? " wide" : "")}>{children}</div>
+  </div>;
+};
+window.DCArtboard = function({ label, width, height, children }) {
+  // For print: scale to fit max 1100px (mobile keeps 320; web scales down)
+  const maxW = 1100;
+  const scale = width > maxW ? maxW / width : 1;
+  const scaledW = width * scale;
+  const scaledH = height * scale;
+  return <div className="pg-art">
+    {label && <div className="pg-art-label">{label}</div>}
+    <div className="pg-art-frame" style={{ height: scaledH + 20 }}>
+      <div className="pg-art-inner" style={{
+        width: width, height: height,
+        transform: 'scale(' + scale + ')',
+        marginBottom: -(height - scaledH),
+      }}>{children}</div>
+    </div>
+  </div>;
+};
+// Stub for HiCtx (used by components)
+window.HiCtx = React.createContext({ lang: 'ko', theme: 'light', font: 'md' });
+</script>
+
+<script type="text/babel" src="hifi/i18n.jsx"></script>
+<script type="text/babel" src="hifi/atoms.jsx"></script>
+<script type="text/babel" src="hifi/mobile.jsx"></script>
+<script type="text/babel" src="hifi/web.jsx"></script>
+<script type="text/babel" src="hifi/admin.jsx"></script>
+<script type="text/babel" src="hifi/desktop-and-settings.jsx"></script>
+<script type="text/babel" src="hifi/widgets.jsx"></script>
+<script type="text/babel" src="hifi/extra-pages.jsx"></script>
+<script type="text/babel" src="hifi/detail-pages.jsx"></script>
+<script type="text/babel" src="hifi/web-responsive.jsx"></script>
+<script type="text/babel" src="hifi/inbox.jsx"></script>
+<script type="text/babel" src="hifi/system.jsx"></script>
+<script type="text/babel" src="hifi/system-extras.jsx"></script>
+<script type="text/babel" src="hifi/component-specs.jsx"></script>
+<script type="text/babel" src="hifi/compliance-calendar-onboarding.jsx"></script>
+
+<script type="text/babel">
+function App() {
+  return (
+    <HiCtx.Provider value={{ lang: 'ko', theme: 'light', font: 'md' }}>
+      <DesignCanvas>
+        <DCSection id="ds-foundation" title="0-A. 디자인 시스템 · Foundation" subtitle="원칙 · 컬러 · 타이포 · 아이콘 · 스페이싱 · 라디우스 · 그림자 · 모션">
+          <DCArtboard id="sys-principles" label="원칙" width={960} height={680}><SysPrinciples/></DCArtboard>
+          <DCArtboard id="sys-colors" label="컬러" width={960} height={680}><SysColors/></DCArtboard>
+          <DCArtboard id="sys-type" label="타이포그래피" width={960} height={680}><SysType/></DCArtboard>
+          <DCArtboard id="sys-icons" label="아이콘" width={960} height={680}><SysIcons/></DCArtboard>
+          <DCArtboard id="sys-spacing" label="스페이싱 · 라디우스 · 그림자" width={960} height={680}><SysSpacing/></DCArtboard>
+          <DCArtboard id="sys-motion" label="모션" width={960} height={680}><SysMotion/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="ds-components" title="0-B. 디자인 시스템 · Components" subtitle="각 컴포넌트별 Variants · States · Anatomy · Props">
+          <DCArtboard id="spec-button" label="Button" width={1040} height={1180}><SpecButton/></DCArtboard>
+          <DCArtboard id="spec-input" label="Input · Field" width={1040} height={1180}><SpecInput/></DCArtboard>
+          <DCArtboard id="spec-chip" label="Chip · Badge" width={1040} height={1180}><SpecChip/></DCArtboard>
+          <DCArtboard id="spec-toggles" label="Switch · Checkbox · Radio" width={1040} height={1180}><SpecToggles/></DCArtboard>
+          <DCArtboard id="spec-card" label="Card" width={1040} height={1180}><SpecCard/></DCArtboard>
+          <DCArtboard id="spec-avatar" label="Avatar · List Item" width={1040} height={1180}><SpecAvatarList/></DCArtboard>
+          <DCArtboard id="spec-tabs" label="Tabs · Segment" width={1040} height={1180}><SpecTabs/></DCArtboard>
+          <DCArtboard id="spec-date" label="DatePicker" width={1040} height={1180}><SpecDatePicker/></DCArtboard>
+          <DCArtboard id="spec-dropdown" label="Select · Menu" width={1040} height={1180}><SpecDropdown/></DCArtboard>
+          <DCArtboard id="spec-modal" label="Modal · Sheet" width={1040} height={1180}><SpecModal/></DCArtboard>
+          <DCArtboard id="spec-feedback" label="Toast · Banner · Tooltip" width={1040} height={1180}><SpecFeedback/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="ds-states" title="0-C. 디자인 시스템 · States">
+          <DCArtboard id="sys-states" label="상태 패턴" width={960} height={680}><SysStates/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="onboarding" title="1. 인증 & 온보딩">
+          <DCArtboard id="onboard-intro" label="온보딩 인트로" width={320} height={680}><MobOnboarding/></DCArtboard>
+          <DCArtboard id="signup" label="회원가입" width={320} height={680}><MobSignup/></DCArtboard>
+          <DCArtboard id="login" label="로그인" width={320} height={680}><MobLogin/></DCArtboard>
+          <DCArtboard id="forgot" label="비밀번호 찾기" width={320} height={680}><MobForgot/></DCArtboard>
+          <DCArtboard id="onb-1" label="온보딩 1 · 환영" width={320} height={680}><MobOnbWelcome/></DCArtboard>
+          <DCArtboard id="onb-2" label="온보딩 2 · 회사 코드" width={320} height={680}><MobOnbCompanyCode/></DCArtboard>
+          <DCArtboard id="onb-3" label="온보딩 3 · 프로필" width={320} height={680}><MobOnbProfile/></DCArtboard>
+          <DCArtboard id="onb-4" label="온보딩 4 · 위치" width={320} height={680}><MobOnbLocation/></DCArtboard>
+          <DCArtboard id="onb-5" label="온보딩 5 · 근무시간" width={320} height={680}><MobOnbSchedule/></DCArtboard>
+          <DCArtboard id="onb-6" label="온보딩 6 · 알림" width={320} height={680}><MobOnbNotifications/></DCArtboard>
+          <DCArtboard id="onb-7" label="온보딩 7 · 위젯" width={320} height={680}><MobOnbWidget/></DCArtboard>
+          <DCArtboard id="onb-8" label="온보딩 8 · 완료" width={320} height={680}><MobOnbDone/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="mobile-home" title="2. 모바일 · 홈 (출퇴근)" subtitle="3가지 UX 방향">
+          <DCArtboard id="home-a" label="A · 밀어서 출근" width={320} height={680}><MobHomeSlide/></DCArtboard>
+          <DCArtboard id="home-b" label="B · 탭하여 출근" width={320} height={680}><MobHomeTap/></DCArtboard>
+          <DCArtboard id="home-c" label="C · 카드 스택" width={320} height={680}><MobHomeCards/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="mobile-ot" title="3. 모바일 · 초과근무">
+          <DCArtboard id="ot" label="요청 시트" width={320} height={680}><MobOvertime/></DCArtboard>
+          <DCArtboard id="ot-settings" label="자동 요청 설정" width={320} height={680}><MobOvertimeSettings/></DCArtboard>
+          <DCArtboard id="ot-history" label="이력" width={320} height={680}><MobOvertimeHistory/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="mobile-leave" title="4. 모바일 · 연차">
+          <DCArtboard id="leave-home" label="대시보드" width={320} height={680}><MobLeaveCalendar/></DCArtboard>
+          <DCArtboard id="leave-apply" label="연차 신청" width={320} height={680}><MobLeaveApply/></DCArtboard>
+          <DCArtboard id="leave-success" label="제출 완료" width={320} height={680}><MobSuccess/></DCArtboard>
+          <DCArtboard id="m-expiry" label="소멸 경고" width={320} height={680}><MobExpiryAlert/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="mobile-team" title="5. 모바일 · 팀 & 인박스">
+          <DCArtboard id="team-tabs" label="탭 통합" width={320} height={680}><MobTeamTabs/></DCArtboard>
+          <DCArtboard id="team-a" label="A · 그리드" width={320} height={680}><MobTeamGrid/></DCArtboard>
+          <DCArtboard id="team-b" label="B · 팀별" width={320} height={680}><MobTeamGrouped/></DCArtboard>
+          <DCArtboard id="team-c" label="C · 타임라인" width={320} height={680}><MobTeamTimeline/></DCArtboard>
+          <DCArtboard id="mob-inbox" label="인박스" width={320} height={680}><MobInbox/></DCArtboard>
+          <DCArtboard id="mob-inbox-quick" label="빠른 승인" width={320} height={680}><MobInboxQuick/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="mobile-my" title="6. 모바일 · 마이 & 부가">
+          <DCArtboard id="settings" label="설정" width={320} height={680}><MobSettings/></DCArtboard>
+          <DCArtboard id="profile-full" label="마이 페이지" width={320} height={680}><MobProfileFull/></DCArtboard>
+          <DCArtboard id="customize" label="화면 꾸미기" width={320} height={680}><MobCustomize/></DCArtboard>
+          <DCArtboard id="trip" label="출장" width={320} height={680}><MobBusinessTrip/></DCArtboard>
+          <DCArtboard id="help" label="도움말" width={320} height={680}><MobHelp/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="mobile-detail" title="7. 모바일 · 디테일 페이지">
+          <DCArtboard id="record" label="근무 기록" width={320} height={680}><MobRecordDetail/></DCArtboard>
+          <DCArtboard id="m-approval" label="승인 상세" width={320} height={680}><MobApprovalDetail/></DCArtboard>
+          <DCArtboard id="m-weekly" label="주간 리포트" width={320} height={680}><MobWeeklyReport/></DCArtboard>
+          <DCArtboard id="noti" label="알림 센터" width={320} height={680}><MobNotifications/></DCArtboard>
+          <DCArtboard id="notice" label="공지사항" width={320} height={680}><MobNotice/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="mobile-extras" title="8. 모바일 · 위젯 & 엣지케이스">
+          <DCArtboard id="ios-wid" label="iOS 위젯" width={320} height={680}><IOSWidgets/></DCArtboard>
+          <DCArtboard id="aos-wid" label="Android 위젯" width={320} height={680}><AndroidWidgets/></DCArtboard>
+          <DCArtboard id="wid-gal" label="위젯 갤러리" width={320} height={680}><WidgetGallery/></DCArtboard>
+          <DCArtboard id="noti-empty" label="빈 상태" width={320} height={680}><MobEmpty/></DCArtboard>
+          <DCArtboard id="loc-pick" label="위치 선택" width={320} height={680}><MobLocationPicker/></DCArtboard>
+          <DCArtboard id="err-gps" label="GPS 에러" width={320} height={680}><MobErrorGPS/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="web" title="9. 웹 · 개인 대시보드 (반응형)">
+          <DCArtboard id="web-dash" label="대시보드 (메인)" width={1280} height={1260}><WebDashboard/></DCArtboard>
+          <DCArtboard id="web-team" label="팀 연차 캘린더" width={1280} height={800}><WebTeamLeave/></DCArtboard>
+          <DCArtboard id="web-records" label="근무 기록" width={1280} height={800}><WebRecords/></DCArtboard>
+          <DCArtboard id="res-1440" label="1440 · 와이드" width={1440} height={820}><WebDash1440/></DCArtboard>
+          <DCArtboard id="res-1280" label="1280 · 데스크탑" width={1280} height={820}><WebDash1280/></DCArtboard>
+          <DCArtboard id="res-1024" label="1024 · 노트북" width={1024} height={820}><WebDash1024/></DCArtboard>
+          <DCArtboard id="res-768" label="768 · 태블릿" width={768} height={820}><WebDash768/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="web-inbox" title="10. 웹 · 통합 인박스">
+          <DCArtboard id="web-inbox-3p" label="3-pane Inbox" width={1280} height={820}><WebInbox/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="admin" title="11. 관리자">
+          <DCArtboard id="a-approve" label="승인 대기" width={1280} height={800}><AdminApprovals/></DCArtboard>
+          <DCArtboard id="a-leave" label="연차 소멸" width={1280} height={800}><AdminExpiringLeave/></DCArtboard>
+          <DCArtboard id="a-reports" label="월간 리포트" width={1280} height={800}><AdminReports/></DCArtboard>
+          <DCArtboard id="a-emps" label="직원 관리" width={1280} height={800}><AdminEmployees/></DCArtboard>
+          <DCArtboard id="a-live" label="실시간 보드" width={1280} height={800}><AdminLiveDashboard/></DCArtboard>
+          <DCArtboard id="a-emp-detail" label="직원 상세" width={1280} height={800}><AdminEmployeeDetail/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="desktop" title="12. 데스크탑 앱">
+          <DCArtboard id="menubar" label="macOS 메뉴바" width={1280} height={800}><DesktopMenubar/></DCArtboard>
+          <DCArtboard id="win-tray" label="Windows 트레이" width={1280} height={800}><WindowsTray/></DCArtboard>
+          <DCArtboard id="win-app" label="Windows 앱" width={1280} height={800}><WindowsDesktopApp/></DCArtboard>
+          <DCArtboard id="d-settings" label="환경설정" width={1280} height={760}><DesktopSettings/></DCArtboard>
+          <DCArtboard id="d-noti" label="알림 토스트" width={1280} height={760}><DesktopNotifications/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="special" title="13. 특수 기능">
+          <DCArtboard id="comp-mob" label="컴플라이언스 · 모바일" width={320} height={680}><MobCompliance/></DCArtboard>
+          <DCArtboard id="comp-block" label="컴플라이언스 · 차단" width={320} height={680}><MobComplianceBlock/></DCArtboard>
+          <DCArtboard id="comp-admin" label="컴플라이언스 · 보드" width={1280} height={820}><AdminCompliance/></DCArtboard>
+          <DCArtboard id="cal-mob" label="팀 캘린더 · 모바일" width={320} height={680}><MobTeamCalendar/></DCArtboard>
+          <DCArtboard id="cal-web" label="팀 캘린더 · 웹" width={1280} height={920}><WebTeamCalendar/></DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+    </HiCtx.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+// Auto-print after fonts + JSX scripts settle
+(async () => {
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch(e) {}
+  await new Promise(r => setTimeout(r, 1500));
+  window.print();
+})();
+</script>
+</body>
+</html>

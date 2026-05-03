@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>근무 관리 · 하이파이 디자인</title>
+<meta name="viewport" content="width=1280, initial-scale=1"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="hifi/tokens.css?v=3">
+<style>
+body { background: #F0EEE9; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="hifi/i18n.jsx"></script>
+<script type="text/babel" src="hifi/atoms.jsx"></script>
+<script type="text/babel" src="hifi/mobile.jsx"></script>
+<script type="text/babel" src="hifi/web.jsx"></script>
+<script type="text/babel" src="hifi/admin.jsx"></script>
+<script type="text/babel" src="hifi/desktop-and-settings.jsx"></script>
+<script type="text/babel" src="hifi/widgets.jsx"></script>
+<script type="text/babel" src="hifi/extra-pages.jsx"></script>
+<script type="text/babel" src="hifi/detail-pages.jsx"></script>
+<script type="text/babel" src="hifi/web-responsive.jsx"></script>
+<script type="text/babel" src="hifi/inbox.jsx"></script>
+<script type="text/babel" src="hifi/system.jsx"></script>
+<script type="text/babel" src="hifi/system-extras.jsx"></script>
+<script type="text/babel" src="hifi/component-specs.jsx"></script>
+<script type="text/babel" src="hifi/compliance-calendar-onboarding.jsx"></script>
+
+<script type="text/babel">
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "lang": "ko",
+  "theme": "light",
+  "brand": "blue",
+  "font": "md"
+}/*EDITMODE-END*/;
+
+function applyTheme(t) {
+  document.body.classList.remove('theme-dark','theme-mint','theme-violet','theme-coral');
+  if (t.theme === 'dark') document.body.classList.add('theme-dark');
+  if (t.brand === 'mint') document.body.classList.add('theme-mint');
+  if (t.brand === 'violet') document.body.classList.add('theme-violet');
+  if (t.brand === 'coral') document.body.classList.add('theme-coral');
+  document.body.classList.remove('font-sm','font-md','font-lg');
+  document.body.classList.add('font-' + (t.font || 'md'));
+}
+
+function App() {
+  const [tweaks, setTweaks] = React.useState(TWEAKS);
+  const [editMode, setEditMode] = React.useState(false);
+  React.useEffect(() => { applyTheme(tweaks); }, [tweaks]);
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setEditMode(true);
+      if (e.data?.type === '__deactivate_edit_mode') setEditMode(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const set = (k, v) => {
+    const next = { ...tweaks, [k]: v };
+    setTweaks(next);
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [k]: v } }, '*');
+  };
+
+  return (
+    <HiCtx.Provider value={{ lang: tweaks.lang, theme: tweaks.theme, font: tweaks.font }}>
+      <DesignCanvas>
+        {/* ═══════════ 0. 디자인 시스템 (전체 토큰 + 컴포넌트) ═══════════ */}
+        <DCSection id="ds-foundation" title="0-A. 디자인 시스템 · Foundation" subtitle="원칙 · 컬러 · 타이포 · 아이콘 · 스페이싱 · 라디우스 · 그림자 · 모션">
+          <DCArtboard id="sys-principles" label="원칙" width={960} height={680}><SysPrinciples/></DCArtboard>
+          <DCArtboard id="sys-colors" label="컬러" width={960} height={680}><SysColors/></DCArtboard>
+          <DCArtboard id="sys-type" label="타이포그래피" width={960} height={680}><SysType/></DCArtboard>
+          <DCArtboard id="sys-icons" label="아이콘" width={960} height={680}><SysIcons/></DCArtboard>
+          <DCArtboard id="sys-spacing" label="스페이싱 · 라디우스 · 그림자" width={960} height={680}><SysSpacing/></DCArtboard>
+          <DCArtboard id="sys-motion" label="모션" width={960} height={680}><SysMotion/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="ds-components" title="0-B. 디자인 시스템 · Components (개발용 명세)" subtitle="각 컴포넌트별 Variants · States · Anatomy · Props · Code · 접근성">
+          <DCArtboard id="spec-button" label="Button — variants · states · sizes" width={1040} height={1180}><SpecButton/></DCArtboard>
+          <DCArtboard id="spec-input" label="Input · Field — states · adornments" width={1040} height={1180}><SpecInput/></DCArtboard>
+          <DCArtboard id="spec-chip" label="Chip · Badge · Status Dot" width={1040} height={1180}><SpecChip/></DCArtboard>
+          <DCArtboard id="spec-toggles" label="Switch · Checkbox · Radio" width={1040} height={1180}><SpecToggles/></DCArtboard>
+          <DCArtboard id="spec-card" label="Card — variants · density · anatomy" width={1040} height={1180}><SpecCard/></DCArtboard>
+          <DCArtboard id="spec-avatar" label="Avatar · List Item" width={1040} height={1180}><SpecAvatarList/></DCArtboard>
+          <DCArtboard id="spec-tabs" label="Tabs · Segment · Pagination" width={1040} height={1180}><SpecTabs/></DCArtboard>
+          <DCArtboard id="spec-date" label="DatePicker · Range · Inline" width={1040} height={1180}><SpecDatePicker/></DCArtboard>
+          <DCArtboard id="spec-dropdown" label="Select · Menu · Search" width={1040} height={1180}><SpecDropdown/></DCArtboard>
+          <DCArtboard id="spec-modal" label="Modal · Sheet · Dialog" width={1040} height={1180}><SpecModal/></DCArtboard>
+          <DCArtboard id="spec-feedback" label="Toast · Banner · Tooltip" width={1040} height={1180}><SpecFeedback/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="ds-states" title="0-C. 디자인 시스템 · States" subtitle="Empty · Loading · Error · Success — 모든 화면 공통 패턴">
+          <DCArtboard id="sys-states" label="상태 패턴" width={960} height={680}><SysStates/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 1. 인증 & 온보딩 ═══════════ */}
+        <DCSection id="onboarding" title="1. 인증 & 온보딩" subtitle="첫 접속 → 회원가입 → 8단계 온보딩 → 첫 출근">
+          <DCArtboard id="onboard-intro" label="온보딩 인트로 (3 슬라이드)" width={320} height={680}><MobOnboarding/></DCArtboard>
+          <DCArtboard id="signup" label="회원가입 (이메일 인증)" width={320} height={680}><MobSignup/></DCArtboard>
+          <DCArtboard id="login" label="로그인" width={320} height={680}><MobLogin/></DCArtboard>
+          <DCArtboard id="forgot" label="비밀번호 찾기" width={320} height={680}><MobForgot/></DCArtboard>
+          <DCArtboard id="onb-1" label="온보딩 1 · 환영" width={320} height={680}><MobOnbWelcome/></DCArtboard>
+          <DCArtboard id="onb-2" label="온보딩 2 · 회사 코드" width={320} height={680}><MobOnbCompanyCode/></DCArtboard>
+          <DCArtboard id="onb-3" label="온보딩 3 · 프로필" width={320} height={680}><MobOnbProfile/></DCArtboard>
+          <DCArtboard id="onb-4" label="온보딩 4 · 위치 등록" width={320} height={680}><MobOnbLocation/></DCArtboard>
+          <DCArtboard id="onb-5" label="온보딩 5 · 근무시간" width={320} height={680}><MobOnbSchedule/></DCArtboard>
+          <DCArtboard id="onb-6" label="온보딩 6 · 알림" width={320} height={680}><MobOnbNotifications/></DCArtboard>
+          <DCArtboard id="onb-7" label="온보딩 7 · 위젯 추천" width={320} height={680}><MobOnbWidget/></DCArtboard>
+          <DCArtboard id="onb-8" label="온보딩 8 · 완료" width={320} height={680}><MobOnbDone/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2. 모바일 · 홈 (출퇴근) ═══════════ */}
+        <DCSection id="mobile-home" title="2. 모바일 · 홈 (출퇴근)" subtitle="3가지 UX 방향 — 슬라이드 / 큰 버튼 / 카드 스택">
+          <DCArtboard id="home-a" label="A · 밀어서 출근" width={320} height={680}><MobHomeSlide/></DCArtboard>
+          <DCArtboard id="home-b" label="B · 탭하여 출근" width={320} height={680}><MobHomeTap/></DCArtboard>
+          <DCArtboard id="home-c" label="C · 카드 스택" width={320} height={680}><MobHomeCards/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 3. 모바일 · 초과근무 ═══════════ */}
+        <DCSection id="mobile-ot" title="3. 모바일 · 초과근무" subtitle="요청 시트 · 자동 요청 설정 · 이력">
+          <DCArtboard id="ot" label="초과근무 요청 시트" width={320} height={680}><MobOvertime/></DCArtboard>
+          <DCArtboard id="ot-settings" label="★ 자동 요청 설정" width={320} height={680}><MobOvertimeSettings/></DCArtboard>
+          <DCArtboard id="ot-history" label="초과근무 이력" width={320} height={680}><MobOvertimeHistory/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 4. 모바일 · 연차 ═══════════ */}
+        <DCSection id="mobile-leave" title="4. 모바일 · 연차" subtitle="잔여/소멸 시각화 · 신청 플로우 · 제출 확인 · 소멸 경고">
+          <DCArtboard id="leave-home" label="연차 대시보드 (잔여·소멸)" width={320} height={680}><MobLeaveCalendar/></DCArtboard>
+          <DCArtboard id="leave-apply" label="연차 신청" width={320} height={680}><MobLeaveApply/></DCArtboard>
+          <DCArtboard id="leave-success" label="제출 완료" width={320} height={680}><MobSuccess/></DCArtboard>
+          <DCArtboard id="m-expiry" label="연차 소멸 경고 (풀스크린)" width={320} height={680}><MobExpiryAlert/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 5. 모바일 · 팀 & 인박스 ═══════════ */}
+        <DCSection id="mobile-team" title="5. 모바일 · 팀 & 인박스" subtitle="전 직원 근무 상태 (3가지 뷰) · 통합 승인함">
+          <DCArtboard id="team-tabs" label="★ 탭 통합 (그리드/팀별/타임라인)" width={320} height={680}><MobTeamTabs/></DCArtboard>
+          <DCArtboard id="team-a" label="A · 그리드" width={320} height={680}><MobTeamGrid/></DCArtboard>
+          <DCArtboard id="team-b" label="B · 팀별 그룹" width={320} height={680}><MobTeamGrouped/></DCArtboard>
+          <DCArtboard id="team-c" label="C · 타임라인" width={320} height={680}><MobTeamTimeline/></DCArtboard>
+          <DCArtboard id="mob-inbox" label="통합 인박스 (탭)" width={320} height={680}><MobInbox/></DCArtboard>
+          <DCArtboard id="mob-inbox-quick" label="인박스 · 빠른 승인" width={320} height={680}><MobInboxQuick/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 6. 모바일 · 마이 & 부가 ═══════════ */}
+        <DCSection id="mobile-my" title="6. 모바일 · 마이 & 부가" subtitle="설정 · 화면 꾸미기 · 마이 페이지 · 출장 · 도움말">
+          <DCArtboard id="settings" label="설정 (마이)" width={320} height={680}><MobSettings/></DCArtboard>
+          <DCArtboard id="profile-full" label="마이 페이지 (KPI + 메뉴)" width={320} height={680}><MobProfileFull/></DCArtboard>
+          <DCArtboard id="customize" label="화면 꾸미기" width={320} height={680}><MobCustomize/></DCArtboard>
+          <DCArtboard id="trip" label="출장 · 외근 등록" width={320} height={680}><MobBusinessTrip/></DCArtboard>
+          <DCArtboard id="help" label="도움말 / FAQ" width={320} height={680}><MobHelp/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 7. 모바일 · 디테일 페이지 ═══════════ */}
+        <DCSection id="mobile-detail" title="7. 모바일 · 디테일 페이지" subtitle="기록 · 알림 · 공지 · 승인 · 리포트">
+          <DCArtboard id="record" label="근무 기록 상세" width={320} height={680}><MobRecordDetail/></DCArtboard>
+          <DCArtboard id="m-approval" label="승인 상세 (승인 이력)" width={320} height={680}><MobApprovalDetail/></DCArtboard>
+          <DCArtboard id="m-weekly" label="주간 리포트" width={320} height={680}><MobWeeklyReport/></DCArtboard>
+          <DCArtboard id="noti" label="알림 센터" width={320} height={680}><MobNotifications/></DCArtboard>
+          <DCArtboard id="notice" label="공지사항" width={320} height={680}><MobNotice/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 8. 모바일 · 위젯 & 엣지케이스 ═══════════ */}
+        <DCSection id="mobile-extras" title="8. 모바일 · 위젯 & 엣지케이스" subtitle="홈화면 위젯 · 빈 상태 · 위치 수동 · 에러">
+          <DCArtboard id="ios-wid" label="iOS 홈화면 위젯" width={320} height={680}><IOSWidgets/></DCArtboard>
+          <DCArtboard id="aos-wid" label="Android 홈화면 위젯" width={320} height={680}><AndroidWidgets/></DCArtboard>
+          <DCArtboard id="wid-gal" label="위젯 갤러리" width={320} height={680}><WidgetGallery/></DCArtboard>
+          <DCArtboard id="noti-empty" label="알림 빈 상태" width={320} height={680}><MobEmpty/></DCArtboard>
+          <DCArtboard id="loc-pick" label="위치 수동 선택" width={320} height={680}><MobLocationPicker/></DCArtboard>
+          <DCArtboard id="err-gps" label="에러 (GPS 실패)" width={320} height={680}><MobErrorGPS/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 9. 웹 · 개인 대시보드 (반응형) ═══════════ */}
+        <DCSection id="web" title="9. 웹 · 개인 대시보드" subtitle="대시보드 · 팀 캘린더 · 근무 기록 + 4단계 반응형">
+          <DCArtboard id="web-dash" label="대시보드 (메인)" width={1280} height={1260}><WebDashboard/></DCArtboard>
+          <DCArtboard id="web-team" label="팀 연차 캘린더" width={1280} height={800}><WebTeamLeave/></DCArtboard>
+          <DCArtboard id="web-records" label="근무 기록 상세" width={1280} height={800}><WebRecords/></DCArtboard>
+          <DCArtboard id="res-1440" label="1440 · 데스크탑 와이드" width={1440} height={820}><WebDash1440/></DCArtboard>
+          <DCArtboard id="res-1280" label="1280 · 데스크탑" width={1280} height={820}><WebDash1280/></DCArtboard>
+          <DCArtboard id="res-1024" label="1024 · 노트북 (아이콘 레일)" width={1024} height={820}><WebDash1024/></DCArtboard>
+          <DCArtboard id="res-768" label="768 · 태블릿" width={768} height={820}><WebDash768/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 10. 웹 · 통합 인박스 ═══════════ */}
+        <DCSection id="web-inbox" title="10. 웹 · 통합 인박스" subtitle="3-pane · 필터 / 리스트 / 상세">
+          <DCArtboard id="web-inbox-3p" label="3-pane Inbox" width={1280} height={820}><WebInbox/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 11. 관리자 ═══════════ */}
+        <DCSection id="admin" title="11. 관리자" subtitle="승인 · 연차 소멸 · 리포트 · 직원 · 실시간 보드">
+          <DCArtboard id="a-approve" label="승인 대기 한눈에" width={1280} height={800}><AdminApprovals/></DCArtboard>
+          <DCArtboard id="a-leave" label="연차 소멸 안내" width={1280} height={800}><AdminExpiringLeave/></DCArtboard>
+          <DCArtboard id="a-reports" label="월간 근태 리포트" width={1280} height={800}><AdminReports/></DCArtboard>
+          <DCArtboard id="a-emps" label="직원 관리" width={1280} height={800}><AdminEmployees/></DCArtboard>
+          <DCArtboard id="a-live" label="실시간 현황 보드" width={1280} height={800}><AdminLiveDashboard/></DCArtboard>
+          <DCArtboard id="a-emp-detail" label="직원 상세" width={1280} height={800}><AdminEmployeeDetail/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 12. 데스크탑 앱 ═══════════ */}
+        <DCSection id="desktop" title="12. 데스크탑 앱" subtitle="macOS 메뉴바 · Windows 트레이 · 환경설정 · 알림">
+          <DCArtboard id="menubar" label="macOS 트레이 드롭다운" width={1280} height={800}><DesktopMenubar/></DCArtboard>
+          <DCArtboard id="win-tray" label="Windows 시스템 트레이" width={1280} height={800}><WindowsTray/></DCArtboard>
+          <DCArtboard id="win-app" label="Windows 데스크탑 앱" width={1280} height={800}><WindowsDesktopApp/></DCArtboard>
+          <DCArtboard id="d-settings" label="환경설정 — 초과근무" width={1280} height={760}><DesktopSettings/></DCArtboard>
+          <DCArtboard id="d-noti" label="알림 토스트 스택" width={1280} height={760}><DesktopNotifications/></DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 13. 특수 기능 ═══════════ */}
+        <DCSection id="special" title="13. 특수 기능" subtitle="컴플라이언스 (52시간) · 팀 캘린더">
+          <DCArtboard id="comp-mob" label="컴플라이언스 · 모바일" width={320} height={680}><MobCompliance/></DCArtboard>
+          <DCArtboard id="comp-block" label="컴플라이언스 · 출근 차단" width={320} height={680}><MobComplianceBlock/></DCArtboard>
+          <DCArtboard id="comp-admin" label="컴플라이언스 · 관리자 보드" width={1280} height={820}><AdminCompliance/></DCArtboard>
+          <DCArtboard id="cal-mob" label="팀 캘린더 · 모바일" width={320} height={680}><MobTeamCalendar/></DCArtboard>
+          <DCArtboard id="cal-web" label="팀 캘린더 · 웹 매트릭스" width={1280} height={920}><WebTeamCalendar/></DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+
+      {editMode && (
+        <div style={{
+          position: 'fixed', bottom: 20, right: 20, zIndex: 1000,
+          width: 280, background: '#fff', borderRadius: 14,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.08)',
+          padding: 16, fontFamily: 'Pretendard, sans-serif',
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>Tweaks</div>
+          <div style={{ fontSize: 11, color: '#8B95A1', fontWeight: 700, margin: '6px 0 4px' }}>언어</div>
+          <div style={{ display: 'flex', gap: 4, padding: 3, background: '#F2F4F6', borderRadius: 8 }}>
+            {[['ko','한국어'],['en','English']].map(([k, l]) => (
+              <div key={k} onClick={() => set('lang', k)} style={{
+                flex: 1, textAlign: 'center', padding: '6px 0', borderRadius: 6,
+                background: tweaks.lang === k ? '#fff' : 'transparent',
+                boxShadow: tweaks.lang === k ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              }}>{l}</div>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 11, color: '#8B95A1', fontWeight: 700, margin: '12px 0 4px' }}>테마 모드</div>
+          <div style={{ display: 'flex', gap: 4, padding: 3, background: '#F2F4F6', borderRadius: 8 }}>
+            {[['light','라이트'],['dark','다크']].map(([k, l]) => (
+              <div key={k} onClick={() => set('theme', k)} style={{
+                flex: 1, textAlign: 'center', padding: '6px 0', borderRadius: 6,
+                background: tweaks.theme === k ? '#fff' : 'transparent',
+                boxShadow: tweaks.theme === k ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              }}>{l}</div>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 11, color: '#8B95A1', fontWeight: 700, margin: '12px 0 4px' }}>브랜드 컬러</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[['blue','#3182F6'],['mint','#00B894'],['violet','#7C5CFF'],['coral','#FF5A5F']].map(([k, c]) => (
+              <div key={k} onClick={() => set('brand', k)} style={{
+                flex: 1, aspectRatio: '1', borderRadius: 8, background: c, cursor: 'pointer',
+                border: tweaks.brand === k ? '3px solid #191F28' : '3px solid transparent',
+                boxShadow: tweaks.brand === k ? '0 0 0 1px #191F28' : 'inset 0 0 0 1px rgba(0,0,0,0.08)',
+              }}/>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 11, color: '#8B95A1', fontWeight: 700, margin: '12px 0 4px' }}>글자 크기</div>
+          <div style={{ display: 'flex', gap: 4, padding: 3, background: '#F2F4F6', borderRadius: 8 }}>
+            {[['sm','작게'],['md','보통'],['lg','크게']].map(([k, l]) => (
+              <div key={k} onClick={() => set('font', k)} style={{
+                flex: 1, textAlign: 'center', padding: '6px 0', borderRadius: 6,
+                background: tweaks.font === k ? '#fff' : 'transparent',
+                boxShadow: tweaks.font === k ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              }}>{l}</div>
+            ))}
+          </div>
+        </div>
+      )}
+    </HiCtx.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
