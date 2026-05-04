@@ -16,7 +16,11 @@ export function LeaveApplyPage() {
   const [end, setEnd] = useState<string | null>(null);
 
   function pick(iso: string) {
-    if (!start || (start && end)) {
+    // Range-pick UX:
+    //   1st click → set start (clear end so the second click can extend)
+    //   2nd click → if >= start, set end; if < start, treat as new start
+    //   3rd click after a complete range → start a new range from this date
+    if (!start || (start && end && start !== end)) {
       setStart(iso);
       setEnd(iso);
       return;

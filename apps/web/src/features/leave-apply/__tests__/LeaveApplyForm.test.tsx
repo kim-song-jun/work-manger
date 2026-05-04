@@ -3,7 +3,8 @@
  * Type: Unit (vitest + RTL, jsdom)
  * Why:  연차 신청 폼은 잘못된 입력(종료 < 시작, 잔여 초과)으로
  *       서버 호출을 발생시키면 실수로 휴가가 차감되거나 사용자 신뢰가
- *       깨질 수 있어 클라이언트 검증 회귀를 막아야 합니다.
+ *       깨질 수 있어 클라이언트 검증 회귀를 막아야 합니다. BE 키
+ *       (`start_date`/`end_date`) 정합성도 함께 보호합니다.
  * Covers:
  *   - 종료일이 시작일보다 이전이면 zod refine가 invalid_dates 에러를 노출
  *   - 종류(SegmentedControl)에서 오전 반차 선택 시 폼 상태가 갱신
@@ -25,10 +26,10 @@ vi.mock("@entities/leave", async () => {
   return {
     fetchBalance: async () => ({ remaining: 10, used: 0, accrued: 10, expiring: 0 }),
     applyLeave: vi.fn(async () => null),
-    leaveDays: ({ kind, starts_on, ends_on }: { kind: string; starts_on: string; ends_on: string }) => {
+    leaveDays: ({ kind, start_date, end_date }: { kind: string; start_date: string; end_date: string }) => {
       if (kind !== "FULL") return 0.5;
-      const a = new Date(starts_on).getTime();
-      const b = new Date(ends_on).getTime();
+      const a = new Date(start_date).getTime();
+      const b = new Date(end_date).getTime();
       return Math.floor((b - a) / 86400000) + 1;
     },
   };
@@ -50,7 +51,7 @@ describe("LeaveApplyForm", () => {
     // Why: 일관된 zod refine를 통해 사용자가 잘못된 기간으로 제출하지 못하도록 보장.
     renderWithProviders(<LeaveApplyForm />);
     const inputs = screen.getAllByDisplayValue(new Date().toISOString().slice(0, 10));
-    // first is starts_on, second is ends_on
+    // first is start_date, second is end_date
     await userEvent.clear(inputs[1]);
     await userEvent.type(inputs[1], "1900-01-01");
     const submit = screen.getByRole("button", { name: /신청하기|submit/i });

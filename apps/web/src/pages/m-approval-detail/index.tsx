@@ -31,10 +31,10 @@ export function ApprovalDetailPage() {
           <>
             <Card padding={20}>
               <div className="flex items-center gap-3">
-                <Avatar name={item.requester?.name ?? "?"} size={48} />
+                <Avatar name={item.requester?.name ?? item.requester_name ?? "?"} size={48} />
                 <div className="flex-1 min-w-0">
                   <div className="text-[16px] font-bold" style={{ color: "var(--grey-900)" }}>
-                    {item.requester?.name ?? "—"}
+                    {item.requester?.name ?? item.requester_name ?? "—"}
                   </div>
                   <div className="text-[12px]" style={{ color: "var(--grey-500)" }}>
                     {item.requester?.team ?? ""}
@@ -45,7 +45,7 @@ export function ApprovalDetailPage() {
                 className="text-[20px] font-bold mt-4"
                 style={{ color: "var(--grey-900)", lineHeight: 1.3 }}
               >
-                {item.title}
+                {item.title ?? item.target_type ?? ""}
               </div>
               {item.reason && (
                 <div
@@ -60,7 +60,9 @@ export function ApprovalDetailPage() {
                   {item.reason}
                 </div>
               )}
-              {item.role === "approve" && <InboxQuickActions itemId={item.id} size="md" />}
+              {(item.role === "approve" || item.status === "PENDING") && (
+                <InboxQuickActions itemId={item.id} size="md" />
+              )}
             </Card>
           </>
         )}

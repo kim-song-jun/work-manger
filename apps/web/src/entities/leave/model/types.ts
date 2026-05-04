@@ -18,9 +18,13 @@ export type TeamLeaveCalendar = {
 
 export type LeaveKind = "FULL" | "AM_HALF" | "PM_HALF";
 
+/**
+ * BE accepts `start_date`/`end_date`
+ * (apps/leave/serializers.LeaveRequestCreateSerializer).
+ */
 export type LeaveApplyBody = {
-  starts_on: string;          // YYYY-MM-DD
-  ends_on: string;
+  start_date: string;          // YYYY-MM-DD
+  end_date: string;
   reason?: string;
   kind: LeaveKind;
 };
@@ -29,8 +33,8 @@ export type LeaveRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 export type LeaveRequest = {
   id: string;
-  starts_on: string;
-  ends_on: string;
+  start_date: string;
+  end_date: string;
   kind: LeaveKind;
   days: number;
   status: LeaveRequestStatus;

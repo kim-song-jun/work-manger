@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,22 +34,33 @@ export function LeaveApplyForm({ onDone, defaultDate, defaultEndDate }: Props) {
     control,
     watch,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LeaveApplyValues>({
     resolver: zodResolver(leaveApplySchema),
     defaultValues: {
-      starts_on: today,
-      ends_on: defaultEndDate ?? today,
+      start_date: today,
+      end_date: defaultEndDate ?? today,
       kind: "FULL",
       reason: "",
     },
   });
 
+  // B5 wiring — when the calendar (page-local state) emits new picked
+  // dates via defaultDate/defaultEndDate, sync them into RHF so the
+  // submitted body reflects the user's calendar selection.
+  useEffect(() => {
+    if (defaultDate) setValue("start_date", defaultDate, { shouldValidate: true });
+  }, [defaultDate, setValue]);
+  useEffect(() => {
+    if (defaultEndDate) setValue("end_date", defaultEndDate, { shouldValidate: true });
+  }, [defaultEndDate, setValue]);
+
   const values = watch();
   const days = leaveDays({
     kind: values.kind as LeaveKind,
-    starts_on: values.starts_on,
-    ends_on: values.ends_on,
+    start_date: values.start_date,
+    end_date: values.end_date,
   });
   const remaining = balanceQ.data?.remaining ?? 0;
   const after = Math.max(0, remaining - days);
@@ -57,8 +69,8 @@ export function LeaveApplyForm({ onDone, defaultDate, defaultEndDate }: Props) {
   const m = useMutation({
     mutationFn: (v: LeaveApplyValues) =>
       applyLeave({
-        starts_on: v.starts_on,
-        ends_on: v.ends_on,
+        start_date: v.start_date,
+        end_date: v.end_date,
         kind: v.kind as LeaveKind,
         reason: v.reason,
       }),
@@ -73,7 +85,7 @@ export function LeaveApplyForm({ onDone, defaultDate, defaultEndDate }: Props) {
 
   function onSubmit(v: LeaveApplyValues) {
     if (overBalance) {
-      setError("ends_on", { message: "mobile.leave_apply.over_balance" });
+      setError("end_date", { message: "mobile.leave_apply.over_balance" });
       return;
     }
     m.mutate(v);
@@ -99,20 +111,20 @@ export function LeaveApplyForm({ onDone, defaultDate, defaultEndDate }: Props) {
         />
       </FormField>
 
-      <FormField label={t("leave_apply.from")} required error={errors.starts_on?.message}>
-        <TextField type="date" {...register("starts_on")} />
+      <FormField label={t("leave_apply.from")} required error={errors.start_date?.message}>
+        <TextField type="date" {...register("start_date")} />
       </FormField>
 
       <FormField
         label={t("leave_apply.to")}
         required
         error={
-          errors.ends_on?.message
-            ? t(errors.ends_on.message, { defaultValue: errors.ends_on.message })
+          errors.end_date?.message
+            ? t(errors.end_date.message, { defaultValue: errors.end_date.message })
             : undefined
         }
       >
-        <TextField type="date" {...register("ends_on")} />
+        <TextField type="date" {...register("end_date")} />
       </FormField>
 
       <FormField label={t("leave_apply.reason")} error={errors.reason?.message}>

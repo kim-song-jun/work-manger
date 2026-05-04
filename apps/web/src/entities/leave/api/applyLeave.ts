@@ -15,8 +15,8 @@ export async function applyLeave(body: LeaveApplyBody): Promise<LeaveRequest | n
       // Backend stub: pretend it succeeded so the UI can demo end-to-end.
       return {
         id: "stub-" + Date.now(),
-        starts_on: body.starts_on,
-        ends_on: body.ends_on,
+        start_date: body.start_date,
+        end_date: body.end_date,
         kind: body.kind,
         days: leaveDays(body),
         status: "PENDING",
@@ -27,10 +27,10 @@ export async function applyLeave(body: LeaveApplyBody): Promise<LeaveRequest | n
   }
 }
 
-export function leaveDays(body: Pick<LeaveApplyBody, "kind" | "starts_on" | "ends_on">): number {
+export function leaveDays(body: Pick<LeaveApplyBody, "kind" | "start_date" | "end_date">): number {
   if (body.kind !== "FULL") return 0.5;
-  const a = new Date(body.starts_on);
-  const b = new Date(body.ends_on);
+  const a = new Date(body.start_date);
+  const b = new Date(body.end_date);
   const ms = b.getTime() - a.getTime();
   if (Number.isNaN(ms) || ms < 0) return 0;
   return Math.floor(ms / 86_400_000) + 1;

@@ -305,12 +305,14 @@ function FilterButton({
 }
 
 function ListRowContent({ it }: { it: InboxItem }) {
+  const reqName = it.requester?.name ?? it.requester_name ?? "—";
+  const title = it.title ?? it.target_type ?? "";
   return (
     <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-      <Avatar name={it.requester.name} size={36} />
+      <Avatar name={reqName} size={36} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="text-[13px] font-bold" style={{ color: "var(--grey-900)" }}>
-          {it.requester.name} · <span style={{ fontWeight: 500 }}>{it.title}</span>
+          {reqName} · <span style={{ fontWeight: 500 }}>{title}</span>
         </div>
         {it.reason && (
           <div
@@ -350,7 +352,13 @@ function DetailPane({
   rejectPending: boolean;
 }) {
   const { t } = useTranslation();
-  const canDecide = it.role === "approve" && it.status === "PENDING";
+  const canDecide = (it.role === "approve" || it.status === "PENDING") && it.status === "PENDING";
+  const reqName = it.requester?.name ?? it.requester_name ?? "—";
+  const reqTeam = it.requester?.team ?? "";
+  const title = it.title ?? it.target_type ?? "";
+  const detail = it.detail ?? "—";
+  const requestedAt = it.requested_at ?? it.created_at ?? "";
+  const kindLabel = it.kind ?? it.target_type ?? "";
 
   return (
     <>
@@ -362,10 +370,10 @@ function DetailPane({
         }}
       >
         <div className="text-[20px] font-bold" style={{ color: "var(--grey-900)" }}>
-          {it.title}
+          {title}
         </div>
         <div className="text-[13px] mt-1" style={{ color: "var(--grey-500)" }}>
-          {it.requester.name} · {it.requester.team ?? ""}
+          {reqName} · {reqTeam}
         </div>
       </div>
       <div style={{ flex: 1, overflow: "auto", padding: "24px 32px" }}>
@@ -385,9 +393,9 @@ function DetailPane({
             marginTop: 16,
           }}
         >
-          <DetailKV label={t("inbox.type")} value={it.kind} />
-          <DetailKV label={t("inbox.detail")} value={it.detail ?? "—"} />
-          <DetailKV label={t("inbox.requested_at")} value={it.requested_at} />
+          <DetailKV label={t("inbox.type")} value={kindLabel} />
+          <DetailKV label={t("inbox.detail")} value={detail} />
+          <DetailKV label={t("inbox.requested_at")} value={requestedAt} />
         </div>
       </div>
       {canDecide && (

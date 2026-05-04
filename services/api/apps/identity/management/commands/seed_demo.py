@@ -120,11 +120,17 @@ class Command(BaseCommand):
             User.objects.filter(id__in=user_ids).delete()
 
     def _create_company(self) -> tuple[Company, list[Department]]:
+        # NOTE: explicitly pass `compliance_block_when_over` and
+        # `leave_promotion_enabled` so we don't depend on schema-level
+        # defaults (some environments still have the column with NO
+        # DEFAULT). See migration 0005_company_compliance_block_default.
         company = Company.objects.create(
             name=DEMO_COMPANY_NAME,
             code=DEMO_COMPANY_CODE,
             fiscal_year_start=date(2026, 1, 1),
             timezone="Asia/Seoul",
+            compliance_block_when_over=False,
+            leave_promotion_enabled=False,
         )
         depts = [
             Department.objects.create(company=company, name=n, path=f"/{n.lower()}")

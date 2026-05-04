@@ -127,7 +127,19 @@ def status_timeline(request):
 @api_view(["GET"])
 @permission_classes([IsActiveMember])
 def status_root(request):
-    return status_grid(request._request) if False else status_grid(request)
+    """`/v1/team/status` — alias for the grid view.
+
+    Calls the inner ``_today_data`` helper directly (NOT the wrapped
+    ``status_grid`` view, which would receive a DRF ``Request`` and a
+    second time pass it through ``api_view`` causing
+    ``AssertionError: The `request` argument must be an instance of
+    `django.http.HttpRequest```).
+    """
+    membership = active_membership(request.user)
+    today, items = _today_data(membership.company_id)
+    return Response(
+        {"data": {"date": today.isoformat(), "items": items}, "meta": {"count": len(items)}}
+    )
 
 
 def _matrix_status(rec: AttendanceRecord | None, on_leave: bool) -> str:

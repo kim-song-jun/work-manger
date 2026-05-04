@@ -542,6 +542,8 @@ const ko = {
       kind_leave: "연차",
       kind_wfh: "재택",
       kind_outwork: "외근",
+      kind_manual_clock_in: "수동 출근",
+      kind_trip: "출장",
     },
     notifications: {
       title: "알림",
@@ -1213,6 +1215,8 @@ const en: typeof ko = {
       kind_leave: "Leave",
       kind_wfh: "WFH",
       kind_outwork: "Outside",
+      kind_manual_clock_in: "Manual clock-in",
+      kind_trip: "Trip",
     },
     notifications: {
       title: "Notifications",

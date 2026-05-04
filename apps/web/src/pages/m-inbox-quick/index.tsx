@@ -11,7 +11,9 @@ export function InboxQuickPage() {
   const { t } = useTranslation();
   const nav = useNavigate();
   const q = useQuery({ queryKey: ["inbox"], queryFn: () => fetchInbox() });
-  const items = (q.data?.items ?? []).filter((i) => i.role === "approve");
+  // BE /v1/inbox returns approval tasks the caller is the approver of —
+  // filter to PENDING for the quick-decide flow.
+  const items = (q.data?.items ?? []).filter((i) => i.status === "PENDING" || i.role === "approve");
   const [idx, setIdx] = useState(0);
   const item = items[idx];
 

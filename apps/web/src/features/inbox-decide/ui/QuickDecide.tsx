@@ -70,10 +70,10 @@ export function QuickDecide({ item, onDone }: Props) {
       >
         <Card padding={20} variant="elevated">
           <div className="text-[12px] font-semibold" style={{ color: "var(--brand)" }}>
-            {item.kind}
+            {item.kind ?? item.target_type ?? ""}
           </div>
           <div className="text-[18px] font-bold mt-2" style={{ color: "var(--grey-900)" }}>
-            {item.title}
+            {item.title ?? item.requester_name ?? ""}
           </div>
           {item.reason && (
             <div className="text-[13px] mt-3" style={{ color: "var(--grey-700)" }}>

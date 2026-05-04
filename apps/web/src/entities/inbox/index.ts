@@ -1,5 +1,6 @@
 export type {
   InboxKind,
+  InboxTargetType,
   InboxStatus,
   InboxRole,
   InboxItem,

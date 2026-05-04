@@ -158,11 +158,16 @@ export function WebDashboardPage() {
                     borderBottom: "1px solid var(--grey-100)",
                   }}
                 >
-                  <Avatar name={it.requester.name} size={32} />
+                  <Avatar
+                    name={it.requester?.name ?? it.requester_name ?? "?"}
+                    size={32}
+                  />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="text-[13px] font-semibold">{it.title}</div>
+                    <div className="text-[13px] font-semibold">
+                      {it.title ?? it.target_type ?? ""}
+                    </div>
                     <div className="text-[12px]" style={{ color: "var(--grey-500)" }}>
-                      {it.requester.name}
+                      {it.requester?.name ?? it.requester_name ?? ""}
                     </div>
                   </div>
                 </li>
