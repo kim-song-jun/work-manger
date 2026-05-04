@@ -78,6 +78,61 @@ class BreakRecord(models.Model):
         db_table = "break_record"
 
 
+class ManualClockInRequest(models.Model):
+    """Persistent payload for a manual clock-in request (spec §3.4).
+
+    Created in the same transaction as the corresponding
+    :class:`apps.approval.models.ApprovalTask` (target_type=MANUAL_CLOCK_IN).
+    On approval, :func:`apps.attendance.services.materialize_manual_clock_in`
+    creates the actual :class:`AttendanceRecord`.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        APPROVED = "APPROVED", "Approved"
+        REJECTED = "REJECTED", "Rejected"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    company = models.ForeignKey("identity.Company", on_delete=models.CASCADE)
+    membership = models.ForeignKey(
+        "identity.Membership",
+        on_delete=models.CASCADE,
+        related_name="manual_clock_in_requests",
+    )
+    work_date = models.DateField()
+    # Mirrors AttendanceRecord.Kind so we can replay the original intent.
+    kind = models.CharField(
+        max_length=8,
+        choices=AttendanceRecord.Kind.choices,
+        default=AttendanceRecord.Kind.MANUAL,
+    )
+    reason = models.TextField(blank=True, default="")
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PENDING
+    )
+    decided_by = models.ForeignKey(
+        "identity.Membership",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="decided_manual_clock_in_requests",
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=django_tz.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "manual_clock_in_request"
+        indexes = [
+            models.Index(
+                fields=["company", "status"], name="idx_mcir_company_status"
+            ),
+            models.Index(
+                fields=["membership", "work_date"], name="idx_mcir_member_date"
+            ),
+        ]
+
+
 class OvertimeRequest(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pending"

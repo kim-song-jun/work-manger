@@ -11,6 +11,7 @@ class ApprovalTask(models.Model):
         OVERTIME = "OVERTIME", "Overtime"
         LEAVE = "LEAVE", "Leave"
         MANUAL_CLOCK_IN = "MANUAL_CLOCK_IN", "Manual clock-in"
+        TRIP = "TRIP", "Business trip"
 
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pending"

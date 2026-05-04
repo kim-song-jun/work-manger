@@ -15,7 +15,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.audit.services import record as audit_record
 
-from . import services as identity_services
+from . import email_templates, services as identity_services
 from .models import User
 from .serializers import (
     SignupSerializer,
@@ -269,3 +269,102 @@ def two_fa_challenge(request):
     tokens = issue_tokens(user)
     audit_record(user, "auth.login.success", request=request, payload={"two_fa": True})
     return Response({"data": {**tokens, "user": UserMeSerializer(user).data}})
+
+
+# ───────────────────────── Email verification ─────────────────────────
+class _TokenSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+
+class _EmailSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class _PasswordResetSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def email_verify(request):
+    """Validate an email-verification token and flip ``is_email_verified``.
+
+    Errors map to the standard envelope:
+      - 400 EMAIL_VERIFY_INVALID: bad/expired signature or unknown user
+      - 409 EMAIL_ALREADY_VERIFIED: idempotent re-use after success
+    """
+    s = _TokenSerializer(data=request.data)
+    s.is_valid(raise_exception=True)
+    user = identity_services.verify_email_token(s.validated_data["token"])
+    audit_record(user, "auth.email.verified", request=request)
+    return Response({"data": {"verified": True}})
+
+
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def email_resend(request):
+    """Re-issue an email-verification link; ALWAYS returns 200 (no enumeration).
+
+    If the email matches an unverified user we enqueue an EMAIL row in the
+    notification outbox. Verified or unknown emails silently no-op.
+    """
+    s = _EmailSerializer(data=request.data)
+    s.is_valid(raise_exception=True)
+    email = s.validated_data["email"].strip().lower()
+    user = User.objects.filter(email__iexact=email).first()
+    if user is not None and not user.is_email_verified:
+        _, signed = identity_services.issue_email_verification_token(user)
+        rendered = email_templates.render_verify_email(
+            name=user.name, token=signed, locale=user.locale or "ko"
+        )
+        identity_services.enqueue_user_email(
+            user,
+            event_kind="auth.email.verify",
+            subject=rendered["subject"],
+            text=rendered["text"],
+            html=rendered["html"],
+        )
+        audit_record(user, "auth.email.verify.requested", request=request)
+    return Response({"data": {"sent": True}})
+
+
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def password_forgot(request):
+    """Trigger a password-reset email; ALWAYS returns 200 (no enumeration)."""
+    s = _EmailSerializer(data=request.data)
+    s.is_valid(raise_exception=True)
+    email = s.validated_data["email"].strip().lower()
+    user = User.objects.filter(email__iexact=email).first()
+    if user is not None and user.is_active:
+        _, signed = identity_services.issue_password_reset_token(user)
+        rendered = email_templates.render_password_reset(
+            name=user.name, token=signed, locale=user.locale or "ko"
+        )
+        identity_services.enqueue_user_email(
+            user,
+            event_kind="auth.password.reset_requested",
+            subject=rendered["subject"],
+            text=rendered["text"],
+            html=rendered["html"],
+        )
+        audit_record(user, "auth.password.reset_requested", request=request)
+    return Response({"data": {"sent": True}})
+
+
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def password_reset(request):
+    """Consume a reset token + apply the new password.
+
+    On success: blacklists every refresh token, clears the lockout counter,
+    and emits ``auth.password.reset_completed``.
+    """
+    s = _PasswordResetSerializer(data=request.data)
+    s.is_valid(raise_exception=True)
+    user = identity_services.consume_password_reset_token(
+        s.validated_data["token"], s.validated_data["new_password"]
+    )
+    audit_record(user, "auth.password.reset_completed", request=request)
+    return Response({"data": {"reset": True}})

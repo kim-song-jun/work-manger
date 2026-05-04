@@ -17,7 +17,7 @@ from django.utils import timezone as django_tz
 from apps.approval.models import ApprovalTask
 from apps.identity.models import Membership
 
-from .models import LeaveBalance, LeavePolicy, LeaveRequest
+from .models import LeaveBalance, LeavePolicy, LeavePromotionLog, LeaveRequest
 
 ZERO = Decimal("0")
 ONE_DAY = Decimal("1")
@@ -365,6 +365,138 @@ def expire_balances(as_of: date) -> int:
 # ---------------------------------------------------------------------------
 # Helpers used by views
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# 사용 촉진 (근로기준법 §61)
+# ---------------------------------------------------------------------------
+
+
+# Reminder schedule (days before fiscal_end_date) — see spec §5.2.
+PROMOTION_FIRST_OFFSET_DAYS = 183   # ~6 months before fiscal year-end
+PROMOTION_SECOND_OFFSET_DAYS = 61   # ~2 months before fiscal year-end
+
+
+def _company_fiscal_end_for(company, today: date) -> date:
+    """Return the *next* fiscal year-end date for *company* on ``today``.
+
+    The company's ``fiscal_year_start`` defines the cycle. If today is on or
+    after this year's start, the cycle ends the day before next year's start.
+    Otherwise the cycle ends the day before this year's start.
+    """
+    fy_start = company.fiscal_year_start
+    candidate_start = date(today.year, fy_start.month, fy_start.day)
+    if today >= candidate_start:
+        next_start = date(today.year + 1, fy_start.month, fy_start.day)
+    else:
+        next_start = candidate_start
+    return next_start - timedelta(days=1)
+
+
+@dataclass(frozen=True)
+class PromotionTarget:
+    membership: Membership
+    days_remaining: Decimal
+    fiscal_end_date: date
+    kind: str  # "FIRST" | "SECOND"
+
+
+def pending_promotion_targets(company, today: date) -> list[PromotionTarget]:
+    """Compute outstanding 사용 촉진 reminders for *company* on *today*.
+
+    Spec §5.2 + 근로기준법 §61:
+      - First reminder: when ``today`` is exactly 6개월 (183 days) before
+        ``fiscal_year_end`` AND the membership has > 0 remaining days.
+      - Second reminder: when ``today`` is exactly 2개월 (61 days) before
+        ``fiscal_year_end``, the FIRST reminder was already issued, AND
+        the balance is still > 0.
+
+    Read-only and idempotent — skips memberships whose log row for the same
+    ``(membership, fiscal_end_date, kind)`` already exists.
+    """
+    fiscal_end = _company_fiscal_end_for(company, today)
+    delta_days = (fiscal_end - today).days
+
+    if delta_days == PROMOTION_FIRST_OFFSET_DAYS:
+        kind = LeavePromotionLog.Kind.FIRST
+    elif delta_days == PROMOTION_SECOND_OFFSET_DAYS:
+        kind = LeavePromotionLog.Kind.SECOND
+    else:
+        return []
+
+    targets: list[PromotionTarget] = []
+    memberships = Membership.objects.filter(company=company, is_active=True)
+    for membership in memberships:
+        if LeavePromotionLog.objects.filter(
+            membership=membership, fiscal_end_date=fiscal_end, kind=kind
+        ).exists():
+            continue
+        if kind == LeavePromotionLog.Kind.SECOND:
+            first_issued = LeavePromotionLog.objects.filter(
+                membership=membership,
+                fiscal_end_date=fiscal_end,
+                kind=LeavePromotionLog.Kind.FIRST,
+            ).exists()
+            if not first_issued:
+                continue
+        snapshot = compute_balance(membership, as_of=today)
+        remaining = Decimal(snapshot["remaining"])
+        if remaining <= ZERO:
+            continue
+        targets.append(
+            PromotionTarget(
+                membership=membership,
+                days_remaining=remaining,
+                fiscal_end_date=fiscal_end,
+                kind=kind,
+            )
+        )
+    return targets
+
+
+def record_promotion(
+    membership: Membership,
+    *,
+    kind: str,
+    days_remaining: Decimal,
+    fiscal_end_date: date,
+) -> LeavePromotionLog | None:
+    """Persist one :class:`LeavePromotionLog` row + dispatch the notification.
+
+    Returns the new log row, or ``None`` if a duplicate existed (idempotent).
+    Channels: ``EMAIL`` + ``INAPP`` per spec §8 알림 트리거 표.
+    """
+    from django.db import IntegrityError
+    from apps.notification import services as notif_svc
+
+    try:
+        with transaction.atomic():
+            log = LeavePromotionLog.objects.create(
+                company=membership.company,
+                membership=membership,
+                fiscal_end_date=fiscal_end_date,
+                kind=kind,
+                days_remaining=Decimal(days_remaining),
+            )
+    except IntegrityError:
+        return None
+
+    event_kind = (
+        "LEAVE_PROMOTION_FIRST"
+        if kind == LeavePromotionLog.Kind.FIRST
+        else "LEAVE_PROMOTION_SECOND"
+    )
+    notif_svc.dispatch(
+        membership,
+        event_kind=event_kind,
+        payload={
+            "kind": kind,
+            "days_remaining": str(days_remaining),
+            "fiscal_end_date": fiscal_end_date.isoformat(),
+        },
+        channels=["EMAIL", "INAPP"],
+    )
+    return log
 
 
 def list_team_calendar(

@@ -89,3 +89,46 @@ class LeaveRequest(models.Model):
             models.Index(fields=["membership", "status"], name="idx_leave_req_member_status"),
             models.Index(fields=["company", "start_date", "end_date"], name="idx_leave_req_range"),
         ]
+
+
+class LeavePromotionLog(models.Model):
+    """근로기준법 §61 사용 촉진 안내 발송 기록 (spec §5.2).
+
+    The ``promote_unused_leave`` Celery task writes one row per (membership,
+    fiscal_end_date, kind). The UNIQUE constraint guarantees idempotency
+    when the task re-runs the same day — or any subsequent day before the
+    next reminder window.
+    """
+
+    class Kind(models.TextChoices):
+        FIRST = "FIRST", "First (6개월 전)"
+        SECOND = "SECOND", "Second (2개월 전)"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    company = models.ForeignKey(
+        "identity.Company", on_delete=models.CASCADE, related_name="leave_promotions"
+    )
+    membership = models.ForeignKey(
+        "identity.Membership",
+        on_delete=models.CASCADE,
+        related_name="leave_promotions",
+    )
+    fiscal_end_date = models.DateField()
+    kind = models.CharField(max_length=8, choices=Kind.choices)
+    days_remaining = models.DecimalField(max_digits=5, decimal_places=2)
+    issued_at = models.DateTimeField(default=django_tz.now, editable=False)
+
+    class Meta:
+        db_table = "leave_promotion_log"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["membership", "fiscal_end_date", "kind"],
+                name="uniq_leave_promo_member_fiscal_kind",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["company", "fiscal_end_date"],
+                name="idx_leave_promo_company_fiscal",
+            ),
+        ]

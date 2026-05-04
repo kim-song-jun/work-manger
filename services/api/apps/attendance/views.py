@@ -10,11 +10,13 @@ from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from django.db import transaction
+
 from apps.approval.models import ApprovalTask
 from apps.identity.models import Membership
 
 from . import services
-from .models import AttendanceRecord
+from .models import AttendanceRecord, ManualClockInRequest
 from .permissions import IsActiveMember
 from .serializers import (
     AttendanceRecordSerializer,
@@ -213,11 +215,13 @@ def records_detail(request, pk):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsActiveMember])
 def manual_request(request):
-    """
-    Create an ApprovalTask of type MANUAL_CLOCK_IN.
+    """Create a :class:`ManualClockInRequest` + matching :class:`ApprovalTask`.
 
-    The actual AttendanceRecord is only created once an approver decides
-    (handled by the Approval domain). Here we simply enqueue the task.
+    Spec §3.4 — the actual :class:`AttendanceRecord` is only materialized
+    once an approver decides; on APPROVE the approval domain calls
+    :func:`apps.attendance.services.materialize_manual_clock_in` using this
+    persisted payload. Both rows are written in one transaction so the task
+    can never reference a missing target_id.
     """
     ser = ManualRequestSerializer(data=request.data)
     if not ser.is_valid():
@@ -229,22 +233,30 @@ def manual_request(request):
         request.company, django_tz.now()
     )
     approver = _pick_approver(request.membership)
-    # We use a deterministic synthetic target_id (membership + date) so duplicates collide
-    # with the existing AttendanceRecord uniqueness, but here we just store a fresh UUID.
-    import uuid as _uuid
 
-    task = ApprovalTask.objects.create(
-        company=request.company,
-        target_type=ApprovalTask.TargetType.MANUAL_CLOCK_IN,
-        target_id=_uuid.uuid4(),
-        requester=request.membership,
-        approver=approver,
-        status=ApprovalTask.Status.PENDING,
-    )
+    with transaction.atomic():
+        manual_req = ManualClockInRequest.objects.create(
+            company=request.company,
+            membership=request.membership,
+            work_date=work_date,
+            kind=AttendanceRecord.Kind.MANUAL,
+            reason=data["reason"],
+            status=ManualClockInRequest.Status.PENDING,
+        )
+        task = ApprovalTask.objects.create(
+            company=request.company,
+            target_type=ApprovalTask.TargetType.MANUAL_CLOCK_IN,
+            target_id=manual_req.id,
+            requester=request.membership,
+            approver=approver,
+            status=ApprovalTask.Status.PENDING,
+        )
+
     return Response(
         {
             "data": {
                 "approval_task_id": str(task.id),
+                "manual_request_id": str(manual_req.id),
                 "status": task.status,
                 "work_date": work_date.isoformat(),
                 "reason": data["reason"],

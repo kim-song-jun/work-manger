@@ -143,6 +143,68 @@ TOTP 시크릿 + provisioning URI 반환. 사용자는 이 시점에서 *아직 
 **Response 200** `{ "data": { "access_token": "...", "refresh_token": "...", ... } }`
 에러: `TOKEN_EXPIRED` (60초 만료), `INVALID_CREDENTIALS`
 
+### POST /auth/email/verify
+이메일 인증 토큰을 검증하고 `is_email_verified` 를 true 로 전환. 멱등 — 두 번째 호출은 409.
+**Request**
+```json
+{ "token": "<signed-token-from-email-link>" }
+```
+**Response 200**
+```json
+{ "data": { "verified": true } }
+```
+에러: `EMAIL_VERIFY_INVALID` (400, 위조/만료), `EMAIL_ALREADY_VERIFIED` (409)
+
+### POST /auth/email/resend
+인증 메일 재발송. 항상 200 (account enumeration 방어 — 모르는 이메일도 동일 응답).
+**Request** `{ "email": "user@co.com" }` → **200** `{ "data": { "sent": true } }`
+> 미인증 사용자에 한해 NotificationOutbox 에 EMAIL 행이 추가되며, 이미 인증된 / 모르는 이메일은 silently no-op.
+
+### POST /auth/password/forgot
+비밀번호 재설정 메일 큐잉. 항상 200 (enumeration 방어).
+**Request** `{ "email": "user@co.com" }` → **200** `{ "data": { "sent": true } }`
+
+### POST /auth/password/reset
+재설정 토큰을 소비하고 새 비밀번호 적용. 모든 refresh 토큰 블랙리스트 + 잠금 카운터 초기화.
+**Request**
+```json
+{ "token": "<signed-token>", "new_password": "BrandNew!42" }
+```
+**Response 200**
+```json
+{ "data": { "reset": true } }
+```
+에러: `PASSWORD_RESET_INVALID` (400, 위조/만료), `PASSWORD_RESET_USED` (400, 재사용), `VALIDATION_ERROR` (400, 정책 미달)
+> 토큰 TTL 15분, jti 는 Redis SETNX 로 30분 봉인 → 동일 토큰 재사용 불가.
+
+### GET /auth/oauth/{provider}/start
+OAuth 시작 — `provider` ∈ `google | kakao`. PKCE state 발급 + DB 저장.
+**Query**: `redirect_uri=<absolute-url>` 필수
+**Headers**: `Accept: application/json` 일 때 JSON 응답, 그 외엔 302 리다이렉트.
+**Response 200 (JSON)**
+```json
+{ "data": { "url": "https://accounts.google.com/o/oauth2/v2/auth?...", "state": "..." } }
+```
+**Response 302 (HTML)**: `Location: <provider-auth-url>`
+에러: `OAUTH_NOT_CONFIGURED` (503, client_id 미설정), `OAUTH_UNKNOWN_PROVIDER` (400)
+
+### GET /auth/oauth/{provider}/callback
+OAuth 콜백 — code/state → 토큰 교환 → User 발급/연동. 응답 형식은 `/auth/login` 과 동일.
+**Query**: `code=<authcode>&state=<echoed-state>`
+**Response 200**
+```json
+{
+  "data": {
+    "access_token": "...", "refresh_token": "...",
+    "access_expires_in": 1800, "refresh_expires_in": 1209600,
+    "user": { "id": "uuid", "email": "...", "name": "...", "locale": "ko" },
+    "created": false
+  }
+}
+```
+> 2FA 가 켜진 사용자는 대신 `{ "two_fa_required": true, "two_fa_token": "..." }` 반환 (`/auth/2fa/challenge` 호출 필요).
+에러: `OAUTH_STATE_INVALID` (400, CSRF/만료), `OAUTH_EMAIL_NOT_VERIFIED` (400, 기존 사용자 연동 거부), `OAUTH_EMAIL_REQUIRED` (400, 공급자가 이메일 비반환), `OAUTH_PROFILE_INVALID` (400)
+
 ### GET /admin/audit (ADMIN+)
 필터: `action`, `actor`, `from`, `to` (ISO-8601), 커서 페이지네이션 (`cursor`, `limit` 1~200, default 50).
 **Response** `{ "data": [ { "id": "...", "action": "auth.login.success", "actor_id": "...", "ip": "...", "user_agent": "...", "payload": {...}, "created_at": "..." } ], "next_cursor": "..." }`
@@ -297,6 +359,49 @@ TOTP 시크릿 + provisioning URI 반환. 사용자는 이 시점에서 *아직 
 | GET | `/admin/company-codes` | 코드 목록 |
 | DELETE | `/admin/company-codes/{id}` | 코드 회수 |
 
+### POST /admin/employees/bulk
+**Request** — `multipart/form-data`
+- `file` (required) — UTF-8 CSV. 헤더 행: `email,name,role,department_name,employee_no,position,hired_at,locale`. `hired_at`은 `YYYY-MM-DD`. 빈 컬럼은 허용 (위치/사번 등). `role`은 `EMPLOYEE|MANAGER|ADMIN|OWNER` (대소문자 무시).
+- `dry_run` (optional) — `"true"` 시 검증만 수행. DB 변경 없음.
+
+**Response 200**
+```json
+{
+  "data": {
+    "created": ["alice@co.com", "bob@co.com"],
+    "skipped": [{ "email": "carol@co.com", "reason": "ALREADY_MEMBER" }],
+    "errors": [{ "row_index": 4, "email": "", "message": "INVALID_EMAIL" }],
+    "count_created": 2,
+    "count_skipped": 1,
+    "count_errors": 1,
+    "dry_run": false
+  }
+}
+```
+- 신규 사용자는 `set_unusable_password()` 상태로 생성 → 첫 로그인 전 비밀번호 재설정(이메일 링크) 필수.
+- 행 단위 트랜잭션 — 일부 실패해도 정상 행은 모두 커밋. 멱등성: 두 번째 호출은 모두 `ALREADY_MEMBER` 로 SKIP.
+- 감사 로그: `identity.bulk_imported` (count_*).
+
+에러: `FILE_REQUIRED` (multipart 누락), `INVALID_CSV` (헤더/디코딩 오류), `403 FORBIDDEN` (EMPLOYEE 권한).
+
+### GET /admin/reports/export
+**Query**
+- `format=csv|pdf` (default `csv`).
+- `ym=YYYY-MM` (default 현재 월).
+
+**Response 200 — CSV**
+- `Content-Type: text/csv; charset=utf-8`
+- `Content-Disposition: attachment; filename="monthly-2026-05.csv"`
+- 헤더 행 + 멤버별 1행: `membership_id,name,department,days,late_days,total_minutes,leave_used`.
+
+**Response 200 — PDF**
+- `Content-Type: application/pdf`
+- `Content-Disposition: attachment; filename="monthly-2026-05.pdf"`
+- A4. 타이틀 (회사명 · YYYY-MM 근태 리포트), KPI 박스 (총 인원 / 평균 근무시간 / 지각 일수 / 연차 사용일), 직원별 표.
+- Korean 글꼴 (`NotoSansKR-Regular.otf`)이 번들되어 있을 때만 한글 라벨; 미설치 시 romanized 라벨로 폴백 (`apps/admin_api/exporters/fonts/requirements-fonts.md` 참조).
+
+에러: `INVALID_FORMAT` (422, `format` 이 csv/pdf 외), `INVALID_YM` (422).
+
 ---
 
 ## 9. Realtime (WebSocket)
@@ -325,6 +430,44 @@ wss://api.work-manager.molcube.com/v1/ws?token=<access_token>
 | GET | `/i18n/{locale}.json` | 클라이언트용 i18n 번들 (캐시 가능) |
 | GET | `/health` | 헬스체크 (auth 불필요) |
 | GET | `/version` | 빌드 / 버전 메타 |
+
+---
+
+## 10.5 Trip (출장/외근)
+
+m-trip 화면이 사용. 결재는 기존 `/inbox/{id}/approve|reject` 를 그대로 사용한다 (target_type=`TRIP`).
+
+| Method | Path | 권한 | 설명 |
+|---|---|---|---|
+| POST | `/trip/requests` | 활성 멤버 | 신청 (BUSINESS_TRIP\|FIELD_WORK) → ApprovalTask 생성 |
+| GET | `/trip/requests?status=` | 활성 멤버 | 본인 신청 목록 |
+| GET | `/trip/requests/{id}` | 활성 멤버 (본인 또는 MANAGER+) | 상세 |
+| POST | `/trip/requests/{id}/cancel` | 본인 | PENDING/APPROVED 취소 |
+
+### POST /trip/requests
+**Request**
+```json
+{ "kind": "BUSINESS_TRIP", "start_date": "2026-06-01", "end_date": "2026-06-03", "location_label": "부산 본사", "purpose": "고객 미팅" }
+```
+**Errors**: `INVALID_RANGE` 422 (end_date < start_date), `LOCATION_REQUIRED` 422, `INVALID_KIND` 422.
+
+승인 시 `notification.event_kind = TRIP_DECISION` 이 신청자에게 dispatch 된다.
+
+---
+
+## 10.6 Notice (공지사항)
+
+m-notice 화면이 사용. 회사 단위로 격리되어 있으며, 작성/수정/보관은 ADMIN/OWNER 만 가능.
+
+| Method | Path | 권한 | 설명 |
+|---|---|---|---|
+| GET | `/notices?pinned=&category=&q=&include_archived=` | 활성 멤버 | 같은 회사 공지 목록 (pinned, priority desc, published_at desc) |
+| GET | `/notices/{id}` | 활성 멤버 | 상세 |
+| POST | `/notices` | ADMIN+ | 작성 (`title`, `body`, `pinned`, `priority`, `category`) |
+| PATCH | `/notices/{id}` | ADMIN+ | 부분 수정 |
+| POST | `/notices/{id}/archive` | ADMIN+ | 보관 (archived_at 설정 → 기본 list 에서 숨김) |
+
+`category` 값: `policy` | `event` | `it` | `hr` | `general`. 다른 회사 공지는 절대 노출되지 않는다 (테넌시).
 
 ---
 

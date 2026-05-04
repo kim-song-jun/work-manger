@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.realtime",
     "apps.compliance",
+    "apps.oauth",
+    "apps.trip",
+    "apps.notice",
 ]
 
 MIDDLEWARE = [
@@ -134,6 +137,22 @@ AUTH_LOCKOUT_DURATION = timedelta(minutes=15)
 # 2FA challenge token TTL (seconds) — docs/api/authentication.md §8
 TWO_FA_CHALLENGE_TTL_SECONDS = 60
 TWO_FA_RECOVERY_CODE_COUNT = 10
+
+# ── Email-verification / password-reset ─────────────────────────────────────
+# Frontend base URL embedded in verification + reset email links. Configurable
+# per environment (dev: http://localhost:4444, prod: app.work-manager.molcube.com).
+WM_FRONTEND_BASE_URL = env(
+    "WM_FRONTEND_BASE_URL", default="http://localhost:4444"
+)
+
+# ── OAuth (Google + Kakao) ──────────────────────────────────────────────────
+# When the *_CLIENT_ID is blank the corresponding /v1/auth/oauth/{provider}/start
+# endpoint returns 503 OAUTH_NOT_CONFIGURED so dev environments without secrets
+# don't accidentally redirect to a broken URL.
+OAUTH_GOOGLE_CLIENT_ID = env("OAUTH_GOOGLE_CLIENT_ID", default="")
+OAUTH_GOOGLE_CLIENT_SECRET = env("OAUTH_GOOGLE_CLIENT_SECRET", default="")
+OAUTH_KAKAO_CLIENT_ID = env("OAUTH_KAKAO_CLIENT_ID", default="")
+OAUTH_KAKAO_CLIENT_SECRET = env("OAUTH_KAKAO_CLIENT_SECRET", default="")
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Work Manager API",

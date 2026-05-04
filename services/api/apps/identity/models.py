@@ -74,6 +74,9 @@ class Company(models.Model):
     # Spec §7.6 — when True, attendance.clock_in is blocked for memberships
     # already at/over the 52h weekly threshold. Default off (warn-only).
     compliance_block_when_over = models.BooleanField(default=False)
+    # Spec §5.2 — 근로기준법 §61 사용 촉진 제도. When True, the
+    # ``leave.promote_unused_leave`` beat task issues 6개월/2개월 전 reminders.
+    leave_promotion_enabled = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=django_tz.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 

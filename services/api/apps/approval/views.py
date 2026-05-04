@@ -57,6 +57,30 @@ class InboxItemSerializer(serializers.ModelSerializer):
                     "minutes": r.requested_minutes,
                     "reason": r.reason,
                 }
+        elif obj.target_type == ApprovalTask.TargetType.TRIP:
+            from apps.trip.models import BusinessTrip
+
+            r = BusinessTrip.objects.filter(id=obj.target_id).first()
+            if r:
+                return {
+                    "kind": "trip",
+                    "trip_kind": r.kind,
+                    "start_date": r.start_date.isoformat(),
+                    "end_date": r.end_date.isoformat(),
+                    "location_label": r.location_label,
+                    "purpose": r.purpose,
+                }
+        elif obj.target_type == ApprovalTask.TargetType.MANUAL_CLOCK_IN:
+            from apps.attendance.models import ManualClockInRequest
+
+            r = ManualClockInRequest.objects.filter(id=obj.target_id).first()
+            if r:
+                return {
+                    "kind": "manual_clock_in",
+                    "work_date": r.work_date.isoformat(),
+                    "clock_in_kind": r.kind,
+                    "reason": r.reason,
+                }
         return {"kind": obj.target_type.lower()}
 
 
@@ -146,6 +170,78 @@ def _apply_decision(task: ApprovalTask, decision: str, reason: str = "") -> None
                 "request_id": str(r.id),
                 "decision": decision,
                 "minutes": r.requested_minutes,
+                "reason": reason,
+            },
+        )
+    elif task.target_type == ApprovalTask.TargetType.TRIP:
+        # Hook: m-trip decision propagation. We update BusinessTrip.status and
+        # dispatch a TRIP_DECISION notification so the requester sees the
+        # outcome in their in-app inbox.
+        from apps.trip.models import BusinessTrip
+
+        r = BusinessTrip.objects.filter(id=task.target_id).first()
+        if r is None:
+            return
+        r.status = (
+            BusinessTrip.Status.APPROVED
+            if decision == "APPROVE"
+            else BusinessTrip.Status.REJECTED
+        )
+        r.decided_by = task.approver
+        r.decided_at = django_tz.now()
+        r.save(update_fields=["status", "decided_by", "decided_at", "updated_at"])
+        notif_svc.dispatch(
+            task.requester,
+            event_kind="TRIP_DECISION",
+            payload={
+                "request_id": str(r.id),
+                "decision": decision,
+                "trip_kind": r.kind,
+                "start_date": r.start_date.isoformat(),
+                "end_date": r.end_date.isoformat(),
+                "location_label": r.location_label,
+                "reason": reason,
+            },
+        )
+    elif task.target_type == ApprovalTask.TargetType.MANUAL_CLOCK_IN:
+        # Spec §3.4 — on APPROVE, materialize the AttendanceRecord using the
+        # original ManualClockInRequest payload. Idempotent: a duplicate
+        # APPROVE re-decision (which the approve view also blocks via
+        # IsAlreadyDecided) returns the existing record.
+        from apps.attendance.models import ManualClockInRequest
+        from apps.attendance import services as att_svc
+
+        r = ManualClockInRequest.objects.filter(id=task.target_id).first()
+        if r is None:
+            return
+        r.status = (
+            ManualClockInRequest.Status.APPROVED
+            if decision == "APPROVE"
+            else ManualClockInRequest.Status.REJECTED
+        )
+        r.decided_by = task.approver
+        r.decided_at = django_tz.now()
+        r.save(update_fields=["status", "decided_by", "decided_at", "updated_at"])
+
+        record_id = None
+        if decision == "APPROVE":
+            record = att_svc.materialize_manual_clock_in(
+                membership=r.membership,
+                work_date=r.work_date,
+                kind=r.kind,
+                reason=r.reason,
+                approver=task.approver,
+            )
+            record_id = str(record.id)
+
+        notif_svc.dispatch(
+            task.requester,
+            event_kind="MANUAL_CLOCK_IN_DECISION",
+            payload={
+                "request_id": str(r.id),
+                "decision": decision,
+                "work_date": r.work_date.isoformat(),
+                "record_id": record_id,
                 "reason": reason,
             },
         )

@@ -13,6 +13,10 @@ urlpatterns = [
     path("auth/2fa/verify", views.two_fa_verify),
     path("auth/2fa/disable", views.two_fa_disable),
     path("auth/2fa/challenge", views.two_fa_challenge),
+    path("auth/email/verify", views.email_verify),
+    path("auth/email/resend", views.email_resend),
+    path("auth/password/forgot", views.password_forgot),
+    path("auth/password/reset", views.password_reset),
     path("me", views.me),
     # onboarding
     path("onboarding/join-company", onb.join_company),

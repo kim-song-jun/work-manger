@@ -447,6 +447,81 @@ def clock_out(*, membership: Membership, company: Company) -> AttendanceRecord:
     return rec
 
 
+# ---------- Manual clock-in materialization (spec §3.4) ----------
+
+def _scheduled_start_aware(work_date: date, schedule: WorkSchedule, company: Company) -> datetime:
+    """Combine ``work_date`` + ``schedule.start_time`` into an aware UTC datetime.
+
+    The schedule's ``start_time`` is interpreted in the company timezone so the
+    resulting :class:`AttendanceRecord` has a sane ``clock_in_at`` even when the
+    approver decides days after the original event.
+    """
+    tz = company_tz(company)
+    naive = datetime.combine(work_date, schedule.start_time)
+    local = naive.replace(tzinfo=tz)
+    return local.astimezone(ZoneInfo("UTC"))
+
+
+def materialize_manual_clock_in(
+    *,
+    membership: Membership,
+    work_date: date,
+    kind: str,
+    reason: str,
+    approver: Membership,
+) -> AttendanceRecord:
+    """Persist the AttendanceRecord for an APPROVED manual clock-in request.
+
+    Idempotent: if a row already exists for ``(membership, work_date)``, the
+    existing record is returned unmodified — protects against double-approval
+    and re-running an approval webhook.
+
+    The persisted ``clock_in_kind`` is normalized to ``MANUAL`` so audit /
+    reporting can distinguish staff-mediated entries.
+    """
+    company = membership.company
+    existing = AttendanceRecord.objects.filter(
+        membership=membership, work_date=work_date
+    ).first()
+    if existing is not None:
+        return existing
+
+    schedule = get_or_default_schedule(membership)
+    scheduled_start = _scheduled_start_aware(work_date, schedule, company)
+
+    builder = (
+        ClockInBuilder(membership)
+        .allow_manual(True)
+        .with_kind(AttendanceRecord.Kind.MANUAL)
+        .with_schedule(schedule.start_time)
+        .at(scheduled_start)
+    )
+    try:
+        plan = builder.build()
+    except BuilderInvalidPayload as exc:  # pragma: no cover - defensive
+        raise InvalidState(str(exc) or InvalidState.message) from exc
+
+    try:
+        with transaction.atomic():
+            record = AttendanceRecord.objects.create(
+                company=company,
+                membership=membership,
+                work_date=work_date,
+                clock_in_at=plan.clock_in_at,
+                clock_in_location=None,
+                clock_in_kind=AttendanceRecord.Kind.MANUAL,
+                is_late=plan.is_late,
+                status=AttendanceRecord.Status.WORKING,
+            )
+    except IntegrityError:
+        return AttendanceRecord.objects.get(
+            membership=membership, work_date=work_date
+        )
+
+    _broadcast_team_status(company, membership, record)
+    return record
+
+
 def break_start(*, membership: Membership, company: Company) -> BreakRecord:
     rec = get_today_record(membership, company)
     if rec is None or rec.clock_in_at is None:

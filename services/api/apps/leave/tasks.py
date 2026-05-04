@@ -157,10 +157,40 @@ def expire_balances_task() -> int:
     return services.expire_balances(today)
 
 
+@shared_task(name="leave.promote_unused_leave")
+def promote_unused_leave() -> int:
+    """근로기준법 §61 사용 촉진 안내 (spec §5.2).
+
+    Per company opt-in (``Company.leave_promotion_enabled``), iterate
+    :func:`apps.leave.services.pending_promotion_targets` for ``today`` and
+    persist a :class:`LeavePromotionLog` + dispatch a notification per
+    target. Idempotent: the UNIQUE
+    ``(membership, fiscal_end_date, kind)`` constraint protects against
+    duplicates when the task re-runs.
+    """
+    today = django_tz.localdate()
+    created = 0
+
+    eligible = Company.objects.filter(leave_promotion_enabled=True)
+    for company in eligible:
+        targets = services.pending_promotion_targets(company, today)
+        for target in targets:
+            log = services.record_promotion(
+                target.membership,
+                kind=target.kind,
+                days_remaining=target.days_remaining,
+                fiscal_end_date=target.fiscal_end_date,
+            )
+            if log is not None:
+                created += 1
+    return created
+
+
 # Re-exported aliases for convenience in tests / shells.
 __all__ = [
     "grant_monthly",
     "grant_annual",
     "notify_expiring",
     "expire_balances_task",
+    "promote_unused_leave",
 ]

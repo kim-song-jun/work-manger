@@ -27,7 +27,7 @@ from django.utils import timezone as django_tz
 from apps.identity.models import Membership
 
 from .models import NotificationLog, NotificationOutbox
-from .providers import send as provider_send
+from .providers import is_terminal_error, send as provider_send
 
 logger = logging.getLogger(__name__)
 
@@ -185,9 +185,12 @@ def process_one(self, outbox_id: str) -> str:  # noqa: ARG001 (bind=True keeps c
             _mark_log_delivered(payload, now)
             return "sent"
 
-        # Failure path
+        # Failure path. Terminal errors (e.g. SES MessageRejected, FCM 401)
+        # bypass the retry budget and DEAD immediately — retrying won't help
+        # and burns quota / wakes ops.
         row.last_error = _truncate(provider_error)
-        if row.attempts >= row.max_attempts:
+        terminal = is_terminal_error(provider_error)
+        if terminal or row.attempts >= row.max_attempts:
             row.status = NotificationOutbox.Status.DEAD
             row.updated_at = now
             row.save(update_fields=["status", "last_error", "updated_at"])

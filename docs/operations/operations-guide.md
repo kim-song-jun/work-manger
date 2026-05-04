@@ -103,6 +103,37 @@
 
 - iOS / Android 모두 한 사용자당 빈도 제한 (스팸 방지). 동일 종류 알림 1시간 1회.
 
+### 5.4 Provider 설정 (env-vars)
+
+Provider 코드는 `apps/notification/providers/` 에 모드별로 분리되어 있다.
+실제 발송은 `NOTIFICATION_PROVIDER_MODE=real` 로 토글한다.
+
+| env-var | 기본값 | 설명 |
+|---|---|---|
+| `NOTIFICATION_PROVIDER_MODE` | `stub` | `stub` (테스트 / dev) ↔ `real` (stg / prod) |
+| `EMAIL_PROVIDER` | `ses` | `ses` (boto3) ↔ `smtp` (Django `send_mail` fallback) |
+| `EMAIL_FROM` | `no-reply@work-manager.molcube.com` | SES Source / SMTP From |
+| `AWS_REGION` | `ap-northeast-2` | SES 리전 (boto3) |
+| `FCM_SERVICE_ACCOUNT_JSON` | (빈 값) | 서비스 계정 JSON 파일 경로 또는 inline JSON 문자열 |
+| `APNS_KEY_ID` / `APNS_TEAM_ID` / `APNS_BUNDLE_ID` / `APNS_KEY_PEM` | (빈 값) | APNs HTTP/2 직접 경로용 (선택). 비어 있으면 iOS 토큰도 FCM 으로 라우트 |
+| `APNS_USE_SANDBOX` | `True` | APNs sandbox 게이트웨이 사용 여부 |
+
+#### Provider 스위치 (stub ↔ real)
+
+- `stub`: `apps/notification/providers/{email,push,inapp}.py` — 네트워크 호출 없음.
+  outbox / 큐 / 재시도 로직을 격리 테스트하기 위한 기본 모드. **테스트는 항상 stub.**
+- `real`: `apps/notification/providers/{real_email,real_push,inapp}.py` — SES + FCM.
+  prod / stg 만 활성화. 실패는 두 가지 마커로 분류:
+  - `terminal:` 접두사 → outbox 가 **즉시 DEAD** (재시도 안 함). SES `MessageRejected`,
+    FCM 401/403, 잘못된 페이로드 (FCM 400) 등.
+  - 그 외 → outbox 가 백오프 후 재시도 (SES `Throttling`, FCM 5xx, 네트워크 오류).
+- iOS 토큰은 `APNS_KEY_PEM` 이 비어 있으면 (기본) FCM 의 iOS 앱 설정을 통해 APNs 로
+  fan-out. 직접 APNs 가 필요할 때만 `APNS_*` 와 `httpx[http2]` 를 추가하고
+  `apps/notification/providers/real_push.py` 를 확장한다.
+- DeviceToken `UNREGISTERED` (FCM 404) 시 해당 행 자동 삭제 (§5.1 참조).
+
+토글은 deploy 단계 환경변수만으로 완결된다. 코드 변경 없음. 시크릿 로테이션은 §8.1.
+
 ---
 
 ## 6. 데이터베이스 운영
