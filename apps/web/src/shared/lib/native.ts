@@ -98,7 +98,8 @@ export async function requestLocation(): Promise<LocationOk> {
 }
 
 /**
- * Asks the OS for an FCM/APNs token. Resolves to `null` (not throws) when
+ * Asks the native shell for a push channel handle (ntfy topic on Android,
+ * APNs hex token on iOS — see ADR-006). Resolves to `null` (not throws) when
  * the bridge is missing — callers shouldn't hard-fail in browser context.
  */
 export async function registerDeviceToken(): Promise<DeviceTokenInfo | null> {

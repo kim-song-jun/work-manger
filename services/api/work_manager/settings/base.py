@@ -154,6 +154,37 @@ OAUTH_GOOGLE_CLIENT_SECRET = env("OAUTH_GOOGLE_CLIENT_SECRET", default="")
 OAUTH_KAKAO_CLIENT_ID = env("OAUTH_KAKAO_CLIENT_ID", default="")
 OAUTH_KAKAO_CLIENT_SECRET = env("OAUTH_KAKAO_CLIENT_SECRET", default="")
 
+# ── Self-hosted push notification stack ────────────────────────────────────
+# See docs/operations/operations-guide.md §5.4 + ADR-006 for the rationale
+# (zero Google dependency: Web Push for browsers/Electron/WebView, APNs HTTP/2
+# direct for iOS native, ntfy self-hosted for Android native).
+NOTIFICATION_PROVIDER_MODE = env("NOTIFICATION_PROVIDER_MODE", default="stub")
+
+# Web Push (VAPID) — emit ECDSA P-256 keypair via:
+#   docker compose exec api python manage.py generate_vapid_keys
+WEB_PUSH_VAPID_PUBLIC_KEY = env("WEB_PUSH_VAPID_PUBLIC_KEY", default="")
+WEB_PUSH_VAPID_PRIVATE_KEY = env("WEB_PUSH_VAPID_PRIVATE_KEY", default="")
+WEB_PUSH_VAPID_SUBJECT = env(
+    "WEB_PUSH_VAPID_SUBJECT", default="mailto:ops@work-manager.molcube.com"
+)
+
+# ntfy (Android native) — internal compose service; nginx proxies /v1/ntfy/
+NTFY_BASE_URL = env("NTFY_BASE_URL", default="http://ntfy:80")
+NTFY_TOPIC_PREFIX = env("NTFY_TOPIC_PREFIX", default="wm-prod")
+NTFY_AUTH_TOKEN = env("NTFY_AUTH_TOKEN", default="")
+
+# APNs HTTP/2 direct (iOS native) — bypass FCM entirely.
+APNS_KEY_ID = env("APNS_KEY_ID", default="")
+APNS_TEAM_ID = env("APNS_TEAM_ID", default="")
+APNS_BUNDLE_ID = env("APNS_BUNDLE_ID", default="com.molcube.workmanager")
+APNS_KEY_PEM = env("APNS_KEY_PEM", default="")
+APNS_USE_SANDBOX = env.bool("APNS_USE_SANDBOX", default=True)
+
+# Email provider toggles (existing — kept here so the §5.4 table is self-contained).
+EMAIL_PROVIDER = env("EMAIL_PROVIDER", default="ses")
+EMAIL_FROM = env("EMAIL_FROM", default="no-reply@work-manager.molcube.com")
+AWS_REGION = env("AWS_REGION", default="ap-northeast-2")
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "Work Manager API",
     "DESCRIPTION": "근무 관리 시스템 REST API",

@@ -91,7 +91,10 @@
 
 - Celery 큐 분리: `notification.high` (즉시), `notification.bulk` (배치)
 - 푸시 실패 시 3회 재시도 (지수 백오프). 그 후 NotificationLog 에 `failed_at` 기록.
-- DeviceToken 이 invalid 응답 (`UNREGISTERED`) 받으면 자동 비활성화.
+- DeviceToken 이 invalid 응답 받으면 자동 비활성화 (per platform):
+  - Web Push: HTTP 410 Gone / 404 Not Found
+  - APNs: HTTP 410 BadDeviceToken / 400 DeviceTokenNotForTopic
+  - ntfy: 토큰 개념 없음 — 구독자 0명이어도 publish 는 200 (이상치 아님)
 
 ### 5.2 이메일
 
@@ -108,29 +111,70 @@
 Provider 코드는 `apps/notification/providers/` 에 모드별로 분리되어 있다.
 실제 발송은 `NOTIFICATION_PROVIDER_MODE=real` 로 토글한다.
 
+> **자체 호스팅 푸시 스택**: 2026 년부터 Firebase / FCM 의존성을 제거했다.
+> 자세한 배경은 [ADR-006](../adr/ADR-006-self-hosted-push-no-firebase.md).
+> Web → Web Push (VAPID), iOS → APNs HTTP/2 직접, Android → ntfy (self-hosted).
+
 | env-var | 기본값 | 설명 |
 |---|---|---|
 | `NOTIFICATION_PROVIDER_MODE` | `stub` | `stub` (테스트 / dev) ↔ `real` (stg / prod) |
 | `EMAIL_PROVIDER` | `ses` | `ses` (boto3) ↔ `smtp` (Django `send_mail` fallback) |
 | `EMAIL_FROM` | `no-reply@work-manager.molcube.com` | SES Source / SMTP From |
 | `AWS_REGION` | `ap-northeast-2` | SES 리전 (boto3) |
-| `FCM_SERVICE_ACCOUNT_JSON` | (빈 값) | 서비스 계정 JSON 파일 경로 또는 inline JSON 문자열 |
-| `APNS_KEY_ID` / `APNS_TEAM_ID` / `APNS_BUNDLE_ID` / `APNS_KEY_PEM` | (빈 값) | APNs HTTP/2 직접 경로용 (선택). 비어 있으면 iOS 토큰도 FCM 으로 라우트 |
-| `APNS_USE_SANDBOX` | `True` | APNs sandbox 게이트웨이 사용 여부 |
+| `WEB_PUSH_VAPID_PUBLIC_KEY` | (빈 값) | VAPID 공개 키 (URL-safe base64). FE `VITE_VAPID_PUBLIC_KEY` 와 동일 값. |
+| `WEB_PUSH_VAPID_PRIVATE_KEY` | (빈 값) | VAPID 비공개 키 (PEM). 노출 금지. |
+| `WEB_PUSH_VAPID_SUBJECT` | `mailto:ops@work-manager.molcube.com` | VAPID `sub` claim (운영 연락처) |
+| `APNS_KEY_ID` / `APNS_TEAM_ID` / `APNS_BUNDLE_ID` / `APNS_KEY_PEM` | (빈 값) | APNs HTTP/2 직접 경로 필수. 비어 있으면 iOS 푸시는 `apns_not_configured` soft-fail → router 가 다른 채널로 fallback. |
+| `APNS_USE_SANDBOX` | `True` | APNs sandbox 게이트웨이 (TestFlight / dev). prod 는 `False`. |
+| `NTFY_BASE_URL` | `http://ntfy:80` | compose 내부 ntfy 서비스. nginx 가 `/v1/ntfy/` 로 프록시. |
+| `NTFY_TOPIC_PREFIX` | `wm-prod` | env 별 prefix (`wm-stg`, `wm-prod`). 토픽 = `{prefix}-membership-{id}`. |
+| `NTFY_AUTH_TOKEN` | (빈 값) | BE publisher Bearer 토큰. `init_ntfy_user` 명령어로 발급. |
 
 #### Provider 스위치 (stub ↔ real)
 
 - `stub`: `apps/notification/providers/{email,push,inapp}.py` — 네트워크 호출 없음.
   outbox / 큐 / 재시도 로직을 격리 테스트하기 위한 기본 모드. **테스트는 항상 stub.**
-- `real`: `apps/notification/providers/{real_email,real_push,inapp}.py` — SES + FCM.
-  prod / stg 만 활성화. 실패는 두 가지 마커로 분류:
-  - `terminal:` 접두사 → outbox 가 **즉시 DEAD** (재시도 안 함). SES `MessageRejected`,
-    FCM 401/403, 잘못된 페이로드 (FCM 400) 등.
-  - 그 외 → outbox 가 백오프 후 재시도 (SES `Throttling`, FCM 5xx, 네트워크 오류).
-- iOS 토큰은 `APNS_KEY_PEM` 이 비어 있으면 (기본) FCM 의 iOS 앱 설정을 통해 APNs 로
-  fan-out. 직접 APNs 가 필요할 때만 `APNS_*` 와 `httpx[http2]` 를 추가하고
-  `apps/notification/providers/real_push.py` 를 확장한다.
-- DeviceToken `UNREGISTERED` (FCM 404) 시 해당 행 자동 삭제 (§5.1 참조).
+- `real`: `apps/notification/providers/__init__.py` 의 router 가 채널별로 분기:
+  - `EMAIL` → `real_email.py` (SES + SMTP fallback)
+  - `INAPP` → `inapp.py` (DB row only)
+  - `PUSH` → DeviceToken.platform 별 fan-out:
+    - `WEB`/`DESKTOP` → `web_push.py` (VAPID, `pywebpush`)
+    - `IOS` → `real_push.py` (APNs HTTP/2 direct, `httpx[http2]`)
+    - `ANDROID` → `ntfy.py` (self-hosted ntfy publish)
+  - 한 멤버가 여러 platform 토큰을 등록한 경우 모든 채널에 fan-out 하고 한
+    채널이라도 성공하면 outbox 는 SENT. 실패별 사유는 `ProviderResult.details` 에 적재.
+
+#### 실패 분류 (terminal vs transient)
+
+- `terminal:` 접두사 → outbox 가 **즉시 DEAD** (재시도 안 함):
+  - SES: `MessageRejected`, `MailFromDomainNotVerifiedException`
+  - Web Push: 401/403 (잘못된 VAPID 키)
+  - APNs: 403 (잘못된 키), 410 BadDeviceToken (모든 디바이스), 400 DeviceTokenNotForTopic
+  - ntfy: 401/403 (잘못된 publisher 토큰), 4xx (publish 형식 오류)
+- 그 외 → outbox 가 백오프 후 재시도:
+  - SES `Throttling`, web-push 429/5xx, APNs 429/5xx, ntfy 503, 네트워크 timeout
+
+#### Self-hosted push 운영
+
+- **VAPID 키 회전 (Web Push)**: `docker compose exec api python manage.py generate_vapid_keys`
+  → 출력값을 dev/stg/prod env 와 FE `VITE_VAPID_PUBLIC_KEY` 양쪽에 동시 반영.
+  키 변경 시 기존 구독은 모두 invalidate 되므로 사용자에게 재구독 안내가 필요.
+  로테이션 주기: 6 개월 (§8.1).
+- **ntfy 사용자 관리**: ACL 기본값은 `deny-all` (compose env `NTFY_AUTH_DEFAULT_ACCESS`).
+  BE publisher 만 발급:
+    ```bash
+    docker compose exec ntfy ntfy user add --role=user wm-publisher
+    docker compose exec ntfy ntfy access wm-publisher 'wm-prod-*' write
+    docker compose exec ntfy ntfy access everyone   'wm-prod-*' read
+    docker compose exec ntfy ntfy token add wm-publisher  # → NTFY_AUTH_TOKEN
+    ```
+  편의 명령어: `python manage.py init_ntfy_user wm-publisher` 가 위 스니펫을 출력.
+- **APNs 키 (.p8) 회전**: App Store Connect 에서 새 키 발급 → `APNS_KEY_ID`,
+  `APNS_KEY_PEM` env 갱신 → `api` 재시작. 구 키는 즉시 폐기 (Apple revoke).
+- **모니터링**:
+  - Web Push 실패율 > 10% (이상치) → Slack 알림 (VAPID 만료 / 잘못된 키 의심)
+  - APNs 410 비율 > 일평균 + 3σ → 사용자 디바이스 교체율 급변 신호
+  - ntfy 컨테이너 healthcheck (`/v1/health` GET) → 90s 다운 시 page
 
 토글은 deploy 단계 환경변수만으로 완결된다. 코드 변경 없음. 시크릿 로테이션은 §8.1.
 
@@ -176,7 +220,7 @@ Provider 코드는 `apps/notification/providers/` 에 모드별로 분리되어 
   - JWT signing key: 6개월 (양키 롤링 — 새 키 발행 후 1주 동시 검증)
   - DB 패스워드: 1년
   - OAuth client secret: 1년
-  - 외부 API 키 (FCM, APNs, SES): 6개월
+  - 외부 API 키 (VAPID, APNs `.p8`, ntfy publisher token, SES): 6개월
 - 노출 사고 시 즉시 로테이션 + 영향 분석.
 
 ### 8.2 권한

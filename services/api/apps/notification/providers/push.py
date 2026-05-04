@@ -1,4 +1,4 @@
-"""Push provider stub (FCM/APNs/WebPush placeholder).
+"""Push provider stub (Web Push / APNs direct / ntfy placeholder).
 
 Picks the first registered :class:`DeviceToken` for the membership; if none
 exists, the send is treated as a transient failure (token may be registered on

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
 
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -10,6 +9,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../geofence/geofence_service.dart';
+import '../notif/ntfy_client.dart';
 import '../widget_channels.dart';
 
 /// Bridges native capabilities into `window.NativeBridge` on the WebView's JS
@@ -20,6 +20,11 @@ class NativeBridge {
 
   final InAppWebViewController _controller;
   StreamSubscription<Position>? _positionSub;
+  NtfyClient? _ntfyClient;
+
+  /// Channel name forwarded to the native APNs delegate via the iOS method
+  /// channel (`AppDelegate.swift`). Cached so re-registers don't re-prompt.
+  String? _lastApnsToken;
 
   void register() {
     _controller.addJavaScriptHandler(
@@ -36,7 +41,7 @@ class NativeBridge {
     );
     _controller.addJavaScriptHandler(
       handlerName: 'registerDeviceToken',
-      callback: (_) => _registerDeviceToken(),
+      callback: (args) => _registerDeviceToken(args),
     );
     _controller.addJavaScriptHandler(
       handlerName: 'haptic',
@@ -97,6 +102,8 @@ class NativeBridge {
   void dispose() {
     _positionSub?.cancel();
     _positionSub = null;
+    _ntfyClient?.dispose();
+    _ntfyClient = null;
   }
 
   // --- Handlers ------------------------------------------------------------
@@ -149,18 +156,57 @@ class NativeBridge {
     return {'ok': true};
   }
 
-  Future<Map<String, dynamic>> _registerDeviceToken() async {
+  /// Returns `{platform, token}` or an `{error}` payload — same shape the FE
+  /// already consumes via `apps/web/src/shared/lib/native.ts`.
+  ///
+  /// Android: ntfy is a pub/sub channel, not a per-device token system, so we
+  /// synthesize a stable topic of the form
+  /// ``{prefix}-membership-{membership_id}`` and open the WebSocket via
+  /// :class:`NtfyClient`. The "token" forwarded to the BE is the topic name
+  /// itself — the BE :mod:`apps.notification.providers.ntfy` recomputes it
+  /// from ``membership.id`` so we agree on the channel without coupling.
+  ///
+  /// iOS: APNs is registered by the native AppDelegate
+  /// (``ios/Runner/AppDelegate.swift``); we look up the cached device-token
+  /// hex string via the ``wm.push.apns`` method channel.
+  Future<Map<String, dynamic>> _registerDeviceToken([List<dynamic>? args]) async {
     try {
-      await FirebaseMessaging.instance.requestPermission();
-      final token = await FirebaseMessaging.instance.getToken();
-      if (token == null) return {'error': 'TOKEN_UNAVAILABLE'};
-      return {
-        'platform': Platform.isIOS ? 'IOS' : 'ANDROID',
-        'token': token,
-      };
+      final cfg = (args != null && args.isNotEmpty && args.first is Map)
+          ? Map<String, dynamic>.from(args.first as Map)
+          : <String, dynamic>{};
+      if (Platform.isIOS) {
+        final token = await _getApnsToken();
+        if (token == null) return {'error': 'TOKEN_UNAVAILABLE'};
+        return {'platform': 'IOS', 'token': token};
+      }
+      // Android: caller passes membershipId + ntfyBaseUrl + topicPrefix.
+      final membershipId = cfg['membership_id']?.toString() ?? '';
+      final base = cfg['ntfy_base_url']?.toString() ?? '';
+      final prefix = cfg['ntfy_topic_prefix']?.toString() ?? 'wm-prod';
+      if (membershipId.isEmpty || base.isEmpty) {
+        return {'error': 'TOKEN_UNAVAILABLE'};
+      }
+      final topic = '$prefix-membership-$membershipId';
+      _ntfyClient ??= NtfyClient(baseUrl: base);
+      await _ntfyClient!.subscribe(topic);
+      return {'platform': 'ANDROID', 'token': topic};
     } catch (e) {
       if (kDebugMode) debugPrint('[bridge] registerDeviceToken error: $e');
       return {'error': 'TOKEN_UNAVAILABLE'};
+    }
+  }
+
+  Future<String?> _getApnsToken() async {
+    if (_lastApnsToken != null) return _lastApnsToken;
+    try {
+      const ch = MethodChannel('wm.push.apns');
+      final tok = await ch.invokeMethod<String>('getToken');
+      if (tok != null && tok.isNotEmpty) _lastApnsToken = tok;
+      return _lastApnsToken;
+    } on MissingPluginException {
+      return null;
+    } catch (_) {
+      return null;
     }
   }
 

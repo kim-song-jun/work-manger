@@ -7,7 +7,7 @@
 
 ## 1. 한 페이지 요약
 
-근무 관리 시스템은 **단일 React SPA를 다양한 셸(Web / Flutter WebView / Electron)에 호스팅** 하고, **Django REST API + WebSocket** 으로 비즈니스 로직과 실시간을 처리한다. **PostgreSQL + Redis + Celery** 가 코어 데이터/캐시/배치를 담당하며, 알림은 **FCM / APNs / Web Push / 이메일** 로 분기된다.
+근무 관리 시스템은 **단일 React SPA를 다양한 셸(Web / Flutter WebView / Electron)에 호스팅** 하고, **Django REST API + WebSocket** 으로 비즈니스 로직과 실시간을 처리한다. **PostgreSQL + Redis + Celery** 가 코어 데이터/캐시/배치를 담당하며, 알림은 **Web Push (VAPID) / APNs HTTP/2 직접 / ntfy (self-hosted) / 이메일** 로 분기된다 (Firebase 의존성 0 — [ADR-006](../adr/ADR-006-self-hosted-push-no-firebase.md)).
 
 ---
 
@@ -61,11 +61,12 @@
                                         │
                                         ▼
                               ┌────────────────────┐
-                              │  Notifications     │
-                              │  - FCM (Android)   │
-                              │  - APNs (iOS)      │
-                              │  - Web Push (VAPID)│
-                              │  - SMTP (SES)      │
+                              │  Notifications              │
+                              │  - Web Push (VAPID)         │
+                              │    (browser/Electron/WebView)│
+                              │  - APNs HTTP/2 직접 (iOS)   │
+                              │  - ntfy self-hosted (Android)│
+                              │  - SMTP (SES, email)        │
                               └────────────────────┘
 ```
 
@@ -98,7 +99,7 @@ apps/web/src/
 
 ### 3.2 셸 어댑터
 
-- **Web**: 일반 브라우저. 모든 기능 가능. 서비스 워커로 Web Push.
+- **Web**: 일반 브라우저. 모든 기능 가능. 서비스 워커 (`/sw.js`) + Web Push (VAPID) 으로 자체 호스팅 푸시 수신.
 - **Flutter WebView**: `window.NativeBridge.*` 가 노출. 위치 / 푸시 / 햅틱 / 위젯 업데이트는 네이티브에 위임.
 - **Electron**: `window.ElectronBridge.*` 가 노출. 메뉴바 / 트레이 / OS 알림 / 자동 출퇴근 트리거.
 
@@ -161,7 +162,7 @@ services/api/
 | DB | psycopg[binary], django-environ |
 | Test | pytest-django, factory-boy, pytest-cov |
 | Lint | ruff, mypy, django-stubs |
-| Notif | fcm-django, pywebpush, boto3 (SES) |
+| Notif | pywebpush (VAPID), httpx[http2] (APNs direct), urllib (ntfy publish), boto3 (SES) |
 
 ### 4.3 API → 클라이언트 타입 동기화
 
@@ -180,7 +181,7 @@ services/api/
 - 단순 컨테이너. 비즈니스 로직 없음.
 - 네이티브 권한이 필요한 기능만 수행:
   - GPS / Geofencing
-  - Push (FCM, APNs)
+  - Push: **WebView + ntfy ForegroundService (Android) + APNs direct (iOS)** — Firebase 사용 안 함 ([ADR-006](../adr/ADR-006-self-hosted-push-no-firebase.md))
   - 홈화면 위젯
   - 햅틱 피드백
   - 카메라 / 갤러리 (프로필 사진 등)
@@ -205,7 +206,7 @@ controller.addJavaScriptHandler(
 |---|---|
 | `requestLocation()` | `{ latitude, longitude, accuracy_m, ts }` 또는 `{ error: 'PERMISSION_DENIED' | 'POSITION_UNAVAILABLE' | 'TIMEOUT' }` |
 | `watchLocation()` / `stopWatching()` | 시작/정지. 이후 fixes 는 `window.addEventListener('wm:location', ...)` 로 push. |
-| `registerDeviceToken()` | `{ platform: 'ANDROID' | 'IOS', token }` (FCM) — `/v1/notifications/devices` 등록에 사용 |
+| `registerDeviceToken({membership_id, ntfy_base_url, ntfy_topic_prefix})` | `{ platform: 'ANDROID', token: '<topic>' }` (ntfy) 또는 `{ platform: 'IOS', token: '<apns-hex>' }` (APNs direct) — `/v1/notifications/devices` 등록에 사용 |
 | `haptic('light' | 'medium' | 'heavy')` | `{ ok: true }` |
 | `appInfo()` | `{ version, build, platform }` |
 | `share()` | `{ error: 'NOT_IMPLEMENTED' }` (보류) |
@@ -334,7 +335,7 @@ Celery 워커 + Beat 스케줄러.
 | `attendance.auto_clock_out` | 매시 정각 | 출근 후 24h 무응답 자동 퇴근 처리 |
 | `compliance.check_52h` | 매일 22:00 | 52시간 임계 모니터링 |
 | `report.weekly_summary` | 매주 월 08:00 | 매니저 주간 리포트 발송 |
-| `notification.dispatch` | 큐 기반 | FCM / APNs / Email 발송 |
+| `notification.dispatch` | 큐 기반 | Web Push / APNs direct / ntfy / Email 발송 |
 
 ---
 
@@ -434,4 +435,6 @@ Celery 워커 + Beat 스케줄러.
 - ADR-002: Flutter WebView (네이티브 React Native 대신) 채택
 - ADR-003: Django REST + Channels (FastAPI 대신) 채택
 - ADR-004: PostgreSQL 단일 DB (멀티 테넌트는 v2 검토)
+- ADR-005: 디자인 토큰을 CSS 변수 + Tailwind 참조로 채택
+- ADR-006: 자체 호스팅 푸시 (Web Push + APNs direct + ntfy) — Firebase 의존성 제거
 - ADR-005: 디자인 토큰은 CSS 변수 + Tailwind 참조

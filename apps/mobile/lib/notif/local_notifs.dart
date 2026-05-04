@@ -3,7 +3,9 @@ import 'dart:io' show Platform;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Singleton wrapper for `flutter_local_notifications`. Surfaces foreground
-/// FCM messages as system banners (Android requires a registered channel).
+/// push messages from the ntfy WebSocket (Android) and the APNs delegate
+/// (iOS) as system banners. Android requires a registered channel; we keep
+/// `wm-default` for backwards compatibility with the previous FCM channel id.
 class LocalNotifs {
   LocalNotifs._();
   static final LocalNotifs instance = LocalNotifs._();

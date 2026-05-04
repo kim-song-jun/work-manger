@@ -23,6 +23,8 @@
     <!-- Foreground service for future geofence / auto clock-in worker -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Foreground service holding the ntfy WebSocket alive across Doze. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:label="근무 관리"
@@ -51,10 +53,13 @@
             </intent-filter>
         </activity>
 
-        <!-- FCM default channel mirrors LocalNotifs.channelId -->
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="wm-default" />
+        <!-- ntfy push transport — see ADR-006. The foreground service keeps
+             the WebSocket alive across Doze; the SPA starts/stops it via
+             the JS bridge. -->
+        <service
+            android:name=".push.NtfyForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <meta-data
             android:name="flutterEmbedding"

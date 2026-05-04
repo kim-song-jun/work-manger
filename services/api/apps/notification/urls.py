@@ -8,4 +8,5 @@ urlpatterns = [
     path("notifications/read-all", views.mark_all_read),
     path("notifications/devices", views.register_device),
     path("notifications/devices/<uuid:device_id>", views.unregister_device),
+    path("notifications/vapid-public-key", views.vapid_public_key),
 ]

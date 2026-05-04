@@ -185,7 +185,8 @@ def process_one(self, outbox_id: str) -> str:  # noqa: ARG001 (bind=True keeps c
             _mark_log_delivered(payload, now)
             return "sent"
 
-        # Failure path. Terminal errors (e.g. SES MessageRejected, FCM 401)
+        # Failure path. Terminal errors (e.g. SES MessageRejected, APNs 403,
+        # ntfy 401, web-push 403)
         # bypass the retry budget and DEAD immediately — retrying won't help
         # and burns quota / wakes ops.
         row.last_error = _truncate(provider_error)

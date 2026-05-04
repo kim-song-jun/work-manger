@@ -1,8 +1,16 @@
 # work-manager — mobile (Flutter WebView shell)
 
 Thin Flutter shell that hosts the React SPA (`apps/web`) inside an
-`InAppWebView` and bridges native capabilities (GPS, FCM push, haptics,
+`InAppWebView` and bridges native capabilities (GPS, self-hosted push, haptics,
 device-token registration) into `window.NativeBridge` for the SPA.
+
+Push transports (no Firebase — see [ADR-006](../../docs/adr/ADR-006-self-hosted-push-no-firebase.md)):
+
+- Android → ntfy WebSocket (`lib/notif/ntfy_client.dart`) + Kotlin
+  `NtfyForegroundService` to keep the socket alive across Doze.
+- iOS → APNs HTTP/2 direct via the standard `UIApplication` delegate
+  (`ios/Runner/AppDelegate.swift`); device token forwarded through the
+  `wm.push.apns` MethodChannel.
 
 > Architecture context: see [`docs/architecture/architecture.md` §5](../../docs/architecture/architecture.md#5-모바일-flutter-webview).
 
@@ -12,14 +20,15 @@ device-token registration) into `window.NativeBridge` for the SPA.
 apps/mobile/
 ├── pubspec.yaml
 ├── lib/
-│   ├── main.dart                  # Firebase + local-notif init, runApp
+│   ├── main.dart                  # local-notif init, runApp (no Firebase)
 │   ├── app.dart                   # MaterialApp root, single screen
 │   ├── web_shell.dart             # InAppWebView host + splash + pull-to-refresh
 │   ├── bridge/
-│   │   ├── native_bridge.dart     # Dart-side handlers (location/FCM/haptic/...)
+│   │   ├── native_bridge.dart     # Dart-side handlers (location/push/haptic/...)
 │   │   └── inject.dart            # JS shim defining window.NativeBridge
 │   ├── notif/
-│   │   └── local_notifs.dart      # Foreground FCM → local banner
+│   │   ├── local_notifs.dart      # Foreground push → local banner
+│   │   └── ntfy_client.dart       # Android self-hosted push (WebSocket → ntfy)
 │   └── widget_channels.dart       # MethodChannel placeholder for widgets
 ├── test/
 │   └── bridge_payload_test.dart   # Unit: payload encoding contract
@@ -102,18 +111,10 @@ periodic 15-minute Workmanager task. The native sides need:
   will scrutinise this submission. Provide a clear in-app explainer
   before requesting the always-on permission.
 
-## Firebase setup (NOT committed)
+## Push setup
 
-Drop these into your local checkout (they are gitignored):
-
-- `android/app/google-services.json` — from the Firebase console
-  (`Project settings → Your apps → Android`)
-- `ios/Runner/GoogleService-Info.plist` — same flow for iOS
-- `lib/firebase_options.dart` — generate via `flutterfire configure`
-
-Without these, the app still boots; `Firebase.initializeApp()` failure is
-caught and logged in `lib/main.dart`, and `NativeBridge.registerDeviceToken()`
-returns `{ error: 'TOKEN_UNAVAILABLE' }`.
+See [`apps/mobile/push/README.md`](push/README.md) for the full self-hosted
+push setup (ntfy + APNs direct + Web Push, no Firebase).
 
 ## NativeBridge contract (JS side)
 

@@ -1,26 +1,26 @@
 """
-Test: notification · real push provider (FCM HTTP v1)
-Type: Unit (urllib + google-auth monkeypatched; real network never touched)
-Why:  운영 가이드 §5.1 — UNREGISTERED 토큰은 자동 비활성화. §5.3 — 실패는
-      백오프 후 재시도. FCM 인증 오류 (401) 는 영구 실패라 즉시 DEAD.
-      본 테스트는 real_push.send 가 FCM 응답 코드별로 transient/terminal
-      마커를 정확히 만들고, 404/UNREGISTERED 응답 시 DeviceToken 행을
-      즉시 삭제해 다음 발송이 다른 토큰으로 fallback 되도록 회귀 보호한다.
+Test: notification · real push provider (APNs HTTP/2 direct)
+Type: Unit (httpx + JWT signing monkeypatched; real network never touched)
+Why:  ADR-006 — iOS 푸시는 FCM 우회로 APNs 에 직접 POST 한다. 키/엔드포인트
+      설정 누락 또는 응답 코드 분류 오류 시 (a) outbox 가 영구 실패로 잘못
+      DEAD 되거나 (b) 죽은 디바이스 토큰이 영원히 retry 되어 비용/소음을
+      유발한다.
+      본 테스트는 (a) 200 → success, (b) 410 BadDeviceToken → DeviceToken
+      삭제 + terminal: 마커, (c) APNS_KEY_PEM 미설정 → soft 실패 (router 가
+      다른 채널로 fallback) 동작을 회귀 보호한다.
 Covers:
-  - apps.notification.providers.real_push.send (200 → success + provider_message_id)
-  - apps.notification.providers.real_push.send (401 → terminal: marker)
-  - apps.notification.providers.real_push.send (404 → DeviceToken deleted + transient)
-  - apps.notification.providers.real_push._load_service_account (inline JSON path)
+  - apps.notification.providers.real_push.send (200 → success + apns-id)
+  - apps.notification.providers.real_push.send (410 → DeviceToken deleted, terminal)
+  - apps.notification.providers.real_push.send (APNS_KEY_PEM empty → apns_not_configured)
+  - apps.notification.providers.real_push._build_payload (alert/aps shape)
 Out of scope:
-  - 실제 FCM 호출 (stage 환경에서 검증)
-  - APNs HTTP/2 직접 경로 (현재는 FCM 라우팅으로 통일)
+  - JWT 서명 자체의 정확성 (PyJWT 책임)
+  - 실제 APNs 게이트웨이 응답 (운영 환경 검증)
 Coverage target: ≥ 85% lines for apps/notification/providers/real_push.py
 """
 from __future__ import annotations
 
-import io
 import json
-import urllib.error
 from typing import Any
 
 import pytest
@@ -32,148 +32,131 @@ from tests.factories import MembershipFactory
 pytestmark = pytest.mark.django_db
 
 
-# ----- helpers ---------------------------------------------------------------
+_FAKE_PEM = """-----BEGIN PRIVATE KEY-----
+MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg+++FAKEFAKEFAKE+
+-----END PRIVATE KEY-----
+"""
 
 
-_FAKE_SA = {
-    "type": "service_account",
-    "project_id": "wm-fake-project",
-    "private_key_id": "x",
-    "private_key": "-----BEGIN PRIVATE KEY-----\nfake\n-----END PRIVATE KEY-----\n",
-    "client_email": "wm@wm-fake.iam.gserviceaccount.com",
-    "client_id": "1",
-    "token_uri": "https://oauth2.googleapis.com/token",
-}
-
-
-class _FakeResponse:
-    """Mimics the context-manager return of urllib.request.urlopen."""
-
-    def __init__(self, status: int, body: dict[str, Any] | str = ""):
-        self.status = status
-        if isinstance(body, dict):
-            payload = json.dumps(body).encode("utf-8")
-        else:
-            payload = (body or "").encode("utf-8")
-        self._buf = io.BytesIO(payload)
-
-    def read(self) -> bytes:
-        return self._buf.read()
-
-    def __enter__(self) -> "_FakeResponse":
-        return self
-
-    def __exit__(self, *_: Any) -> None:
-        return None
-
-
-def _patch_token_and_settings(monkeypatch: pytest.MonkeyPatch, settings) -> None:
-    """Bypass google-auth network call; configure the inline-JSON SA path."""
+def _configure(monkeypatch: pytest.MonkeyPatch, settings) -> None:
     settings.NOTIFICATION_PROVIDER_MODE = "real"
-    settings.FCM_SERVICE_ACCOUNT_JSON = json.dumps(_FAKE_SA)
-    monkeypatch.setattr(real_push, "_access_token", lambda _sa: "ya29.fake-access-token")
+    settings.APNS_KEY_ID = "ABC1234567"
+    settings.APNS_TEAM_ID = "TEAM987654"
+    settings.APNS_BUNDLE_ID = "com.molcube.workmanager"
+    settings.APNS_KEY_PEM = _FAKE_PEM
+    settings.APNS_USE_SANDBOX = True
+    # Bypass JWT signing — exercise the network path, not the cryptography.
+    monkeypatch.setattr(
+        real_push, "_build_jwt", lambda *_args, **_kwargs: "fake.jwt.token"
+    )
+    real_push._jwt_cache.update(
+        {"token": None, "issued_at": 0.0, "key_id": None}
+    )
 
 
-# ----- happy path ------------------------------------------------------------
-
-
-def test_real_push_fcm_200_returns_success(
-    monkeypatch: pytest.MonkeyPatch, settings
-) -> None:
-    """FCM 200 → success=True, provider_message_id from response 'name'.
-    Why: outbox transitions to SENT and sets provider_message_id from the FCM
-    resource name, which ops can correlate against the FCM console.
-    """
-    _patch_token_and_settings(monkeypatch, settings)
+def _patch_post(
+    monkeypatch: pytest.MonkeyPatch,
+    status: int,
+    apns_id: str = "x-id",
+    body: str = "",
+) -> dict[str, Any]:
+    """Patch _post_apns to return ``status`` + capture the request payload."""
     captured: dict[str, Any] = {}
 
-    def _fake_urlopen(req: Any, timeout: int = 10) -> _FakeResponse:
-        captured["url"] = req.full_url
-        captured["headers"] = dict(req.headers)
-        captured["body"] = json.loads(req.data.decode("utf-8"))
-        return _FakeResponse(
-            200, {"name": "projects/wm-fake-project/messages/abc-123"}
-        )
+    def _fake(
+        *, host: str, device_token: str, jwt_token: str, bundle_id: str, body: bytes
+    ) -> tuple[int, str, str]:
+        captured["host"] = host
+        captured["device_token"] = device_token
+        captured["jwt"] = jwt_token
+        captured["bundle_id"] = bundle_id
+        captured["body"] = json.loads(body.decode("utf-8"))
+        return status, apns_id, ""
 
-    monkeypatch.setattr("urllib.request.urlopen", _fake_urlopen)
+    monkeypatch.setattr(real_push, "_post_apns", _fake)
+    return captured
+
+
+def test_apns_200_returns_success_with_apns_id(
+    monkeypatch: pytest.MonkeyPatch, settings
+) -> None:
+    """APNs 200 → success=True + apns-id surfaced as provider_message_id.
+    Why: ops can correlate a delivery with Apple's diagnostics.
+    """
+    _configure(monkeypatch, settings)
+    captured = _patch_post(monkeypatch, 200, apns_id="apns-id-deadbeef")
 
     member = MembershipFactory()
-    DeviceToken.objects.create(membership=member, platform="ANDROID", token="fcm-tok-1")
+    DeviceToken.objects.create(membership=member, platform="IOS", token="dead-beef")
 
     result = real_push.send(
-        payload={"title": "T", "body": "B", "data": {"k": 1}},
+        payload={"title": "T", "body": "B", "data": {"route": "/inbox"}},
         membership=member,
     )
 
     assert result.success is True
-    assert result.provider_message_id == "projects/wm-fake-project/messages/abc-123"
-    assert "wm-fake-project" in captured["url"]
-    assert captured["headers"]["Authorization"] == "Bearer ya29.fake-access-token"
-    assert captured["body"]["message"]["token"] == "fcm-tok-1"
-    # data values must be coerced to strings per FCM contract
-    assert captured["body"]["message"]["data"] == {"k": "1"}
+    assert result.provider_message_id == "apns-id-deadbeef"
+    assert captured["host"] == "api.sandbox.push.apple.com"
+    assert captured["bundle_id"] == "com.molcube.workmanager"
+    assert captured["body"]["aps"]["alert"]["title"] == "T"
+    assert captured["body"]["route"] == "/inbox"
 
 
-# ----- terminal (auth) -------------------------------------------------------
-
-
-def test_real_push_fcm_401_returns_terminal_marker(
-    monkeypatch: pytest.MonkeyPatch, settings
-) -> None:
-    """FCM 401 → terminal: prefix; outbox must DEAD on next attempt.
-    Why: bad credentials won't fix themselves between attempts.
+def test_apns_not_configured_returns_soft_failure(settings) -> None:
+    """APNS_KEY_PEM empty → success=False with marker 'apns_not_configured'
+    (NOT terminal). Why: router can fall back to other channels without DEAD.
     """
-    _patch_token_and_settings(monkeypatch, settings)
-
-    def _fake_urlopen(req: Any, timeout: int = 10) -> _FakeResponse:
-        raise urllib.error.HTTPError(
-            req.full_url, 401, "Unauthorized", hdrs=None, fp=io.BytesIO(b"unauth")
-        )
-
-    monkeypatch.setattr("urllib.request.urlopen", _fake_urlopen)
+    settings.NOTIFICATION_PROVIDER_MODE = "real"
+    settings.APNS_KEY_PEM = ""
 
     member = MembershipFactory()
-    DeviceToken.objects.create(membership=member, platform="ANDROID", token="fcm-tok-401")
+    DeviceToken.objects.create(membership=member, platform="IOS", token="x")
+
+    result = real_push.send(payload={"title": "x"}, membership=member)
+
+    assert result.success is False
+    assert result.error == "apns_not_configured"
+    assert real_push.TERMINAL_PREFIX not in (result.error or "")
+
+
+def test_apns_410_bad_device_token_deletes_row_and_returns_terminal(
+    monkeypatch: pytest.MonkeyPatch, settings
+) -> None:
+    """410 BadDeviceToken → DeviceToken row deleted (ops guide §5.1) AND
+    terminal: marker so outbox DEADs without retrying.
+    Why: a permanently dead device token will never recover; retrying just
+    burns retries and ops alerts.
+    """
+    _configure(monkeypatch, settings)
+    monkeypatch.setattr(
+        real_push,
+        "_post_apns",
+        lambda **_: (410, "x", json.dumps({"reason": "BadDeviceToken"})),
+    )
+
+    member = MembershipFactory()
+    bad = DeviceToken.objects.create(
+        membership=member, platform="IOS", token="dead-token"
+    )
 
     result = real_push.send(payload={"title": "x"}, membership=member)
 
     assert result.success is False
     assert result.error is not None
     assert result.error.startswith(real_push.TERMINAL_PREFIX)
+    assert not DeviceToken.objects.filter(id=bad.id).exists()
 
 
-# ----- token unregistered ---------------------------------------------------
-
-
-def test_real_push_fcm_404_unregistered_deletes_device_token(
+def test_apns_no_devices_returns_transient(
     monkeypatch: pytest.MonkeyPatch, settings
 ) -> None:
-    """FCM 404 (UNREGISTERED) → DeviceToken row is deleted (ops guide §5.1).
-    Why: an invalid token must not be re-tried forever; future sends should
-    pick a different (still-valid) device.
+    """Membership has no IOS DeviceToken → transient (token may register on retry).
+    Why: outbox should retry once a token lands instead of DEADing now.
     """
-    _patch_token_and_settings(monkeypatch, settings)
-
-    def _fake_urlopen(req: Any, timeout: int = 10) -> _FakeResponse:
-        raise urllib.error.HTTPError(
-            req.full_url,
-            404,
-            "Not Found",
-            hdrs=None,
-            fp=io.BytesIO(b'{"error":{"status":"UNREGISTERED"}}'),
-        )
-
-    monkeypatch.setattr("urllib.request.urlopen", _fake_urlopen)
-
+    _configure(monkeypatch, settings)
     member = MembershipFactory()
-    bad = DeviceToken.objects.create(
-        membership=member, platform="IOS", token="fcm-tok-dead"
-    )
-    bad_id = str(bad.id)
 
     result = real_push.send(payload={"title": "x"}, membership=member)
 
     assert result.success is False
-    assert result.error is not None
-    assert not result.error.startswith(real_push.TERMINAL_PREFIX)
-    assert not DeviceToken.objects.filter(id=bad_id).exists()
+    assert "no iOS device token" in (result.error or "")

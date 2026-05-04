@@ -1,8 +1,10 @@
 """Notification + Inbox endpoints — /v1/notifications, /v1/notifications/devices."""
 from __future__ import annotations
 
+from django.conf import settings
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from core.errors import NotFound
@@ -10,6 +12,20 @@ from core.permissions import IsActiveMember, active_membership
 
 from . import services
 from .models import DeviceToken, NotificationLog
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def vapid_public_key(request):
+    """Return the active VAPID public key for FE Web Push subscription.
+
+    Public on purpose: it's the same key embedded in static FE bundles via
+    ``VITE_VAPID_PUBLIC_KEY``. Exposing the runtime endpoint lets ops rotate
+    the key without rebuilding FE artefacts.
+    """
+    return Response(
+        {"data": {"public_key": getattr(settings, "WEB_PUSH_VAPID_PUBLIC_KEY", "")}}
+    )
 
 
 class NotificationLogSerializer(serializers.ModelSerializer):

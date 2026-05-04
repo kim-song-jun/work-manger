@@ -8,6 +8,7 @@ networks:
 volumes:
   pg-data:
   redis-data:
+  ntfy-data:
 
 services:
   db:
@@ -42,6 +43,26 @@ services:
       timeout: 3s
       retries: 20
     # No host port — redis is internal-only
+
+  ntfy:
+    # Self-hosted push for the Android native client. The Flutter shell
+    # opens a WebSocket to this server (proxied via nginx /v1/ntfy/) and
+    # the BE publishes per-membership topics from real_push fan-out.
+    # See ADR-006 + docs/operations/operations-guide.md §5.4.
+    image: binwiederhier/ntfy:v2.10.0
+    container_name: wm-ntfy
+    restart: unless-stopped
+    command: ["serve"]
+    environment:
+      NTFY_BASE_URL: http://ntfy:80
+      NTFY_BEHIND_PROXY: "true"
+      NTFY_AUTH_FILE: /var/lib/ntfy/user.db
+      NTFY_AUTH_DEFAULT_ACCESS: deny-all
+      NTFY_CACHE_DURATION: 24h
+    volumes:
+      - ntfy-data:/var/lib/ntfy
+    networks: [wm-net]
+    # No host port — nginx proxies /v1/ntfy/ → ntfy:80
 
   api:
     build:

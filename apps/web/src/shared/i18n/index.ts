@@ -165,6 +165,20 @@ const ko = {
     language: "언어",
     reset: "기본값으로",
   },
+  push: {
+    section: "푸시 알림",
+    enable: "푸시 알림 켜기",
+    disable: "푸시 알림 끄기",
+    success: "푸시 알림이 활성화됐어요",
+    disabled: "푸시 알림을 껐어요",
+    error: {
+      UNSUPPORTED: "이 브라우저는 푸시 알림을 지원하지 않아요",
+      PERMISSION_DENIED: "알림 권한이 거부됐어요",
+      NO_VAPID_KEY: "푸시 서버 설정이 필요해요",
+      SUBSCRIBE_FAILED: "구독에 실패했어요",
+      REGISTER_FAILED: "서비스 워커 등록에 실패했어요",
+    },
+  },
   trip: {
     title: "출장/외근",
     new: "새 신청",
@@ -837,6 +851,20 @@ const en: typeof ko = {
     font_lg: "Large",
     language: "Language",
     reset: "Reset",
+  },
+  push: {
+    section: "Push notifications",
+    enable: "Enable push",
+    disable: "Disable push",
+    success: "Push notifications enabled",
+    disabled: "Push notifications disabled",
+    error: {
+      UNSUPPORTED: "This browser does not support push notifications",
+      PERMISSION_DENIED: "Notification permission denied",
+      NO_VAPID_KEY: "Push server is not configured",
+      SUBSCRIBE_FAILED: "Subscription failed",
+      REGISTER_FAILED: "Service worker registration failed",
+    },
   },
   trip: {
     title: "Business trip",

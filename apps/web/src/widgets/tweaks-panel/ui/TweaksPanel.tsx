@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon, SegmentedControl, Sheet } from "@shared/ui";
+import { registerWebPush, unregisterWebPush } from "@shared/lib/web-push";
 import {
   applyTweaks,
   defaultTweaks,
@@ -13,6 +14,24 @@ export function TweaksFab() {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [tw, setTw] = useState<Tweaks>(() => loadTweaks());
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMsg, setPushMsg] = useState<string | null>(null);
+
+  async function handleEnablePush() {
+    setPushBusy(true);
+    setPushMsg(null);
+    const result = await registerWebPush();
+    setPushBusy(false);
+    setPushMsg(result.ok ? t("push.success") : t(`push.error.${result.reason}`));
+  }
+
+  async function handleDisablePush() {
+    setPushBusy(true);
+    setPushMsg(null);
+    const ok = await unregisterWebPush();
+    setPushBusy(false);
+    setPushMsg(ok ? t("push.disabled") : t("push.error.UNSUPPORTED"));
+  }
 
   useEffect(() => {
     applyTweaks(tw);
@@ -118,6 +137,52 @@ export function TweaksFab() {
                 { value: "en", label: t("common.lang_en") },
               ]}
             />
+          </div>
+          <div>
+            <div className="text-[13px] font-semibold mb-2 text-ink-700">
+              {t("push.section")}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleEnablePush}
+                disabled={pushBusy}
+                className="text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  background: "var(--brand)",
+                  color: "#fff",
+                  border: "none",
+                  cursor: pushBusy ? "wait" : "pointer",
+                  opacity: pushBusy ? 0.6 : 1,
+                }}
+              >
+                {t("push.enable")}
+              </button>
+              <button
+                type="button"
+                onClick={handleDisablePush}
+                disabled={pushBusy}
+                className="text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  background: "var(--grey-200)",
+                  color: "var(--grey-900)",
+                  border: "none",
+                  cursor: pushBusy ? "wait" : "pointer",
+                  opacity: pushBusy ? 0.6 : 1,
+                }}
+              >
+                {t("push.disable")}
+              </button>
+            </div>
+            {pushMsg ? (
+              <div className="text-[12px] mt-2" style={{ color: "var(--grey-700)" }}>
+                {pushMsg}
+              </div>
+            ) : null}
           </div>
           <button
             type="button"

@@ -8,7 +8,8 @@
 ///   - LocalNotifs constants — channel id stays in sync with AndroidManifest
 /// Out of scope:
 ///   - Live Geolocator stream (integration test territory)
-///   - FCM token retrieval (requires Firebase test harness)
+///   - APNs / ntfy token retrieval (covered by ntfy_client_test.dart and
+///     by the iOS native AppDelegate handlers — out of Dart unit scope)
 /// Coverage target: shape regression only — ensures future refactors keep the
 /// public bridge contract.
 
