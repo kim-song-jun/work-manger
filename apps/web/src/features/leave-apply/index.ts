@@ -1,3 +1,5 @@
-// leave-apply feature slot reserved for the upcoming "Request leave" flow.
-// Intentionally empty for now — keeps the FSD layer layout consistent.
-export {};
+export { LeaveApplyForm } from "./ui/LeaveApplyForm";
+export { LeaveApplySheet } from "./ui/LeaveApplySheet";
+export { applyLeave } from "./api/applyLeave";
+export { leaveApplySchema } from "./model/schema";
+export type { LeaveApplyValues } from "./model/schema";

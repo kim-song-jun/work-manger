@@ -5,9 +5,9 @@ import { Button } from "@shared/ui";
 import { OnbShell } from "./OnbShell";
 
 const SIZES = [
-  { key: "small", label: "Small", sub: "근무시간만" },
-  { key: "medium", label: "Medium", sub: "근무 + 팀" },
-  { key: "large", label: "Large", sub: "풀 대시보드" },
+  { key: "small", labelKey: "onb.widget_size_small", subKey: "onb.widget_size_small_sub" },
+  { key: "medium", labelKey: "onb.widget_size_medium", subKey: "onb.widget_size_medium_sub" },
+  { key: "large", labelKey: "onb.widget_size_large", subKey: "onb.widget_size_large_sub" },
 ] as const;
 
 type SizeKey = (typeof SIZES)[number]["key"];
@@ -40,7 +40,7 @@ export function Widget() {
             boxShadow: "0 6px 20px rgba(0,0,0,0.18)",
           }}
         >
-          <div className="text-[10px] text-ink-500">오늘 근무</div>
+          <div className="text-[10px] text-ink-500">{t("onb.widget_demo_today")}</div>
           <div className="num-tab text-[22px] font-bold mt-0.5">6h 12m</div>
           <div
             style={{
@@ -62,7 +62,7 @@ export function Widget() {
                 background: "var(--success)",
               }}
             />
-            <span className="text-[10px] text-ink-600">본사 · 09:02</span>
+            <span className="text-[10px] text-ink-600">{t("onb.widget_demo_office_time")}</span>
           </div>
           <div
             className="text-center text-[12px] font-bold mt-3 py-1.5"
@@ -72,7 +72,7 @@ export function Widget() {
               borderRadius: "var(--r-sm)",
             }}
           >
-            퇴근하기
+            {t("onb.widget_demo_clock_out")}
           </div>
         </div>
       </div>
@@ -99,9 +99,9 @@ export function Widget() {
                 className="text-[13px] font-bold"
                 style={{ color: on ? "var(--brand)" : "var(--grey-900)" }}
               >
-                {s.label}
+                {t(s.labelKey)}
               </div>
-              <div className="text-[12px] text-ink-500">{s.sub}</div>
+              <div className="text-[12px] text-ink-500">{t(s.subKey)}</div>
             </button>
           );
         })}

@@ -35,7 +35,8 @@ export function TabBar({ badges = {} }: Props) {
           <NavLink
             key={tab.key}
             to={tab.to}
-            className="flex flex-1 flex-col items-center justify-center gap-[3px] relative"
+            aria-label={t(tab.labelKey)}
+            className="flex flex-1 flex-col items-center justify-center gap-[3px] relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-sm"
             style={({ isActive }) => ({
               color: isActive ? "var(--brand)" : "var(--grey-400)",
               fontSize: 11,
@@ -46,8 +47,9 @@ export function TabBar({ badges = {} }: Props) {
           >
             {({ isActive }) => (
               <>
-                <Ic width={22} height={22} />
+                <Ic width={22} height={22} aria-hidden />
                 <span
+                  aria-current={isActive ? "page" : undefined}
                   style={{
                     color: isActive ? "var(--grey-900)" : "var(--grey-400)",
                     fontWeight: isActive ? 600 : 500,

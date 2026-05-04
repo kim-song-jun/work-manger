@@ -1,7 +1,7 @@
 import type { Preview } from "@storybook/react";
 import { withThemeByClassName } from "@storybook/addon-themes";
-import "../src/styles/tokens.css";
-import "../src/styles/index.css";
+import "../src/shared/styles/tokens.css";
+import "../src/shared/styles/index.css";
 
 const preview: Preview = {
   parameters: {

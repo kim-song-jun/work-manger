@@ -29,7 +29,7 @@ export function TweaksFab() {
         type="button"
         aria-label={t("home.open_tweaks")}
         onClick={() => setOpen(true)}
-        className="absolute z-40 flex items-center justify-center"
+        className="absolute z-40 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
         style={{
           right: 16,
           bottom: 80,
@@ -78,6 +78,8 @@ export function TweaksFab() {
                   type="button"
                   onClick={() => setTw({ ...tw, brand: k })}
                   aria-label={k}
+                  aria-pressed={tw.brand === k}
+                  className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                   style={{
                     width: 40,
                     height: 40,
@@ -112,8 +114,8 @@ export function TweaksFab() {
               value={tw.lang}
               onChange={(v) => setTw({ ...tw, lang: v })}
               options={[
-                { value: "ko", label: "한국어" },
-                { value: "en", label: "English" },
+                { value: "ko", label: t("common.lang_ko") },
+                { value: "en", label: t("common.lang_en") },
               ]}
             />
           </div>

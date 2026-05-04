@@ -3,7 +3,15 @@ import { useTranslation } from "react-i18next";
 import { Button, Card, Icon } from "@shared/ui";
 import { OnbShell } from "./OnbShell";
 
-const DAYS_KO = ["월", "화", "수", "목", "금", "토", "일"];
+const DAY_KEYS = [
+  "common.days_short_mon",
+  "common.days_short_tue",
+  "common.days_short_wed",
+  "common.days_short_thu",
+  "common.days_short_fri",
+  "common.days_short_sat",
+  "common.days_short_sun",
+];
 const PATTERN = [true, true, true, true, true, false, false];
 
 export function Schedule() {
@@ -50,9 +58,9 @@ export function Schedule() {
         {t("onb.schedule_pattern")}
       </div>
       <div className="grid gap-1 mb-4" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
-        {DAYS_KO.map((d, i) => (
+        {DAY_KEYS.map((k, i) => (
           <div
-            key={d}
+            key={k}
             className="flex items-center justify-center font-bold text-[13px]"
             style={{
               aspectRatio: "1",
@@ -61,7 +69,7 @@ export function Schedule() {
               color: PATTERN[i] ? "var(--brand)" : "var(--grey-400)",
             }}
           >
-            {d}
+            {t(k)}
           </div>
         ))}
       </div>
@@ -81,8 +89,12 @@ export function Schedule() {
             <Icon.clock width={18} height={18} />
           </div>
           <div className="flex-1">
-            <div className="text-[13px] font-bold text-ink-900">초과근무 자동 감지</div>
-            <div className="text-[12px] text-ink-500">18시 이후 근무 시 승인 요청</div>
+            <div className="text-[13px] font-bold text-ink-900">
+              {t("onb.schedule_overtime_title")}
+            </div>
+            <div className="text-[12px] text-ink-500">
+              {t("onb.schedule_overtime_sub")}
+            </div>
           </div>
         </div>
       </Card>
@@ -102,8 +114,12 @@ export function Schedule() {
             <Icon.calendar width={18} height={18} />
           </div>
           <div className="flex-1">
-            <div className="text-[13px] font-bold text-ink-900">연차 자동 발생</div>
-            <div className="text-[12px] text-ink-500">매월 1일 입사일 기준</div>
+            <div className="text-[13px] font-bold text-ink-900">
+              {t("onb.schedule_leave_title")}
+            </div>
+            <div className="text-[12px] text-ink-500">
+              {t("onb.schedule_leave_sub")}
+            </div>
           </div>
         </div>
       </Card>

@@ -20,7 +20,7 @@ export function MobileShell({ showTabBar = true }: Props) {
           boxShadow: "var(--shadow-3)",
         }}
       >
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main id="main" className="flex-1 flex flex-col overflow-hidden">
           <Outlet />
         </main>
         {showTabBar && <TabBar />}

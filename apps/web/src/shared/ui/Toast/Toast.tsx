@@ -18,13 +18,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={{ show }}>
       {children}
+      {/* Container: polite live region for default/success toasts. */}
       <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
         className="pointer-events-none fixed inset-x-0 z-[100] flex flex-col items-center gap-2"
         style={{ bottom: 24 }}
       >
         {items.map((t) => (
           <div
             key={t.id}
+            // Errors get role=alert + aria-live=assertive so SR users hear them
+            // immediately, before quieter status updates.
+            role={t.tone === "danger" ? "alert" : undefined}
+            aria-live={t.tone === "danger" ? "assertive" : undefined}
             className="wm-anim-fade px-4 py-3 text-[14px] shadow-3"
             style={{
               background:

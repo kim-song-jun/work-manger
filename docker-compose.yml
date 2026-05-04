@@ -187,3 +187,38 @@ services:
     ports:
       - "6006:6006"
     networks: [wm-net]
+
+  e2e:
+    # Playwright end-to-end runner. Run with:
+    #   docker compose --profile e2e run --rm e2e
+    # Prereq: stack must be up (api healthy, web reachable) and the demo
+    # company must be seeded (`docker compose run --rm seed`).
+    #
+    # NOTE: Vite dev server (apps/web) defaults to blocking non-IP / non-localhost
+    # Host headers (server.allowedHosts in v5). Rather than touch the FE config,
+    # we resolve `web` → IPv4 at container start and use the raw IP for BASE_URL.
+    # The api/ws stay on internal DNS — they only care about HTTP routing.
+    image: mcr.microsoft.com/playwright:v1.49.1-jammy
+    profiles: ["e2e"]
+    depends_on:
+      api: { condition: service_healthy }
+      web: { condition: service_started }
+      ws:  { condition: service_started }
+    environment:
+      API_URL: http://api:4455
+      CI: "1"
+      E2E_SKIP_SEED: "1"   # CI/operator runs `seed` separately
+    working_dir: /e2e
+    volumes:
+      - ./apps/e2e:/e2e
+      - /e2e/node_modules
+    command:
+      - bash
+      - -lc
+      - |
+        set -e
+        export BASE_URL="http://$$(getent hosts web | awk '{print $$1}'):4444"
+        echo "[e2e] BASE_URL=$$BASE_URL"
+        npm ci --no-audit --no-fund
+        exec npx playwright test
+    networks: [wm-net]

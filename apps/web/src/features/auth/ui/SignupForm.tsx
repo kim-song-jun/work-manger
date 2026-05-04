@@ -58,7 +58,7 @@ export function SignupForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            hint="8자 이상, 영문 + 숫자 + 특수문자 포함"
+            hint={t("auth.password_hint")}
             error={err ?? undefined}
           />
         </div>

@@ -18,10 +18,27 @@ export const defaultTweaks: Tweaks = {
   lang: "ko",
 };
 
+/**
+ * Pick the OS-preferred color scheme as a default. When the user has no
+ * stored theme override we honour `prefers-color-scheme: dark` so the app
+ * matches the rest of the OS on first visit.
+ */
+function osPrefersDark(): boolean {
+  try {
+    if (typeof window === "undefined" || !window.matchMedia) return false;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  } catch {
+    return false;
+  }
+}
+
 export function loadTweaks(): Tweaks {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultTweaks;
+    if (!raw) {
+      // No prior choice → fall back to OS preference for theme only.
+      return { ...defaultTweaks, theme: osPrefersDark() ? "dark" : "light" };
+    }
     return { ...defaultTweaks, ...JSON.parse(raw) };
   } catch {
     return defaultTweaks;

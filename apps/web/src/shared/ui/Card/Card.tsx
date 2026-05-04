@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode, MouseEvent } from "react";
+import type { CSSProperties, ReactNode, MouseEvent, KeyboardEvent } from "react";
 
 type Variant = "plain" | "elevated" | "subtle" | "flat";
 
@@ -36,8 +36,32 @@ export function Card({
       : {}),
     ...style,
   };
+
+  // Clickable Card → expose as a button so keyboard users can activate it.
+  function onKey(e: KeyboardEvent<HTMLDivElement>): void {
+    if (!onClick) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick(e as unknown as MouseEvent<HTMLDivElement>);
+    }
+  }
+
+  const cls = [
+    className,
+    onClick ? "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={className} onClick={onClick} style={base}>
+    <div
+      className={cls}
+      onClick={onClick}
+      onKeyDown={onClick ? onKey : undefined}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      style={base}
+    >
       {children}
     </div>
   );

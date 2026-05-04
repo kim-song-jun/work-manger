@@ -75,7 +75,7 @@ export function Location() {
         <div className="flex items-center gap-2.5 mb-1">
           <Icon.building width={18} height={18} style={{ color: "var(--brand)" }} />
           <div className="text-[14px] font-bold text-ink-900">
-            {t("onb.location_office", { name: "강남 오피스" })}
+            {t("onb.location_office", { name: t("home.location_office_name") })}
           </div>
           <span
             className="ml-auto text-[10px] font-semibold px-2 py-0.5"
@@ -88,7 +88,9 @@ export function Location() {
             ✓
           </span>
         </div>
-        <div className="text-[12px] text-ink-500">서울 강남구 · {t("onb.location_radius")}</div>
+        <div className="text-[12px] text-ink-500">
+          {t("onb.location_office_address")} · {t("onb.location_radius")}
+        </div>
       </Card>
 
       <Card padding={14} style={{ marginBottom: 10, border: "1px dashed var(--grey-300)" }}>

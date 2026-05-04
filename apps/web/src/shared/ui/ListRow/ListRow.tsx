@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode, MouseEvent } from "react";
+import type { CSSProperties, ReactNode, MouseEvent, KeyboardEvent } from "react";
 import { Icon } from "../Icon";
 
 type Props = {
@@ -43,9 +43,23 @@ export function ListRow({
       ? "var(--danger)"
       : "var(--grey-900)";
 
+  // When clickable, the row is exposed as a button to AT users so they get
+  // keyboard activation (Enter/Space) and a focus ring.
+  function onKey(e: KeyboardEvent<HTMLDivElement>): void {
+    if (!onClick) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick(e as unknown as MouseEvent<HTMLDivElement>);
+    }
+  }
+
   return (
     <div
       onClick={onClick}
+      onKeyDown={onClick ? onKey : undefined}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      className={onClick ? "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand" : undefined}
       style={{
         display: "flex",
         alignItems: "center",

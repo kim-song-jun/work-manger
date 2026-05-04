@@ -1,0 +1,177 @@
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: backend (django + pytest)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            services/api/requirements.txt
+            services/api/requirements-dev.txt
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start Postgres + Redis (compose)
+        run: |
+          docker compose up -d db redis
+          # Wait for healthchecks
+          for i in {1..30}; do
+            db_ok=$(docker inspect --format='{{.State.Health.Status}}' wm-db 2>/dev/null || echo starting)
+            redis_ok=$(docker inspect --format='{{.State.Health.Status}}' wm-redis 2>/dev/null || echo starting)
+            if [ "$db_ok" = "healthy" ] && [ "$redis_ok" = "healthy" ]; then
+              echo "db + redis healthy"; break
+            fi
+            echo "waiting for db ($db_ok) + redis ($redis_ok)..."
+            sleep 2
+          done
+
+      - name: Install Python deps
+        working-directory: services/api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+      - name: Run pytest with coverage
+        working-directory: services/api
+        env:
+          DJANGO_SETTINGS_MODULE: work_manager.settings.test
+          DATABASE_URL: postgres://wm:wm@localhost:5432/work_manager
+          REDIS_URL: redis://localhost:6379/1
+          DJANGO_SECRET_KEY: ci-insecure-key
+        run: |
+          # Expose db/redis to the host for pytest by re-publishing via socat,
+          # OR rely on settings.test using sqlite in-memory. We try real PG first
+          # via published port; if compose did not publish, settings.test should
+          # fall back gracefully.
+          pytest --ds=work_manager.settings.test \
+                 --cov=apps --cov=core \
+                 --cov-fail-under=50 \
+                 --cov-report=xml --cov-report=term-missing
+
+      - name: Upload backend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: services/api/coverage.xml
+          if-no-files-found: ignore
+          retention-days: 7
+
+  frontend:
+    name: frontend (vite + vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install deps
+        working-directory: apps/web
+        run: npm ci --legacy-peer-deps
+
+      - name: Typecheck
+        working-directory: apps/web
+        run: npm run typecheck
+
+      - name: Unit tests with coverage
+        working-directory: apps/web
+        run: npm run test -- --coverage
+
+      - name: Build
+        working-directory: apps/web
+        run: npm run build
+
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: apps/web/coverage
+          if-no-files-found: ignore
+          retention-days: 7
+
+  e2e:
+    name: e2e (playwright)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Bring up the full stack
+        run: |
+          docker compose up -d --build db redis api ws worker beat web
+          # Wait for api health
+          for i in {1..60}; do
+            s=$(docker inspect --format='{{.State.Health.Status}}' wm-api 2>/dev/null || echo starting)
+            if [ "$s" = "healthy" ]; then echo "api healthy"; break; fi
+            echo "waiting for api ($s)..."
+            sleep 3
+          done
+          # Web has no healthcheck — probe its port
+          for i in {1..30}; do
+            if curl -fsS -o /dev/null http://localhost:4444; then echo "web reachable"; break; fi
+            echo "waiting for web..."
+            sleep 2
+          done
+
+      - name: Seed demo dataset
+        run: docker compose run --rm seed
+
+      - name: Run Playwright suite
+        run: docker compose --profile e2e run --rm e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/e2e/playwright-report
+            apps/e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Dump container logs on failure
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs --no-color --tail=400 api web ws worker || true
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose down -v --remove-orphans

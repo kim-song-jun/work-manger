@@ -1,68 +1,36 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Avatar, Card, PageHeader, Skeleton, StatusDot } from "@shared/ui";
-import { fetchTeam, type TeamMember } from "@entities/team";
+import { PageHeader, SegmentedControl } from "@shared/ui";
+import { useTeamStream } from "@shared/lib";
+import { GridSlice } from "./slices/GridSlice";
+import { GroupedSlice } from "./slices/GroupedSlice";
+import { TimelineSlice } from "./slices/TimelineSlice";
 
-const FALLBACK: TeamMember[] = [
-  { id: "1", name: "지우", status: "office", team: "디자인" },
-  { id: "2", name: "민수", status: "office", team: "엔지니어링" },
-  { id: "3", name: "예린", status: "wfh", team: "엔지니어링" },
-  { id: "4", name: "현우", status: "office", team: "프로덕트" },
-  { id: "5", name: "수아", status: "leave", team: "프로덕트" },
-  { id: "6", name: "도윤", status: "off", team: "오퍼레이션" },
-];
+type Tab = "grid" | "grouped" | "timeline";
 
 export function TeamPage() {
   const { t } = useTranslation();
-  const q = useQuery({ queryKey: ["team-status"], queryFn: fetchTeam });
-  const members = q.data ?? FALLBACK;
+  const [tab, setTab] = useState<Tab>("grid");
+  useTeamStream();
 
   return (
     <>
       <PageHeader title={t("team.title")} />
       <div className="flex-1 overflow-y-auto" style={{ padding: "8px 20px 24px" }}>
-        {q.isLoading ? (
-          <div className="grid grid-cols-3 gap-2">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <Card key={i} padding={12}>
-                <div className="flex flex-col items-center gap-2">
-                  <Skeleton width={48} height={48} radius={24} />
-                  <Skeleton width="80%" height={12} />
-                  <Skeleton width="60%" height={10} />
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-2">
-            {members.map((m) => (
-              <Card key={m.id} padding={12}>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="relative">
-                    <Avatar name={m.name} size={48} />
-                    <span className="absolute" style={{ bottom: 0, right: 0 }}>
-                      <StatusDot status={m.status} size={12} ring />
-                    </span>
-                  </div>
-                  <div
-                    className="text-[13px] font-semibold text-ink-900"
-                    style={{
-                      maxWidth: "100%",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {m.name}
-                  </div>
-                  {m.team && (
-                    <div className="text-[11px] text-ink-500">{m.team}</div>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
+        <SegmentedControl
+          value={tab}
+          onChange={(v) => setTab(v as Tab)}
+          options={[
+            { value: "grid", label: t("mobile.team_tabs.grid") },
+            { value: "grouped", label: t("mobile.team_tabs.grouped") },
+            { value: "timeline", label: t("mobile.team_tabs.timeline") },
+          ]}
+        />
+        <div style={{ marginTop: 14 }}>
+          {tab === "grid" && <GridSlice />}
+          {tab === "grouped" && <GroupedSlice />}
+          {tab === "timeline" && <TimelineSlice />}
+        </div>
       </div>
     </>
   );

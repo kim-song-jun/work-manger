@@ -15,20 +15,33 @@ import { clockIn, readGeoFix, SlideToClockIn } from "@features/clock-in";
 import { TweaksFab } from "@widgets/tweaks-panel";
 import type { ClockInBody, ClockKind } from "@entities/attendance";
 
-const FAKE_PEOPLE: { name: string; status: "office" | "wfh" | "leave" | "off" }[] = [
-  { name: "지우", status: "office" },
-  { name: "민수", status: "office" },
-  { name: "예린", status: "wfh" },
-  { name: "현우", status: "office" },
-  { name: "수아", status: "leave" },
-  { name: "도윤", status: "off" },
-  { name: "하린", status: "office" },
+type FakeStatus = "office" | "wfh" | "leave" | "off";
+const FAKE_PEOPLE: { nameKey: string; status: FakeStatus }[] = [
+  { nameKey: "home.fake_member_1", status: "office" },
+  { nameKey: "home.fake_member_2", status: "office" },
+  { nameKey: "home.fake_member_3", status: "wfh" },
+  { nameKey: "home.fake_member_4", status: "office" },
+  { nameKey: "home.fake_member_5", status: "leave" },
+  { nameKey: "home.fake_member_6", status: "off" },
+  { nameKey: "home.fake_member_7", status: "office" },
 ];
 
-function todayDateLabel(): string {
+function buildTodayDateLabel(t: (k: string, opts?: Record<string, unknown>) => string): string {
   const d = new Date();
-  const days = ["일", "월", "화", "수", "목", "금", "토"];
-  return `${days[d.getDay()]} · ${d.getMonth() + 1}월 ${d.getDate()}일`;
+  const dayKeys = [
+    "common.days_short_sun",
+    "common.days_short_mon",
+    "common.days_short_tue",
+    "common.days_short_wed",
+    "common.days_short_thu",
+    "common.days_short_fri",
+    "common.days_short_sat",
+  ];
+  return t("common.weekday_month_day", {
+    weekday: t(dayKeys[d.getDay()]),
+    month: d.getMonth() + 1,
+    day: d.getDate(),
+  });
 }
 
 export function HomePage() {
@@ -69,7 +82,7 @@ export function HomePage() {
   });
 
   const greeting = clockedIn ? t("home.good_evening") : t("home.good_morning");
-  const dateLabel = useMemo(todayDateLabel, []);
+  const dateLabel = useMemo(() => buildTodayDateLabel(t), [t]);
 
   return (
     <>
@@ -129,7 +142,7 @@ export function HomePage() {
               </div>
             }
             title={t("home.at_office")}
-            subtitle={`강남 오피스 · ${t("home.auto_detected")}`}
+            subtitle={`${t("home.location_office_name")} · ${t("home.auto_detected")}`}
             trailing={
               <button
                 type="button"
@@ -190,26 +203,29 @@ export function HomePage() {
             <Icon.chevR width={16} height={16} style={{ color: "var(--grey-400)" }} />
           </div>
           <div className="flex items-center mt-2.5">
-            {FAKE_PEOPLE.slice(0, 7).map((p, i) => (
-              <div
-                key={p.name}
-                style={{ marginLeft: i === 0 ? 0 : -8, position: "relative" }}
-              >
-                <Avatar name={p.name} size={32} />
-                <span
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    right: 0,
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: `var(--s-${p.status})`,
-                    border: "2px solid var(--white)",
-                  }}
-                />
-              </div>
-            ))}
+            {FAKE_PEOPLE.slice(0, 7).map((p, i) => {
+              const name = t(p.nameKey);
+              return (
+                <div
+                  key={p.nameKey}
+                  style={{ marginLeft: i === 0 ? 0 : -8, position: "relative" }}
+                >
+                  <Avatar name={name} size={32} />
+                  <span
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      right: 0,
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: `var(--s-${p.status})`,
+                      border: "2px solid var(--white)",
+                    }}
+                  />
+                </div>
+              );
+            })}
             <div
               className="flex items-center justify-center text-[11px] font-bold"
               style={{

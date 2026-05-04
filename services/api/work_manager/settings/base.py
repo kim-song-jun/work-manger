@@ -149,6 +149,14 @@ CORS_ALLOWED_ORIGINS = env.list(
         "http://127.0.0.1:4444",
     ],
 )
+# Regex allowlist (e.g., compose internal IPv4 used by the e2e container).
+# Default permits 172.* docker networks talking to web:4444.
+CORS_ALLOWED_ORIGIN_REGEXES = env.list(
+    "CORS_ALLOWED_ORIGIN_REGEXES",
+    default=[
+        r"^http://(127\.0\.0\.1|localhost|web|172\.[0-9]+\.[0-9]+\.[0-9]+):4444$",
+    ],
+)
 CORS_ALLOW_CREDENTIALS = True
 
 LANGUAGE_CODE = "ko-kr"

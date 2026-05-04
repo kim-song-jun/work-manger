@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { Icon } from "@shared/ui";
 
 type Props = {
@@ -58,6 +58,25 @@ export function SlideToClockIn({ onCommit, disabled, labelIn, labelOut, active }
     document.addEventListener("pointerup", up);
   }
 
+  // Keyboard fallback: Enter/Space completes the slide programmatically.
+  // Without this, screen-reader / keyboard-only users have no way to
+  // confirm clock-in/out (pointer drag is mouse/touch-only).
+  function onKeyDown(e: ReactKeyboardEvent<HTMLDivElement>): void {
+    if (disabled || committing) return;
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    setCommitting(true);
+    setPct(1);
+    setTimeout(() => {
+      try {
+        onCommit();
+      } finally {
+        setCommitting(false);
+        setPct(0);
+      }
+    }, 50);
+  }
+
   const trackBg = active ? "var(--success-soft)" : "var(--brand-soft)";
   const knobBg = active ? "var(--success)" : "var(--brand)";
   const trackText = active ? "var(--success)" : "var(--brand)";
@@ -74,6 +93,9 @@ export function SlideToClockIn({ onCommit, disabled, labelIn, labelOut, active }
       aria-valuemax={100}
       aria-valuenow={Math.round(pct * 100)}
       aria-disabled={disabled || committing}
+      tabIndex={disabled ? -1 : 0}
+      onKeyDown={onKeyDown}
+      className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       style={{
         height: 64,
         borderRadius: 32,
