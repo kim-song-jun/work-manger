@@ -1,0 +1,219 @@
+name: release-desktop
+
+# Triggered by:
+#   - GitHub Release published (tag pattern v*.*.*)
+#   - Manual workflow_dispatch (lets you re-cut a release without re-tagging)
+#
+# Each platform job:
+#   1. Builds the Electron desktop app on its native runner.
+#   2. Code-signs (mac: Apple Developer ID + notarytool; win: cert via env;
+#      linux: unsigned AppImage).
+#   3. Publishes update manifests + binaries to the S3 update bucket
+#      (electron-builder --publish=always when WM_UPDATE_BUCKET is set).
+#   4. Uploads the artifact to the GitHub Release assets.
+#
+# Secrets are documented in `.github/RELEASE_SECRETS.md`.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      publish_to_s3:
+        description: "Publish update manifest + binaries to S3 (`always`) vs. build only (`never`)."
+        type: choice
+        options: ["never", "always"]
+        default: "never"
+      channel:
+        description: "Update channel (writes to s3://<bucket>/desktop/<channel>)."
+        type: choice
+        options: ["prod", "beta", "stg"]
+        default: "prod"
+
+permissions:
+  contents: write   # upload release assets
+  id-token: write   # OIDC → AWS (if you swap from access keys later)
+
+concurrency:
+  group: release-desktop-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "24"
+  AWS_REGION: ap-northeast-2
+  WM_UPDATE_CHANNEL: ${{ github.event.inputs.channel || 'prod' }}
+  EB_PUBLISH_FLAG: ${{ github.event_name == 'release' && '--publish=always' || (github.event.inputs.publish_to_s3 == 'always' && '--publish=always' || '--publish=never') }}
+
+jobs:
+  release-mac:
+    name: release · macOS (notarized)
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Install deps
+        working-directory: apps/desktop
+        run: npm ci --legacy-peer-deps
+
+      - name: Preflight signing check
+        working-directory: apps/desktop
+        run: npm run check:mac-signing
+
+      - name: Build + sign + notarize + (optionally) publish
+        working-directory: apps/desktop
+        env:
+          # Apple notarization (notarytool via afterSign hook)
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Apple Developer ID Application certificate (.p12 → base64 → secret)
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          # S3 publish target
+          WM_UPDATE_BUCKET: ${{ secrets.WM_UPDATE_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          npm run build:ts
+          npx electron-builder --mac ${EB_PUBLISH_FLAG}
+
+      - name: Upload release artifacts
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.zip
+            apps/desktop/release/latest-mac.yml
+            apps/desktop/release/*.blockmap
+
+      - name: Upload build artifacts (workflow_dispatch)
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-mac
+          path: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.zip
+            apps/desktop/release/latest-mac.yml
+          if-no-files-found: error
+          retention-days: 14
+
+  release-win:
+    name: release · Windows (signed)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Install deps
+        working-directory: apps/desktop
+        run: npm ci --legacy-peer-deps
+
+      - name: Build + sign + (optionally) publish
+        working-directory: apps/desktop
+        shell: bash
+        env:
+          # electron-builder reads CSC_LINK / CSC_KEY_PASSWORD by convention.
+          # We mirror them from WIN_CSC_* so the cert path can stay distinct
+          # from the macOS one in the secret store.
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          WIN_PUBLISHER_NAME: ${{ secrets.WIN_PUBLISHER_NAME || 'Molcube' }}
+          # 'cloud' switches to scripts/win-sign.cjs (DigiCert KeyLocker / SSL.com).
+          # Default 'local' uses the .p12 above.
+          WM_WIN_SIGN_MODE: ${{ vars.WM_WIN_SIGN_MODE || 'local' }}
+          # S3 publish target
+          WM_UPDATE_BUCKET: ${{ secrets.WM_UPDATE_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          npm run build:ts
+          npx electron-builder --win ${EB_PUBLISH_FLAG}
+
+      - name: Upload release artifacts
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/latest.yml
+            apps/desktop/release/*.blockmap
+
+      - name: Upload build artifacts (workflow_dispatch)
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-win
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/latest.yml
+          if-no-files-found: error
+          retention-days: 14
+
+  release-linux:
+    name: release · Linux (AppImage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Install deps
+        working-directory: apps/desktop
+        run: npm ci --legacy-peer-deps
+
+      - name: Build + (optionally) publish
+        working-directory: apps/desktop
+        env:
+          WM_UPDATE_BUCKET: ${{ secrets.WM_UPDATE_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          npm run build:ts
+          npx electron-builder --linux ${EB_PUBLISH_FLAG}
+
+      - name: Upload release artifacts
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/latest-linux.yml
+
+      - name: Upload build artifacts (workflow_dispatch)
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: |
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/latest-linux.yml
+          if-no-files-found: error
+          retention-days: 14

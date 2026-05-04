@@ -59,6 +59,56 @@ work-manager/
 
 ---
 
+## 개발 셋업 (Development Setup)
+
+### 사전 요구사항 (Prerequisites)
+
+| 도구 | 버전 | 비고 |
+|---|---|---|
+| Docker Desktop | 최신 | Engine + Compose v2 |
+| Node.js | **24.x** | apps/web · apps/desktop |
+| Python | **3.12** | services/api |
+| `pre-commit` | 3.x+ | `pip install pre-commit` |
+| Terraform | **1.9.x** | infra/terraform (선택, 인프라 작업 시) |
+| Flutter SDK | 3.24+ | apps/mobile (선택) |
+| Apple Developer cert | — | macOS Electron 코드사이닝 (선택) |
+
+### 한 줄 셋업 (One-liner)
+
+```bash
+pre-commit install && cp .env.example .env && docker compose up -d --build
+```
+
+### 자주 쓰는 명령 (Make targets)
+
+| 명령 | 설명 |
+|---|---|
+| `make up` / `make down` | 전체 스택 기동 / 종료 |
+| `make migrate` | Django 마이그레이션 실행 |
+| `make test` | BE pytest (= `make test-be`) |
+| `make test-fe` | FE typecheck + vitest |
+| `make test-all` | BE + FE 전체 회귀 |
+| `make precommit` | 모든 파일에 pre-commit 훅 실행 |
+| `make audit` | pip-audit + npm audit 로컬 실행 |
+
+### 모니터링 (Sentry, 선택)
+
+`.env` (또는 컨테이너 env) 에 다음을 설정하면 활성:
+
+```
+# Backend (services/api)
+SENTRY_DSN=https://<key>@sentry.io/<project>
+SENTRY_TRACES_SAMPLE_RATE=0.1
+DJANGO_ENV=dev|stg|prod
+
+# Frontend (apps/web — Vite build-time)
+VITE_SENTRY_DSN=https://<key>@sentry.io/<project>
+```
+
+DSN 미설정 시 SDK init 은 자동 skip → 로컬 / CI 무영향.
+
+---
+
 ## 빠른 시작 (예정)
 
 ```bash
@@ -82,6 +132,7 @@ cd apps/web && pnpm install && pnpm dev
 - [데이터 모델](docs/architecture/data-model.md)
 - [운영 유의사항](docs/operations/operations-guide.md)
 - [디자인 시스템](docs/design/design-system.md)
+- [관리자 매뉴얼 — 회사 가입 코드](docs/manuals/admin-company-codes.md)
 - [로드맵](docs/roadmap.md)
 
 ---

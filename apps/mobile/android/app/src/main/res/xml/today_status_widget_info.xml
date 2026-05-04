@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Glance / AppWidget metadata for TodayStatusWidget. Resize down to 2x2,
+  default 3x2. updatePeriodMillis=0 because Glance.updateAll() drives the
+  refresh cadence (Dart pushes after /v1/attendance/today resolves).
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:minResizeWidth="120dp"
+    android:minResizeHeight="80dp"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:description="@string/wm_widget_today_desc"
+    android:initialLayout="@layout/wm_widget_loading" />

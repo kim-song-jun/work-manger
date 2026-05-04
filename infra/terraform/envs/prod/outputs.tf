@@ -63,3 +63,18 @@ output "secret_arns" {
   description = "Map of category → Secrets Manager ARN."
   sensitive   = true
 }
+
+output "desktop_updates_bucket_name" {
+  value       = module.desktop_updates.bucket_name
+  description = "S3 bucket for Electron desktop auto-update artifacts (CI WM_UPDATE_BUCKET)."
+}
+
+output "desktop_updates_bucket_arn" {
+  value       = module.desktop_updates.bucket_arn
+  description = "ARN of the desktop-updates bucket."
+}
+
+output "desktop_updates_cf_domain" {
+  value       = module.desktop_updates.cf_domain
+  description = "CloudFront distribution domain for desktop updates (null when CF disabled)."
+}

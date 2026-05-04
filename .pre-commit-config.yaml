@@ -1,0 +1,111 @@
+# Pre-commit hooks (https://pre-commit.com)
+#
+# 설치:
+#   pip install pre-commit
+#   pre-commit install
+#
+# 전체 회귀 실행:
+#   pre-commit run --all-files
+#
+# 정책:
+# - ruff / mypy 는 services/api 트리에만 적용. mypy 는 core/ 만 strict, 나머지는 incremental.
+# - prettier / eslint 는 apps/web (FE) + 인프라 / 문서 / GitHub workflows 에만 적용.
+#   apps/mobile (Dart) 는 dart format 으로만 처리.
+# - terraform / dart 는 시스템에 도구가 없으면 자동 skip (entry: bash -c 'command -v ...').
+# - secret 스캔 (gitleaks) 은 모든 commit 에서 실행.
+
+repos:
+  # ── 기본 위생 (공통) ───────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(apps/web/src/shared/api/openapi-types\.ts|.*\.snap|.*\.lock)$
+      - id: end-of-file-fixer
+        exclude: ^(apps/web/src/shared/api/openapi-types\.ts|.*\.snap|.*\.lock)$
+      - id: check-merge-conflict
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+        exclude: ^(infra/k8s/.*\.yaml|apps/desktop/electron-builder\.yml)$
+      - id: check-json
+        exclude: ^apps/web/tsconfig.*\.json$  # tsconfig 들은 JSON-with-comments
+
+  # ── Python (services/api) ────────────────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.4
+    hooks:
+      - id: ruff
+        args: [--fix, --config=services/api/pyproject.toml]
+        files: ^services/api/.*\.py$
+      - id: ruff-format
+        args: [--config=services/api/pyproject.toml]
+        files: ^services/api/.*\.py$
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      # core/ 만 strict — 도메인 핵심 (incremental rollout).
+      - id: mypy
+        name: mypy (services/api/core — strict)
+        files: ^services/api/core/.*\.py$
+        args: [--config-file=services/api/pyproject.toml, --strict]
+        additional_dependencies: [django-stubs==5.1.1, types-redis, types-python-dateutil]
+      # apps/ 전체 — lenient (gradual typing).
+      - id: mypy
+        name: mypy (services/api/apps — lenient)
+        files: ^services/api/apps/.*\.py$
+        args: [--config-file=services/api/pyproject.toml]
+        additional_dependencies: [django-stubs==5.1.1, types-redis, types-python-dateutil]
+
+  # ── JS / TS / 문서 / YAML — Prettier ─────────────────────────────────────
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        files: ^(apps/web/.*\.(ts|tsx|js|jsx|css|json|md)|infra/.*\.(yml|yaml|json|md)|docs/.*\.md|\.github/.*\.(yml|yaml))$
+        # apps/mobile 은 의도적으로 제외 — Dart 전용.
+        exclude: ^(apps/web/src/shared/api/openapi-types\.ts|apps/web/dist/.*|apps/web/coverage/.*)$
+        additional_dependencies:
+          - prettier@3.3.3
+
+  # ── ESLint — apps/web/src 만 ─────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: eslint-web
+        name: eslint (apps/web/src --max-warnings=0)
+        language: system
+        entry: bash -c 'cd apps/web && npx --no-install eslint --fix --max-warnings=0 "$@"' --
+        files: ^apps/web/src/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: true
+
+      # tsc --noEmit (per-package). pre-commit 은 변경 파일 기준이므로
+      # tsc 는 incremental 하게 전체 그래프를 검사하도록 한 번만 호출.
+      - id: tsc-web
+        name: tsc --noEmit (apps/web)
+        language: system
+        entry: bash -c 'cd apps/web && npm run -s typecheck'
+        files: ^apps/web/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      # dart format — dart 가 PATH 에 없으면 skip.
+      - id: dart-format
+        name: dart format (apps/mobile/lib)
+        language: system
+        entry: bash -c 'command -v dart >/dev/null 2>&1 && dart format apps/mobile/lib || echo "[skip] dart not installed"'
+        files: ^apps/mobile/lib/.*\.dart$
+        pass_filenames: false
+
+      # terraform fmt — terraform 가 PATH 에 없으면 skip.
+      - id: terraform-fmt
+        name: terraform fmt -recursive infra/terraform
+        language: system
+        entry: bash -c 'command -v terraform >/dev/null 2>&1 && terraform fmt -recursive infra/terraform || echo "[skip] terraform not installed"'
+        files: ^infra/terraform/.*\.tf$
+        pass_filenames: false
+
+  # ── 보안 — gitleaks (secret scan) ────────────────────────────────────────
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+        name: gitleaks (secret scan)

@@ -39,6 +39,18 @@ export interface StatusChangedPayload {
   status: WorkStatus;
 }
 
+export interface UpdaterAvailablePayload {
+  version?: string;
+}
+
+export interface UpdaterDownloadedPayload {
+  version?: string;
+}
+
+export interface UpdaterErrorPayload {
+  message: string;
+}
+
 /** Channels the renderer can `invoke()` (request/response). */
 export const IPC_INVOKE = {
   GetAppVersion: "wm:get-app-version",
@@ -54,6 +66,9 @@ export const IPC_EVENT = {
   StatusChanged: "wm:status-changed",
   NotificationClicked: "wm:notification-clicked",
   AutoClockInFired: "wm:auto-clock-in",
+  UpdaterUpdateAvailable: "wm:updater:update-available",
+  UpdaterUpdateDownloaded: "wm:updater:update-downloaded",
+  UpdaterError: "wm:updater:error",
 } as const;
 
 export type IpcInvokeChannel = (typeof IPC_INVOKE)[keyof typeof IPC_INVOKE];

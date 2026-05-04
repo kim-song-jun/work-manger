@@ -1,0 +1,67 @@
+# services/api/pyproject.toml
+# ruff + mypy 설정. 실제 빌드 메타데이터는 requirements.txt 가 책임.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+  "migrations",
+  ".venv",
+  "build",
+  "dist",
+  "staticfiles",
+]
+
+[tool.ruff.lint]
+# 일반적인 안전망: pycodestyle (E,W) + pyflakes (F) + import ordering (I) +
+# bug patterns (B) + comprehensions (C4) + simplify (SIM) + Django (DJ).
+select = ["E", "W", "F", "I", "B", "C4", "SIM", "UP", "DJ"]
+ignore = [
+  "E501",   # line-length 은 ruff format 이 처리.
+  "B008",   # Django/DRF 패턴: default=function() 흔함.
+  "SIM108", # ternary 강요 — 가독성 떨어지는 경우 다수.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011", "F401", "F811"]
+"**/migrations/*" = ["E", "F", "I", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+# ── mypy ──────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+mypy_path = "services/api"
+explicit_package_bases = true
+namespace_packages = true
+ignore_missing_imports = true       # 외부 패키지 stubs 부족 시 우회.
+follow_imports = "silent"
+warn_redundant_casts = true
+warn_unused_ignores = false
+disallow_untyped_defs = false       # incremental — apps/ 는 점진 적용.
+disallow_incomplete_defs = false
+no_implicit_optional = true
+strict_equality = true
+exclude = [
+  "migrations/",
+  ".venv/",
+  "build/",
+  "dist/",
+  "staticfiles/",
+  "tests/",
+]
+
+[[tool.mypy.overrides]]
+# core/ 만 strict — 도메인 핵심 코드 (builders, strategies, errors).
+module = ["core.*"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+warn_return_any = true
+no_implicit_reexport = true
+
+[tool.django-stubs]
+django_settings_module = "work_manager.settings.test"

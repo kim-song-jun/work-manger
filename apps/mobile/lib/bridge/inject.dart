@@ -21,7 +21,16 @@ Future<String> bridgeInjectionScript() async {
     registerDeviceToken: function () { return call('registerDeviceToken'); },
     haptic: function (intensity) { return call('haptic', [intensity || 'light']); },
     share:  function (payload)   { return call('share', [payload || {}]); },
-    appInfo: function () { return call('appInfo'); }
+    appInfo: function () { return call('appInfo'); },
+    // ---- Home-screen widgets (iOS WidgetKit / Android Glance) -------------
+    pushTodayStatus: function (payload) {
+      return call('pushTodayStatus', [payload || {}]);
+    },
+    reloadWidgets: function () { return call('reloadWidgets'); },
+    // ---- Geofencing (registered after /v1/onboarding/locations) -----------
+    registerGeofences: function (items) {
+      return call('registerGeofences', [items || []]);
+    }
   };
   // Notify SPA that the bridge is ready (in case it boots before us).
   try {

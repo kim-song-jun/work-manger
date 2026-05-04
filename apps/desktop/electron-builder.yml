@@ -11,21 +11,54 @@ files:
   - package.json
   - "!**/*.map"
   - "!**/__tests__/**"
+extraResources:
+  - from: build/entitlements.mac.plist
+    to: build/entitlements.mac.plist
 
+# ──────────────────────── macOS ─────────────────────────────────────────────
+# Hardened Runtime + Notarization (notarytool). The notarization itself is
+# performed by `scripts/notarize.cjs` (afterSign hook) so it can no-op cleanly
+# when the Apple credentials env vars are missing — local dev / CI fork PRs.
 mac:
   category: public.app-category.business
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  # `notarize: false` here — actual notarization done in afterSign hook so we
+  # can use notarytool (App Store Connect API) and skip cleanly in dev.
   notarize: false
   target:
     - target: dmg
       arch:
         - arm64
         - x64
+    - target: zip
+      arch:
+        - arm64
+        - x64
+afterSign: scripts/notarize.cjs
 
+# ──────────────────────── Windows ───────────────────────────────────────────
+# Code signing modes (selected via WM_WIN_SIGN_MODE env):
+#   - unset / "local"  → electron-builder reads WIN_CSC_LINK + WIN_CSC_KEY_PASSWORD
+#                        (mapped to certificateFile / certificatePassword via env).
+#   - "cloud"          → scripts/win-sign.cjs takes over (DigiCert KeyLocker / SSL.com /
+#                        Azure Trusted Signing wrappers around signtool.exe).
+# `publisherName` should match the CN on the cert. Override via WIN_PUBLISHER_NAME.
 win:
+  signtoolOptions:
+    signingHashAlgorithms:
+      - sha256
+    publisherName: ${env.WIN_PUBLISHER_NAME:-Molcube}
+    certificateFile: ${env.WIN_CSC_LINK}
+    certificatePassword: ${env.WIN_CSC_KEY_PASSWORD}
+    # Resolved at build-time by electron-builder. When `WM_WIN_SIGN_MODE=cloud`
+    # the script in `scripts/win-sign.cjs` is invoked per-binary and bypasses
+    # the built-in signtool path. When unset, electron-builder uses the cert
+    # above with its built-in signtool flow.
+    sign: scripts/win-sign.cjs
+    rfc3161TimeStampServer: http://timestamp.digicert.com
   target:
     - target: nsis
       arch:
@@ -43,8 +76,13 @@ linux:
   target:
     - AppImage
 
-# S3-ready; flip provider to `s3` once bucket + creds wired (WM_UPDATE_FEED_URL).
-# `null` here keeps `--publish=never` builds from trying to assemble a publish
-# manifest (which requires a `repository` field). Set `WM_PUBLISH_PROVIDER=github`
-# in CI when you actually want to publish a draft release.
-publish: null
+# ──────────────────────── Auto-update publish (S3) ──────────────────────────
+# Publish target is S3. `bucket` / `path` are read from env so the same YAML
+# works across stg / prod without per-env overrides. `WM_UPDATE_BUCKET` unset
+# (dev) is handled by `electron-builder --publish=never` in package.json.
+publish:
+  - provider: s3
+    bucket: ${env.WM_UPDATE_BUCKET}
+    path: /desktop/${env.WM_UPDATE_CHANNEL:-prod}
+    region: ${env.AWS_REGION:-ap-northeast-2}
+    acl: null

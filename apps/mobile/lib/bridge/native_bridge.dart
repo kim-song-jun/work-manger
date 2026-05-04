@@ -9,6 +9,9 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../geofence/geofence_service.dart';
+import '../widget_channels.dart';
+
 /// Bridges native capabilities into `window.NativeBridge` on the WebView's JS
 /// side. The actual JS shim is in `bridge/inject.dart`; this class wires the
 /// Dart side handlers that the shim's `callHandler(...)` calls reach.
@@ -48,6 +51,47 @@ class NativeBridge {
       handlerName: 'appInfo',
       callback: (_) => _appInfo(),
     );
+    _controller.addJavaScriptHandler(
+      handlerName: 'pushTodayStatus',
+      callback: (args) => _pushTodayStatus(args),
+    );
+    _controller.addJavaScriptHandler(
+      handlerName: 'reloadWidgets',
+      callback: (_) => _reloadWidgets(),
+    );
+    _controller.addJavaScriptHandler(
+      handlerName: 'registerGeofences',
+      callback: (args) => _registerGeofences(args),
+    );
+  }
+
+  // --- Widget bridges ------------------------------------------------------
+  Future<Map<String, dynamic>> _pushTodayStatus(List<dynamic> args) async {
+    final payload = (args.isNotEmpty && args.first is Map)
+        ? Map<String, dynamic>.from(args.first as Map)
+        : <String, dynamic>{};
+    final res = await WidgetChannels.pushTodayStatus(
+      status: (payload['status'] as String?) ?? 'UNKNOWN',
+      clockInAt: payload['clockInAt'] as String?,
+      workedMinutes: (payload['workedMinutes'] as num?)?.toInt() ?? 0,
+      annualLeaveRemaining:
+          (payload['annualLeaveRemaining'] as num?)?.toDouble() ?? 0,
+      weekHours: (payload['weekHours'] as num?)?.toDouble() ?? 0,
+      metric: payload['metric'] as String?,
+    );
+    return res ?? {'ok': false, 'error': 'CHANNEL_UNAVAILABLE'};
+  }
+
+  Future<Map<String, dynamic>> _reloadWidgets() async {
+    final res = await WidgetChannels.requestWidgetReload();
+    return res ?? {'ok': false, 'error': 'CHANNEL_UNAVAILABLE'};
+  }
+
+  Future<Map<String, dynamic>> _registerGeofences(List<dynamic> args) async {
+    final raw = (args.isNotEmpty && args.first is List) ? args.first as List : const [];
+    final items = normalizeGeofencePayload(raw);
+    await GeofenceServiceShim.registerAll(items);
+    return {'ok': true, 'count': items.length};
   }
 
   void dispose() {

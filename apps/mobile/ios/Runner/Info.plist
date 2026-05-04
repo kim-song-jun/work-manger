@@ -37,7 +37,15 @@
     <key>NSUserNotificationsUsageDescription</key>
     <string>출퇴근, 결재, 알림을 받기 위해 사용합니다.</string>
 
-    <!-- Background modes ========================================= -->
+    <!-- Background modes =========================================
+         WARNING: `location` triggers extra Apple App Review scrutiny.
+         Reviewers will reject builds that request always-on location
+         without (a) a clear in-app explainer screen referenced from
+         the App Store description, (b) `NSLocationAlways...` purpose
+         string that names the geofence feature, and (c) graceful
+         degradation when permission is denied. See
+         lib/geofence/geofence_service.dart and docs/specs/feature-spec.md §3.4.
+    -->
     <key>UIBackgroundModes</key>
     <array>
         <string>fetch</string>

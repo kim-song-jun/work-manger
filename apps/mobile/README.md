@@ -72,6 +72,36 @@ flutter build ipa --release \
   --dart-define=WEBVIEW_URL=https://app.work-manager.molcube.com
 ```
 
+## Native widget setup
+
+Home-screen widgets need manual platform wiring on top of `flutter pub get`:
+
+- **iOS WidgetKit** — see [`ios/WorkManagerWidget/README.md`](ios/WorkManagerWidget/README.md).
+  Add a Widget Extension target in Xcode, drag in the Swift files, and
+  enable the `group.com.molcube.workmanager` App Group capability on
+  **both** the Runner and the WorkManagerWidget targets.
+- **Android Glance** — already wired via
+  `android/app/src/main/kotlin/com/molcube/workmanager/widget/`. The
+  receivers are declared in `android/app/src/main/AndroidManifest.xml`.
+  Re-run `flutter clean && flutter run -d android` if Glance fails to
+  pick up the deps in `android/app/build.gradle.kts`.
+- **Bridge** — Dart calls land in `lib/widget_channels.dart`. The FE
+  invokes them via `window.NativeBridge.pushTodayStatus(...)` (typed
+  wrapper at `apps/web/src/shared/lib/native.ts`).
+
+## Geofencing background
+
+The Dart side (`lib/geofence/geofence_service.dart`) registers a
+periodic 15-minute Workmanager task. The native sides need:
+
+- **Android**: `ACCESS_BACKGROUND_LOCATION` is now requested in
+  `AndroidManifest.xml`. The Play Store will require a privacy-policy
+  link and an in-app explainer screen — see
+  `docs/specs/feature-spec.md` §3.4.
+- **iOS**: `UIBackgroundModes` already lists `location` — App Review
+  will scrutinise this submission. Provide a clear in-app explainer
+  before requesting the always-on permission.
+
 ## Firebase setup (NOT committed)
 
 Drop these into your local checkout (they are gitignored):

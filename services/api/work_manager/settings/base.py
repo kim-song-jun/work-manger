@@ -201,3 +201,28 @@ LOGGING = {
     },
     "root": {"handlers": ["console"], "level": "INFO"},
 }
+
+# ── Sentry (error + perf monitoring) ────────────────────────────────────────
+# DSN 미설정 시 init 을 건너뜀 → 로컬 / CI 환경에서는 무영향.
+# stg / prod 환경에서는 SENTRY_DSN env 를 주입하면 자동 활성.
+SENTRY_DSN = env("SENTRY_DSN", default="")
+SENTRY_TRACES_SAMPLE_RATE = env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.1)
+DJANGO_ENV = env("DJANGO_ENV", default="dev")
+
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            CeleryIntegration(),
+            RedisIntegration(),
+        ],
+        traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+        send_default_pii=False,  # PII 보호 — operations-guide.md §8.4
+        environment=DJANGO_ENV,
+    )

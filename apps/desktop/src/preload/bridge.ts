@@ -18,6 +18,9 @@ import {
   type NotificationClickedPayload,
   type NotifyPayload,
   type StatusChangedPayload,
+  type UpdaterAvailablePayload,
+  type UpdaterDownloadedPayload,
+  type UpdaterErrorPayload,
   type WorkStatus,
 } from "../shared/ipc-contracts.js";
 
@@ -25,6 +28,9 @@ type EventPayloads = {
   [IPC_EVENT.StatusChanged]: StatusChangedPayload;
   [IPC_EVENT.NotificationClicked]: NotificationClickedPayload;
   [IPC_EVENT.AutoClockInFired]: AutoClockInFiredPayload;
+  [IPC_EVENT.UpdaterUpdateAvailable]: UpdaterAvailablePayload;
+  [IPC_EVENT.UpdaterUpdateDownloaded]: UpdaterDownloadedPayload;
+  [IPC_EVENT.UpdaterError]: UpdaterErrorPayload;
 };
 
 export interface ElectronBridge {

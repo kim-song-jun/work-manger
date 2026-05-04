@@ -255,7 +255,7 @@ Provider 코드는 `apps/notification/providers/` 에 모드별로 분리되어 
 - [ ] ⏳ **App Store / Play Store 심사 통과** — Flutter 셸(`apps/mobile/`) 빌드 가능. 양 스토어 개발자 계정 등록 + 첫 제출 미진행. *Owner: TBD · Target: 2026-07-31*
 - [ ] ⏳ **Apple Notarization (Mac Electron)** — `apps/desktop/electron-builder.yml` 의 `mac.notarize: false` 상태. Apple Developer ID 인증서 미확보, `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` env 미설정. *Owner: TBD · Target: 2026-07-31*
 - [ ] ⏳ **Windows code signing** — `electron-builder.yml` win.target NSIS 설정 완료. EV / OV 인증서 미확보, `CSC_LINK` / `CSC_KEY_PASSWORD` env 미설정. *Owner: TBD · Target: 2026-07-31*
-- [ ] 🟡 **모니터링 대시보드 / 알림 룰 모두 활성** — Terraform observability 모듈(`infra/terraform/modules/observability/main.tf`) 작성 완료(SNS topic + CloudWatch log group + metric filter). 실제 prod 환경 deploy + Grafana / PagerDuty 연동 미진행. *Owner: TBD · Target: 2026-06-15*
+- [ ] 🟡 **모니터링 대시보드 / 알림 룰 모두 활성** — Terraform observability 모듈(`infra/terraform/modules/observability/main.tf`) 작성 완료(SNS topic + CloudWatch log group + metric filter). Sentry SDK 스캐폴딩 완료(BE: `services/api/work_manager/settings/base.py` SENTRY_DSN guard, FE: `apps/web/src/main.tsx` VITE_SENTRY_DSN guard) — stg+prod 에 DSN 주입 시 ✅. 실제 prod 환경 deploy + Grafana / PagerDuty 연동 미진행. *Owner: TBD · Target: 2026-06-15*
 - [ ] ⏳ **온콜 로테이션 확정** — PagerDuty 계정 미연동. 로테이션 정책 / 보상 협의 미시작. *Owner: TBD · Target: 2026-06-30*
 - [ ] ⏳ **사용자 매뉴얼 / 도움말 / FAQ 작성** — `docs/user-guide/` 미작성. 앱 내 헬프 센터 라우트 미추가. *Owner: TBD · Target: 2026-07-15*
 - [ ] ⏳ **백업 / 복원 리허설** — RDS 자동 백업 활성, PITR 활성(architecture §7.1). stg 복원 리허설 미실시 (`operations-guide.md` §6.3 의 "월 1회" 약속 시작 전). *Owner: TBD · Target: 2026-06-30*
@@ -272,5 +272,6 @@ Provider 코드는 `apps/notification/providers/` 에 모드별로 분리되어 
 | 비밀번호 강제 리셋 (대규모 사고 시) | [`sop/sop-emergency-password-reset.md`](sop/sop-emergency-password-reset.md) | Security Lead |
 | 이메일 도메인 평판 회복 | [`sop/sop-email-reputation-recovery.md`](sop/sop-email-reputation-recovery.md) | DevOps Lead |
 | App Store / Play Store 긴급 업데이트 | [`sop/sop-app-store-emergency-update.md`](sop/sop-app-store-emergency-update.md) | Mobile Lead |
+| 회사 가입 코드 (company-code) 발급 / 회수 | [`../manuals/admin-company-codes.md`](../manuals/admin-company-codes.md) | Customer Success Lead |
 
 운영 인덱스 전체: [`index.md`](index.md)

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
+    "@sentry/react": "^8.36.0",
     "@tanstack/react-query": "^5.62.7",
     "clsx": "^2.1.1",
     "i18next": "^24.0.5",

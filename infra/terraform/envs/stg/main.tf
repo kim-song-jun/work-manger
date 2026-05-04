@@ -178,6 +178,19 @@ module "s3_cdn" {
   tags                = local.common_tags
 }
 
+module "desktop_updates" {
+  source = "../../modules/desktop-updates"
+
+  env                    = local.env
+  bucket_name            = var.desktop_updates_bucket_name
+  account_id_short       = var.account_id_short
+  enable_cloudfront      = var.desktop_updates_enable_cloudfront
+  cloudfront_aliases     = var.desktop_updates_cloudfront_aliases
+  acm_certificate_arn    = var.desktop_updates_acm_certificate_arn
+  publish_principal_arns = var.desktop_updates_publish_principal_arns
+  tags                   = local.common_tags
+}
+
 module "observability" {
   source = "../../modules/observability"
 

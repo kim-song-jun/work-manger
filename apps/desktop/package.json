@@ -19,8 +19,12 @@
     "dev": "npm run build:ts && cross-env NODE_ENV=development electron dist/main/index.js",
     "start": "electron dist/main/index.js",
     "build:win": "npm run build:ts && electron-builder --win --publish=never",
-    "build:mac": "npm run build:ts && electron-builder --mac --publish=never",
+    "build:mac": "npm run build:ts && node scripts/check-mac-signing.cjs && electron-builder --mac --publish=never",
     "build:linux": "npm run build:ts && electron-builder --linux --publish=never",
+    "release:win": "npm run build:ts && electron-builder --win --publish=always",
+    "release:mac": "npm run build:ts && node scripts/check-mac-signing.cjs && electron-builder --mac --publish=always",
+    "release:linux": "npm run build:ts && electron-builder --linux --publish=always",
+    "check:mac-signing": "node scripts/check-mac-signing.cjs",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
@@ -31,6 +35,7 @@
     "electron-updater": "^6.3.9"
   },
   "devDependencies": {
+    "@electron/notarize": "^2.5.0",
     "@types/node": "^20.16.5",
     "@typescript-eslint/eslint-plugin": "^8.18.2",
     "@typescript-eslint/parser": "^8.18.2",

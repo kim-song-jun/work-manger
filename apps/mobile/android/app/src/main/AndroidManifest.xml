@@ -8,12 +8,11 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!--
-      Background location is intentionally commented until geofencing ships.
-      Enabling it pre-launch triggers Play Store policy review without a
-      user-facing reason. Re-enable in the same PR that adds the geofence
-      foreground service.
+      Background location is required by the geofence path
+      (lib/geofence/geofence_service.dart). Play Store will scrutinise this
+      submission — provide a clear in-app explainer + a privacy-policy link.
     -->
-    <!-- <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- Push (Android 13+ requires runtime grant) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -60,6 +59,33 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- ================== Home-screen widgets (Glance) ================== -->
+        <!-- TodayStatusWidget: 출근/퇴근 상태 + 누적 근무 시간 -->
+        <receiver
+            android:name=".widget.TodayStatusWidgetReceiver"
+            android:exported="true"
+            android:label="@string/wm_widget_today_desc">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/today_status_widget_info" />
+        </receiver>
+
+        <!-- ThisWeekWidget: 주간 누적 시간 + 잔여 연차 -->
+        <receiver
+            android:name=".widget.ThisWeekWidgetReceiver"
+            android:exported="true"
+            android:label="@string/wm_widget_week_desc">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/this_week_widget_info" />
+        </receiver>
     </application>
 
     <queries>

@@ -87,3 +87,35 @@ variable "image_api" {
   type        = string
   description = "Container image URI for api/ws/worker/beat."
 }
+
+# ──────────────────────── desktop-updates ───────────────────────────────────
+
+variable "desktop_updates_bucket_name" {
+  type        = string
+  description = "Globally unique S3 bucket name for the Electron desktop auto-update artifacts. Empty → derived from `workmanager-desktop-updates-<env>-<account_id_short>`."
+  default     = ""
+}
+
+variable "desktop_updates_enable_cloudfront" {
+  type        = bool
+  description = "Front the desktop-updates bucket with CloudFront + OAC. v1: false (S3 SigV4 direct)."
+  default     = false
+}
+
+variable "desktop_updates_cloudfront_aliases" {
+  type        = list(string)
+  description = "Optional CNAMEs for the CloudFront updates distribution."
+  default     = []
+}
+
+variable "desktop_updates_acm_certificate_arn" {
+  type        = string
+  description = "ACM cert ARN (us-east-1) for the desktop-updates CloudFront aliases."
+  default     = ""
+}
+
+variable "desktop_updates_publish_principal_arns" {
+  type        = list(string)
+  description = "IAM ARNs (CI runner role) allowed to PutObject into the desktop-updates bucket."
+  default     = []
+}

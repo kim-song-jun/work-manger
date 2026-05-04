@@ -35,6 +35,34 @@ type NativeBridgeShape = {
   registerDeviceToken?: () => Promise<RawDeviceToken>;
   haptic?: (intensity: HapticIntensity) => Promise<{ ok: true } | BridgeError>;
   appInfo?: () => Promise<RawAppInfo>;
+  // ---- Home-screen widgets --------------------------------------------
+  pushTodayStatus?: (
+    payload: TodayStatusPayload,
+  ) => Promise<{ ok: boolean } | BridgeError>;
+  reloadWidgets?: () => Promise<{ ok: boolean } | BridgeError>;
+  // ---- Geofencing ------------------------------------------------------
+  registerGeofences?: (
+    items: GeofenceItem[],
+  ) => Promise<{ ok: true; count: number } | BridgeError>;
+};
+
+export type TodayStatus = "WORKING" | "OFF" | "LEAVE" | "UNKNOWN";
+
+export type TodayStatusPayload = {
+  status: TodayStatus;
+  clockInAt?: string | null;
+  workedMinutes?: number;
+  weekHours?: number;
+  annualLeaveRemaining?: number;
+  metric?: "hours" | "leave" | "overtime";
+};
+
+export type GeofenceItem = {
+  id: string;
+  lat: number;
+  lon: number;
+  radius_m: number;
+  label: string;
 };
 
 declare global {
@@ -100,6 +128,45 @@ export async function haptic(intensity: HapticIntensity = "light"): Promise<void
     return;
   }
   await b.haptic(intensity);
+}
+
+/**
+ * Push today's attendance snapshot into the home-screen widget store.
+ * No-ops outside the Flutter shell. Resolves to `false` on bridge errors so
+ * callers can tag analytics without throwing.
+ */
+export async function pushTodayStatus(
+  payload: TodayStatusPayload,
+): Promise<boolean> {
+  const b = bridge();
+  if (!b?.pushTodayStatus) return false;
+  const res = await b.pushTodayStatus(payload);
+  if (isErr(res)) return false;
+  return !!res.ok;
+}
+
+/** Force a widget reload without changing the snapshot. */
+export async function reloadWidgets(): Promise<boolean> {
+  const b = bridge();
+  if (!b?.reloadWidgets) return false;
+  const res = await b.reloadWidgets();
+  if (isErr(res)) return false;
+  return !!res.ok;
+}
+
+/**
+ * Register the company's geofence regions (called once after
+ * `/v1/onboarding/locations` resolves). Returns the count actually
+ * registered, or `0` when the bridge is absent.
+ */
+export async function registerGeofences(
+  items: GeofenceItem[],
+): Promise<number> {
+  const b = bridge();
+  if (!b?.registerGeofences) return 0;
+  const res = await b.registerGeofences(items);
+  if (isErr(res)) return 0;
+  return res.count;
 }
 
 /** App / build metadata. Returns sensible WEB defaults outside the shell. */
