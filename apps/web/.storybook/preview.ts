@@ -1,7 +1,18 @@
 import type { Preview } from "@storybook/react";
 import { withThemeByClassName } from "@storybook/addon-themes";
+import { initialize, mswLoader } from "msw-storybook-addon";
 import "../src/shared/styles/tokens.css";
 import "../src/shared/styles/index.css";
+import "../src/shared/i18n";
+import { handlers } from "../src/test/msw/handlers";
+
+// Boots the MSW worker for the Storybook iframe. Default handlers come from the
+// shared registry used by Vitest, so a story renders the same data shape as a
+// unit test by default. Stories override per-test via `parameters.msw.handlers`.
+initialize({
+  onUnhandledRequest: "bypass",
+  serviceWorker: { url: "./mockServiceWorker.js" },
+});
 
 const preview: Preview = {
   parameters: {
@@ -16,7 +27,9 @@ const preview: Preview = {
     },
     layout: "centered",
     controls: { expanded: true },
+    msw: { handlers },
   },
+  loaders: [mswLoader],
   decorators: [
     withThemeByClassName({
       themes: {

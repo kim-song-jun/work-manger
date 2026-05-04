@@ -1,0 +1,1 @@
+import{u as r}from"./useQuery-PVg23WYc.js";import{a as e,H as a}from"./client-DvqTn1SX.js";async function s(){try{return(await e("/v1/me")).data}catch(t){if(t instanceof a&&(t.status===401||t.status===404))return null;throw t}}function o(){return r({queryKey:["me"],queryFn:s,staleTime:6e4})}export{s as f,o as u};

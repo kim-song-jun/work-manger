@@ -1,5 +1,11 @@
 import { api, HttpError } from "@shared/api";
+import type { paths } from "@shared/api/openapi-types";
 import type { InboxItem, InboxList, InboxStatus } from "../model/types";
+
+// Smoke proof: codegen output is consumed. Once backend declares
+// `responses=InboxListSerializer` on the drf view, the envelope below can
+// switch to `paths["/v1/inbox"]["get"]["responses"][200]["content"]["application/json"]`.
+export type InboxOp = paths["/v1/inbox"]["get"];
 
 type Envelope<T> = { data: T; counts?: InboxList["counts"]; next_cursor?: string | null };
 

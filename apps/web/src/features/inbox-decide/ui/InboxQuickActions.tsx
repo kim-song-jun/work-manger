@@ -46,6 +46,8 @@ export function InboxQuickActions({ itemId, size = "sm" }: Props) {
         <Button
           type="button"
           size={size}
+          // E2E hook (apps/e2e/specs/inbox-approve.spec.ts).
+          data-testid="inbox-approve"
           onClick={() => decide.mutate("approve")}
           disabled={decide.isPending}
         >

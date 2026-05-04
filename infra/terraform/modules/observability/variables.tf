@@ -5,8 +5,21 @@ variable "env" {
 
 variable "alert_emails" {
   type        = list(string)
-  description = "Email subscribers for the SNS ops alerts topic."
+  description = "Email subscribers for the SNS ops alerts topic. Each address must confirm the subscription via the AWS-sent email."
   default     = []
+}
+
+variable "pagerduty_endpoint_url" {
+  type        = string
+  description = "PagerDuty Events API URL (https://events.pagerduty.com/integration/<key>/enqueue). Empty disables PD subscription. See README §8."
+  default     = ""
+  sensitive   = true
+}
+
+variable "create_waf_log_group" {
+  type        = bool
+  description = "If true, create a CloudWatch log group named `aws-waf-logs-wm-<env>` for WAFv2 logging. Required if WAF logging is enabled."
+  default     = false
 }
 
 variable "alb_arn_suffix" {

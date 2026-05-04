@@ -8,6 +8,11 @@ output "app_log_group_name" {
   description = "Shared application log group name (Django JSON logs)."
 }
 
+output "waf_log_group_arn" {
+  value       = try(aws_cloudwatch_log_group.waf[0].arn, "")
+  description = "ARN of the WAF CloudWatch log group (empty if create_waf_log_group=false). Pass to modules/waf log_group_arn."
+}
+
 output "alarm_names" {
   value = [
     aws_cloudwatch_metric_alarm.alb_5xx_rate.alarm_name,

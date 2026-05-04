@@ -99,6 +99,34 @@ jobs:
         working-directory: apps/web
         run: npm ci --legacy-peer-deps
 
+      - name: Set up Docker Buildx (for OpenAPI types drift check)
+        uses: docker/setup-buildx-action@v3
+
+      - name: Bring up API for OpenAPI schema
+        # The schema source lives in drf-spectacular (architecture.md §4.3).
+        # We boot db + redis + api just long enough to fetch /v1/schema/.
+        run: |
+          docker compose up -d --build db redis api
+          for i in {1..60}; do
+            s=$(docker inspect --format='{{.State.Health.Status}}' wm-api 2>/dev/null || echo starting)
+            if [ "$s" = "healthy" ]; then echo "api healthy"; break; fi
+            echo "waiting for api ($s)..."
+            sleep 3
+          done
+
+      - name: OpenAPI types drift check
+        working-directory: apps/web
+        # Regenerates openapi-types.ts into a temp file from the live drf-spectacular
+        # schema. If the committed file is out of sync the job fails — run
+        # `npm run types:gen` locally and commit the diff.
+        env:
+          VITE_API_URL: http://localhost:4455
+        run: npm run types:check
+
+      - name: Tear down OpenAPI stack
+        if: always()
+        run: docker compose down -v --remove-orphans
+
       - name: Typecheck
         working-directory: apps/web
         run: npm run typecheck
@@ -150,12 +178,14 @@ jobs:
           done
 
       - name: Seed demo dataset
-        run: docker compose run --rm seed
+        run: docker compose --profile seed run --rm seed
 
       - name: Run Playwright suite
-        run: docker compose --profile e2e run --rm e2e
+        env:
+          WM_E2E_RETRIES: "2"
+        run: docker compose --profile e2e run --rm -e WM_E2E_RETRIES=$WM_E2E_RETRIES e2e
 
-      - name: Upload Playwright report
+      - name: Upload Playwright HTML report + traces
         if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -170,7 +200,19 @@ jobs:
         if: failure()
         run: |
           docker compose ps
-          docker compose logs --no-color --tail=400 api web ws worker || true
+          mkdir -p apps/e2e/_logs
+          docker compose logs --no-color --tail=800 api ws web > apps/e2e/_logs/api-ws-web.log 2>&1 || true
+          docker compose logs --no-color --tail=400 worker beat db redis > apps/e2e/_logs/workers-infra.log 2>&1 || true
+          tail -n 200 apps/e2e/_logs/api-ws-web.log || true
+
+      - name: Upload container logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-container-logs
+          path: apps/e2e/_logs
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Tear down stack
         if: always()

@@ -1,0 +1,1 @@
+import{a as n}from"./client-DvqTn1SX.js";async function e(o,a={}){await n(`/v1/inbox/${o}/approve`,{method:"POST",json:a})}async function i(o,a={}){await n(`/v1/inbox/${o}/reject`,{method:"POST",json:a})}export{e as a,i as r};

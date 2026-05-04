@@ -33,6 +33,24 @@ variable "alb_zone_id" {
   default     = ""
 }
 
+variable "spa_record_name" {
+  type        = string
+  description = "FQDN for the SPA record (e.g. `app.dev.work-manager.molcube.com`). Empty skips."
+  default     = ""
+}
+
+variable "cloudfront_domain_name" {
+  type        = string
+  description = "CloudFront distribution domain (e.g. d111.cloudfront.net) for SPA alias. Empty skips."
+  default     = ""
+}
+
+variable "cloudfront_zone_id" {
+  type        = string
+  description = "CloudFront global hosted zone ID. Defaults to the AWS-published constant Z2FDTNDATAQYW2."
+  default     = "Z2FDTNDATAQYW2"
+}
+
 variable "tags" {
   type        = map(string)
   description = "Common resource tags."

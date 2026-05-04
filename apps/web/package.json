@@ -15,7 +15,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "storybook": "storybook dev -p 6006 --host 0.0.0.0",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "types:gen": "node scripts/gen-api-types.mjs",
+    "types:check": "node scripts/gen-api-types.mjs --out=src/shared/api/openapi-types.generated.tmp.ts && diff -q src/shared/api/openapi-types.ts src/shared/api/openapi-types.generated.tmp.ts && rm -f src/shared/api/openapi-types.generated.tmp.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -47,11 +49,19 @@
     "@vitest/ui": "^2.1.8",
     "autoprefixer": "^10.4.20",
     "jsdom": "^25.0.1",
+    "msw": "^2.14.2",
+    "msw-storybook-addon": "^2.0.7",
+    "openapi-typescript": "^7.13.0",
     "postcss": "^8.4.49",
     "storybook": "^8.4.7",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.7.2",
     "vite": "^5.4.11",
     "vitest": "^2.1.8"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

@@ -28,10 +28,10 @@
 
 ## 인덱스
 
-| ID | 제목 | 상태 |
-|---|---|---|
-| ADR-001 | (예정) React SPA 단일 코드베이스 + 셸 어댑터 | Proposed |
-| ADR-002 | (예정) Flutter WebView 채택 | Proposed |
-| ADR-003 | (예정) Django REST + Channels | Proposed |
-| ADR-004 | (예정) PostgreSQL 단일 DB / 멀티 테넌트 v2 연기 | Proposed |
-| ADR-005 | (예정) 디자인 토큰 = CSS 변수 + Tailwind 참조 | Proposed |
+| ID | 제목 | 상태 | 날짜 |
+|---|---|---|---|
+| [ADR-001](ADR-001-react-spa-shell-adapter.md) | React SPA 단일 코드베이스 + 셸 어댑터 | Accepted | 2026-05-04 |
+| [ADR-002](ADR-002-flutter-webview-mobile.md) | Flutter WebView 채택 (모바일 셸) | Accepted | 2026-05-04 |
+| [ADR-003](ADR-003-django-rest-channels.md) | Django REST + Channels 채택 (백엔드) | Accepted | 2026-05-04 |
+| [ADR-004](ADR-004-postgres-single-db-multitenant-deferred.md) | PostgreSQL 단일 DB / 멀티 테넌트 v2 연기 | Accepted | 2026-05-04 |
+| [ADR-005](ADR-005-design-tokens-css-vars-tailwind.md) | 디자인 토큰 = CSS 변수 + Tailwind 참조 | Accepted | 2026-05-04 |

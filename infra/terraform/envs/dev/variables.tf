@@ -10,9 +10,23 @@ variable "alert_emails" {
   default     = []
 }
 
+variable "pagerduty_endpoint_url" {
+  type        = string
+  description = "PagerDuty Events API URL — see README §8. Empty disables PD subscription."
+  default     = ""
+  sensitive   = true
+}
+
 variable "spa_bucket_name" {
   type        = string
-  description = "Globally unique S3 bucket name for the SPA assets."
+  description = "Globally unique S3 bucket name for the SPA assets. Empty → derived from pattern + account_id_short."
+  default     = ""
+}
+
+variable "account_id_short" {
+  type        = string
+  description = "Last-6 digits of AWS account ID. Required if spa_bucket_name is empty."
+  default     = ""
 }
 
 variable "spa_domain_aliases" {
@@ -23,13 +37,13 @@ variable "spa_domain_aliases" {
 
 variable "spa_acm_certificate_arn" {
   type        = string
-  description = "ACM cert ARN in us-east-1 for the SPA aliases. Empty disables aliases."
+  description = "Fallback ACM cert ARN in us-east-1 (used only if module.acm doesn't produce one). Empty disables aliases."
   default     = ""
 }
 
 variable "alb_acm_certificate_arn" {
   type        = string
-  description = "ACM cert ARN in the ALB's region for the HTTPS listener. Empty leaves listener unconfigured."
+  description = "Fallback ACM cert ARN in the ALB region (used only if module.acm doesn't produce one)."
   default     = ""
 }
 
@@ -43,6 +57,30 @@ variable "api_record_name" {
   type        = string
   description = "FQDN of the API record (e.g. api.dev.work-manager.molcube.com). Empty skips."
   default     = ""
+}
+
+variable "spa_record_name" {
+  type        = string
+  description = "FQDN of the SPA record (e.g. app.dev.work-manager.molcube.com). Empty skips."
+  default     = ""
+}
+
+variable "enable_waf" {
+  type        = bool
+  description = "Attach WAFv2 web ACL to the ALB. Disabled by default in dev to save cost."
+  default     = false
+}
+
+variable "waf_geo_block_country_codes" {
+  type        = list(string)
+  description = "ISO 3166-1 alpha-2 country codes to block via WAF. Empty disables."
+  default     = []
+}
+
+variable "waf_enable_bot_control" {
+  type        = bool
+  description = "Enable WAF bot-control managed rule set (cost impact ~$10/mo)."
+  default     = false
 }
 
 variable "image_api" {

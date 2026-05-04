@@ -12,13 +12,28 @@ import { defineConfig, devices } from "@playwright/test";
  */
 const isCI = !!process.env.CI;
 
+/**
+ * Retry policy. Locally (CI=undefined) we want 0 retries — flake should be
+ * loud and immediate during development. CI tolerates `WM_E2E_RETRIES` (set
+ * by .github/workflows/ci.yml, default 2) so transient docker/network jitter
+ * doesn't bounce a green PR.
+ */
+const retries = (() => {
+  const raw = process.env.WM_E2E_RETRIES;
+  if (raw !== undefined && raw !== "") {
+    const n = Number(raw);
+    if (Number.isFinite(n) && n >= 0) return Math.floor(n);
+  }
+  return isCI ? 1 : 0;
+})();
+
 export default defineConfig({
   testDir: "./specs",
   globalSetup: require.resolve("./global-setup"),
   fullyParallel: false,
   workers: isCI ? 1 : 1,
   forbidOnly: isCI,
-  retries: isCI ? 1 : 0,
+  retries,
   reporter: isCI
     ? [["list"], ["html", { open: "never" }], ["github"]]
     : [["list"], ["html", { open: "never" }]],

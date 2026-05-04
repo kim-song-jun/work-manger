@@ -12,12 +12,20 @@ locals {
   name_prefix         = "wm-${var.env}"
   use_custom_domain   = var.acm_certificate_arn != "" && length(var.domain_aliases) > 0
   create_route53_alis = var.route53_zone_id != "" && local.use_custom_domain
+
+  # Resolve bucket name: explicit `bucket_name` wins; otherwise expand the
+  # pattern. Pattern tokens are `{env}` and `{short}`. Operators must supply
+  # `account_id_short` per-env via tfvars (last-6 digits of AWS account ID).
+  resolved_bucket_name = var.bucket_name != "" ? var.bucket_name : replace(
+    replace(var.bucket_name_pattern, "{env}", var.env),
+    "{short}", var.account_id_short,
+  )
 }
 
 resource "aws_s3_bucket" "spa" {
-  bucket        = var.bucket_name
+  bucket        = local.resolved_bucket_name
   force_destroy = var.env != "prod"
-  tags          = merge(var.tags, { Name = var.bucket_name })
+  tags          = merge(var.tags, { Name = local.resolved_bucket_name })
 }
 
 resource "aws_s3_bucket_public_access_block" "spa" {
@@ -57,75 +65,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "spa" {
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
     }
-  }
-}
-
-resource "aws_cloudfront_origin_access_control" "spa" {
-  name                              = "${local.name_prefix}-spa-oac"
-  description                       = "OAC for ${aws_s3_bucket.spa.id}"
-  origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
-}
-
-resource "aws_cloudfront_response_headers_policy" "spa" {
-  name = "${local.name_prefix}-spa-headers"
-
-  security_headers_config {
-    strict_transport_security {
-      access_control_max_age_sec = 63072000
-      include_subdomains         = true
-      preload                    = true
-      override                   = true
-    }
-    content_type_options {
-      override = true
-    }
-    frame_options {
-      frame_option = "DENY"
-      override     = true
-    }
-    referrer_policy {
-      referrer_policy = "strict-origin-when-cross-origin"
-      override        = true
-    }
-    xss_protection {
-      protection = true
-      mode_block = true
-      override   = true
-    }
-  }
-}
-
-resource "aws_cloudfront_cache_policy" "index_short" {
-  name        = "${local.name_prefix}-index-short"
-  comment     = "Short TTL for index.html — must always reflect newest deploy."
-  default_ttl = 60
-  max_ttl     = 300
-  min_ttl     = 0
-
-  parameters_in_cache_key_and_forwarded_to_origin {
-    enable_accept_encoding_gzip   = true
-    enable_accept_encoding_brotli = true
-    cookies_config { cookie_behavior = "none" }
-    headers_config { header_behavior = "none" }
-    query_strings_config { query_string_behavior = "none" }
-  }
-}
-
-resource "aws_cloudfront_cache_policy" "asset_long" {
-  name        = "${local.name_prefix}-asset-long"
-  comment     = "Long TTL for hashed assets (immutable filenames)."
-  default_ttl = 31536000
-  max_ttl     = 31536000
-  min_ttl     = 31536000
-
-  parameters_in_cache_key_and_forwarded_to_origin {
-    enable_accept_encoding_gzip   = true
-    enable_accept_encoding_brotli = true
-    cookies_config { cookie_behavior = "none" }
-    headers_config { header_behavior = "none" }
-    query_strings_config { query_string_behavior = "none" }
   }
 }
 
@@ -222,12 +161,13 @@ resource "aws_s3_bucket_policy" "spa" {
   policy = data.aws_iam_policy_document.spa.json
 }
 
+# Route53 alias records for the SPA were moved to modules/route53 (single
+# owner of DNS). Pass `route53_zone_id = ""` from the env to keep this disabled.
 resource "aws_route53_record" "spa_a" {
   for_each = local.create_route53_alis ? toset(var.domain_aliases) : []
   zone_id  = var.route53_zone_id
   name     = each.value
   type     = "A"
-
   alias {
     name                   = aws_cloudfront_distribution.spa.domain_name
     zone_id                = aws_cloudfront_distribution.spa.hosted_zone_id
@@ -240,7 +180,6 @@ resource "aws_route53_record" "spa_aaaa" {
   zone_id  = var.route53_zone_id
   name     = each.value
   type     = "AAAA"
-
   alias {
     name                   = aws_cloudfront_distribution.spa.domain_name
     zone_id                = aws_cloudfront_distribution.spa.hosted_zone_id

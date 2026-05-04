@@ -53,8 +53,12 @@ export function InboxPage() {
           )}
           {filtered.map((it) => {
             const km = KIND_COLORS[it.kind] ?? KIND_COLORS.OTHER;
+            // E2E hook: `data-testid="inbox-item"` on the wrapping div is
+            // consumed by apps/e2e/specs/{inbox-approve,realtime}.spec.ts.
+            // See apps/e2e/README.md "FE testids" for the full list.
             return (
-              <Card key={it.id} padding={14}>
+              <div key={it.id} data-testid="inbox-item">
+              <Card padding={14}>
                 <div className="flex items-center gap-2">
                   <span
                     className="text-[11px] font-bold"
@@ -99,6 +103,7 @@ export function InboxPage() {
                 </button>
                 {it.role === "approve" && <InboxQuickActions itemId={it.id} />}
               </Card>
+              </div>
             );
           })}
         </div>

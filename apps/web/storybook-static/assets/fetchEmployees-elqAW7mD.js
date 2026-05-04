@@ -1,0 +1,1 @@
+import{a as e,H as n}from"./client-DvqTn1SX.js";async function i(a={}){const r=new URLSearchParams;a.q&&r.set("q",a.q),a.role&&a.role!=="ALL"&&r.set("role",a.role);const s=r.toString(),o=`/v1/admin/employees${s?`?${s}`:""}`;try{const t=await e(o);return Array.isArray(t.data)?t.data:[]}catch(t){if(t instanceof n&&t.status===404)return[];throw t}}export{i as f};

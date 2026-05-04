@@ -5,96 +5,93 @@
  *       지연 후에야 인지하게 되어 SLA 와 사용자 신뢰가 무너짐 (api-spec §9 / ops §3.1).
  * Pre-conditions:
  *   - manager1@acme.demo (직속 부하 employee 보유)
- *   - 동일 회사 employee 계정 (seed_demo 의 첫 번째 employee 사용)
+ *   - 동일 회사 employee 계정 (resolveEmployeeEmail 로 동적 검색)
  *   - ws/daphne 컨테이너 healthy
+ *   - 모바일 라우트 /m/inbox 활성, FE 카드에 data-testid="inbox-item"
  * Coverage:
  *   - manager 컨텍스트 /m/inbox 오픈 → ws 연결 (wss /v1/ws?token=...)
  *   - employee 컨텍스트가 POST /v1/overtime/requests 로 OT 요청 생성
- *   - manager 화면이 새 인박스 항목을 2초 이내 렌더 (WS push)
+ *   - manager 화면이 새 인박스 항목을 2초 이내 렌더 (WS push → query refetch)
  * SLO 검증: 생성 → 매니저 UI 반영 < 2s
- *
- * NOTE (deferred):
- *   - /m/inbox 미존재 시 skip
- *   - WS 채널 미구현 시 명확한 실패로 회귀 보호
  */
 import { test, expect, request as pwRequest } from "@playwright/test";
-import { attachAuthToContext, loginViaApi, API_URL } from "@fixtures/auth";
+import { loginAs, loginViaApi, resolveEmployeeEmail, API_URL } from "@fixtures/auth";
 import { DEMO_USERS } from "@fixtures/users";
 
-test.describe("realtime inbox push", () => {
+test.describe("realtime inbox push @manager", () => {
   test("manager sees employee OT request within 2s via WebSocket", async ({ browser }) => {
-    // Arrange — two contexts: manager (browser), employee (API only)
-    const managerSession = await loginViaApi(DEMO_USERS.manager);
+    // Arrange — manager browser context with programmatic auth
     const managerCtx = await browser.newContext();
-    await attachAuthToContext(managerCtx, managerSession);
     const managerPage = await managerCtx.newPage();
+    const managerSession = await loginAs(managerPage, DEMO_USERS.manager);
 
-    await managerPage.goto("/m/inbox").catch(() => null);
-    if (!/\/m\/inbox/.test(managerPage.url())) {
-      await managerCtx.close();
-      test.skip(true, "/m/inbox route not yet wired in FE — deferred");
-    }
+    await managerPage.goto("/m/inbox", { waitUntil: "load", timeout: 30_000 });
+    await expect(managerPage).toHaveURL(/\/m\/inbox/);
 
     // Settle initial inbox list and snapshot row count
     await managerPage
-      .waitForResponse((r) => r.url().includes("/v1/inbox") && r.request().method() === "GET", {
-        timeout: 5_000,
-      })
+      .waitForResponse(
+        (r) => r.url().includes("/v1/inbox") && r.request().method() === "GET",
+        { timeout: 10_000 },
+      )
       .catch(() => null);
     const initialCount = await managerPage.getByTestId("inbox-item").count();
 
-    // Act — log in an employee and create an OT request via API
-    // Find an employee email by listing the manager's reports
-    const adminCtx = await pwRequest.newContext({
-      baseURL: API_URL,
-      extraHTTPHeaders: { authorization: `Bearer ${managerSession.accessToken}` },
-    });
-    const teamRes = await adminCtx.get("/v1/team");
-    let employeeEmail: string | null = null;
-    if (teamRes.ok()) {
-      const body = (await teamRes.json()) as { data?: Array<{ email?: string }> };
-      const list = body.data ?? [];
-      employeeEmail = list.find((m) => m.email && m.email !== DEMO_USERS.manager.email)?.email ?? null;
-    }
-    await adminCtx.dispose();
+    // Resolve an EMPLOYEE-role member under this manager (or any in the company).
+    const employeeEmail = await resolveEmployeeEmail(managerSession);
     if (!employeeEmail) {
       await managerCtx.close();
-      test.skip(true, "could not locate an employee email under this manager");
+      throw new Error("[realtime] could not locate an employee email under this manager");
     }
-
     const empSession = await loginViaApi({
-      email: employeeEmail!,
-      password: DEMO_USERS.admin.password, // seeded password is uniform
+      email: employeeEmail,
+      password: DEMO_USERS.employee.password,
       role: "EMPLOYEE",
     });
 
-    const empCtx = await pwRequest.newContext({
+    // Act — employee submits an OT request via API. The OT serializer expects
+    // `work_date` (YYYY-MM-DD) + `requested_minutes` + optional `reason`.
+    const empApi = await pwRequest.newContext({
       baseURL: API_URL,
       extraHTTPHeaders: { authorization: `Bearer ${empSession.accessToken}` },
     });
-    const otRes = await empCtx.post("/v1/overtime/requests", {
+
+    // Watch for the inbox refetch that should fire when the WS push lands.
+    // The FE invalidates ["inbox"] on push → refetch hits /v1/inbox.
+    const refetchPromise = managerPage.waitForResponse(
+      (r) =>
+        (r.url().includes("/v1/inbox") || r.url().includes("/v1/ws/inbox")) &&
+        r.request().method() === "GET",
+      { timeout: 5_000 },
+    );
+
+    const start = Date.now();
+    const otRes = await empApi.post("/v1/overtime/requests", {
       data: {
-        date: new Date().toISOString().slice(0, 10),
-        hours: 1.5,
+        work_date: new Date().toISOString().slice(0, 10),
+        requested_minutes: 90,
         reason: "E2E realtime test",
       },
-      headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
+      headers: { "content-type": "application/json" },
     });
-    await empCtx.dispose();
+    await empApi.dispose();
     if (!otRes.ok()) {
       await managerCtx.close();
       throw new Error(`employee OT submit failed: ${otRes.status()} ${await otRes.text()}`);
     }
 
-    // Assert — manager UI sees a new row within 2s
-    const start = Date.now();
+    // Wait for either the WS-triggered refetch OR the row count delta — whichever
+    // arrives first within the SLO window.
+    await refetchPromise.catch(() => null);
     await expect
       .poll(async () => managerPage.getByTestId("inbox-item").count(), {
         timeout: 2_000,
-        intervals: [200, 200, 200, 200, 200],
+        intervals: [100, 100, 100, 100, 100, 200, 200, 200, 200],
       })
       .toBeGreaterThan(initialCount);
     const elapsed = Date.now() - start;
+
+    // Assert
     expect(elapsed, `realtime push should arrive < 2s, was ${elapsed}ms`).toBeLessThan(2_000);
 
     await managerCtx.close();

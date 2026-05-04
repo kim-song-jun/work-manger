@@ -1,0 +1,1 @@
+import{j as n}from"./jsx-runtime-DFAAy_2V.js";function i({width:e="100%",height:s=16,radius:t=8,style:o,className:r=""}){return n.jsx("div",{className:`wm-skeleton ${r}`,style:{width:e,height:s,borderRadius:t,...o}})}export{i as S};

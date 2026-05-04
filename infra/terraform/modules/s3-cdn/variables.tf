@@ -5,7 +5,20 @@ variable "env" {
 
 variable "bucket_name" {
   type        = string
-  description = "Globally unique S3 bucket name for the SPA assets."
+  description = "Globally unique S3 bucket name for the SPA assets. If empty, derived from `bucket_name_pattern`."
+  default     = ""
+}
+
+variable "account_id_short" {
+  type        = string
+  description = "Last-6 digits of the AWS account ID — used by `bucket_name_pattern` to keep names globally unique without leaking the full account ID into VCS. Provided per-env via tfvars."
+  default     = ""
+}
+
+variable "bucket_name_pattern" {
+  type        = string
+  description = "Template for the SPA bucket name when `bucket_name` is empty. Tokens: `{env}`, `{short}` (= account_id_short)."
+  default     = "workmanager-{env}-spa-{short}"
 }
 
 variable "domain_aliases" {

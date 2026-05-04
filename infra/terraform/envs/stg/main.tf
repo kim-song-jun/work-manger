@@ -46,15 +46,44 @@ module "secrets" {
   tags                 = local.common_tags
 }
 
+module "route53" {
+  source = "../../modules/route53"
+
+  env                    = local.env
+  create_zone            = false
+  zone_name              = var.route53_zone_name
+  api_record_name        = var.api_record_name
+  alb_dns_name           = module.alb.alb_dns_name
+  alb_zone_id            = module.alb.alb_zone_id
+  spa_record_name        = var.spa_record_name
+  cloudfront_domain_name = module.s3_cdn.cloudfront_domain
+  tags                   = local.common_tags
+}
+
+module "acm" {
+  source = "../../modules/acm"
+  providers = {
+    aws.regional  = aws.regional
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  env                                  = local.env
+  zone_id                              = module.route53.zone_id
+  alb_domain_name                      = var.api_record_name
+  cloudfront_domain_name               = var.spa_record_name
+  cloudfront_subject_alternative_names = var.spa_domain_aliases
+  tags                                 = local.common_tags
+}
+
 module "alb" {
   source = "../../modules/alb"
 
-  env             = local.env
-  vpc_id          = module.network.vpc_id
+  env               = local.env
+  vpc_id            = module.network.vpc_id
   public_subnet_ids = module.network.public_subnet_ids
-  certificate_arn = var.alb_acm_certificate_arn
-  enable_waf      = true
-  tags            = local.common_tags
+  certificate_arn   = module.acm.alb_certificate_arn != "" ? module.acm.alb_certificate_arn : var.alb_acm_certificate_arn
+  enable_waf        = false # WAF wired separately via modules/waf below
+  tags              = local.common_tags
 }
 
 module "ecs" {
@@ -93,34 +122,34 @@ module "ecs" {
 module "rds" {
   source = "../../modules/rds"
 
-  env                          = local.env
-  vpc_id                       = module.network.vpc_id
-  db_subnet_ids                = module.network.db_subnet_ids
+  env           = local.env
+  vpc_id        = module.network.vpc_id
+  db_subnet_ids = module.network.db_subnet_ids
   ingress_security_group_ids = [
     module.ecs.api_security_group_id,
     module.ecs.ws_security_group_id,
     module.ecs.worker_security_group_id,
     module.ecs.beat_security_group_id,
   ]
-  instance_class                = "db.t4g.large"
-  allocated_storage_gb          = 100
-  max_allocated_storage_gb      = 300
-  multi_az                      = true
-  create_replica                = true
-  backup_retention_days         = 7
-  deletion_protection           = true
-  db_password_secret_arn        = module.secrets.db_password_arn
-  performance_insights_enabled  = true
-  monitoring_interval_seconds   = 60
-  tags                          = local.common_tags
+  instance_class               = "db.t4g.large"
+  allocated_storage_gb         = 100
+  max_allocated_storage_gb     = 300
+  multi_az                     = true
+  create_replica               = true
+  backup_retention_days        = 7
+  deletion_protection          = true
+  db_password_secret_arn       = module.secrets.db_password_arn
+  performance_insights_enabled = true
+  monitoring_interval_seconds  = 60
+  tags                         = local.common_tags
 }
 
 module "elasticache" {
   source = "../../modules/elasticache"
 
-  env                        = local.env
-  vpc_id                     = module.network.vpc_id
-  db_subnet_ids              = module.network.db_subnet_ids
+  env           = local.env
+  vpc_id        = module.network.vpc_id
+  db_subnet_ids = module.network.db_subnet_ids
   ingress_security_group_ids = [
     module.ecs.api_security_group_id,
     module.ecs.ws_security_group_id,
@@ -141,35 +170,38 @@ module "s3_cdn" {
 
   env                 = local.env
   bucket_name         = var.spa_bucket_name
+  account_id_short    = var.account_id_short
   domain_aliases      = var.spa_domain_aliases
-  acm_certificate_arn = var.spa_acm_certificate_arn
-  route53_zone_id     = module.route53.zone_id
+  acm_certificate_arn = module.acm.cloudfront_certificate_arn != "" ? module.acm.cloudfront_certificate_arn : var.spa_acm_certificate_arn
+  route53_zone_id     = "" # route53 module owns SPA aliases now
   price_class         = "PriceClass_200"
   tags                = local.common_tags
-}
-
-module "route53" {
-  source = "../../modules/route53"
-
-  env             = local.env
-  create_zone     = false
-  zone_name       = var.route53_zone_name
-  api_record_name = var.api_record_name
-  alb_dns_name    = module.alb.alb_dns_name
-  alb_zone_id     = module.alb.alb_zone_id
-  tags            = local.common_tags
 }
 
 module "observability" {
   source = "../../modules/observability"
 
-  env                          = local.env
-  alert_emails                 = var.alert_emails
-  alb_arn_suffix               = element(split("loadbalancer/", module.alb.alb_arn), 1)
-  api_target_group_arn_suffix  = element(split(":targetgroup/", module.alb.api_target_group_arn), 1)
-  rds_instance_id              = "wm-${local.env}-pg-primary"
-  redis_replication_group_id   = module.elasticache.replication_group_id
-  ecs_cluster_name             = module.ecs.cluster_name
-  ecs_api_service_name         = module.ecs.api_service_name
-  tags                         = local.common_tags
+  env                         = local.env
+  alert_emails                = var.alert_emails
+  pagerduty_endpoint_url      = var.pagerduty_endpoint_url
+  create_waf_log_group        = var.enable_waf
+  alb_arn_suffix              = element(split("loadbalancer/", module.alb.alb_arn), 1)
+  api_target_group_arn_suffix = element(split(":targetgroup/", module.alb.api_target_group_arn), 1)
+  rds_instance_id             = "wm-${local.env}-pg-primary"
+  redis_replication_group_id  = module.elasticache.replication_group_id
+  ecs_cluster_name            = module.ecs.cluster_name
+  ecs_api_service_name        = module.ecs.api_service_name
+  tags                        = local.common_tags
+}
+
+module "waf" {
+  count  = var.enable_waf ? 1 : 0
+  source = "../../modules/waf"
+
+  env                     = local.env
+  alb_arn                 = module.alb.alb_arn
+  log_group_arn           = module.observability.waf_log_group_arn
+  geo_block_country_codes = var.waf_geo_block_country_codes
+  enable_bot_control      = var.waf_enable_bot_control
+  tags                    = local.common_tags
 }

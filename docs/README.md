@@ -14,9 +14,33 @@
 | 아키텍처 설계도 | [`architecture/architecture.md`](architecture/architecture.md) | 시스템 컴포넌트 · 통신 흐름 · 배포 토폴로지 |
 | 데이터 모델 | [`architecture/data-model.md`](architecture/data-model.md) | 테이블 스키마 · 인덱스 · 마이그레이션 정책 |
 | 운영 유의사항 | [`operations/operations-guide.md`](operations/operations-guide.md) | 배포 · 모니터링 · 백업 · 보안 · 장애 대응 |
-| 런북 | [`operations/runbook.md`](operations/runbook.md) | 장애 시나리오별 복구 절차 |
+| 운영 인덱스 | [`operations/index.md`](operations/index.md) | 핵심 가이드 + SOP + 출시 체크리스트 입구 |
+| 런북 | [`operations/runbook.md`](operations/runbook.md) | 장애 시나리오별 복구 절차 (R-001 ~ R-011) |
+| 운영 SOP | [`operations/sop/`](operations/sop/) | 온보딩 / 데이터 처리 / 보안 사고 / 평판 / 스토어 긴급 업데이트 |
+| 의사결정 기록 (ADR) | [`adr/README.md`](adr/README.md) | ADR-001 ~ ADR-005 (React SPA / Flutter WebView / Django / Postgres / 디자인 토큰) |
 | 디자인 시스템 | [`design/design-system.md`](design/design-system.md) | 토큰 / 타이포 / 컴포넌트 / 모션 |
 | 로드맵 | [`roadmap.md`](roadmap.md) | 마일스톤 · 우선순위 · 마감 |
+
+### SOP 빠른 링크
+
+| SOP | 문서 |
+|---|---|
+| 신규 회사 온보딩 | [`operations/sop/sop-onboard-new-company.md`](operations/sop/sop-onboard-new-company.md) |
+| 사용자 데이터 export 요청 처리 | [`operations/sop/sop-data-export-request.md`](operations/sop/sop-data-export-request.md) |
+| 사용자 데이터 삭제 요청 처리 | [`operations/sop/sop-data-deletion-request.md`](operations/sop/sop-data-deletion-request.md) |
+| 비밀번호 강제 리셋 | [`operations/sop/sop-emergency-password-reset.md`](operations/sop/sop-emergency-password-reset.md) |
+| 이메일 평판 회복 (SES) | [`operations/sop/sop-email-reputation-recovery.md`](operations/sop/sop-email-reputation-recovery.md) |
+| App Store / Play 긴급 업데이트 | [`operations/sop/sop-app-store-emergency-update.md`](operations/sop/sop-app-store-emergency-update.md) |
+
+### ADR 빠른 링크
+
+| ADR | 문서 |
+|---|---|
+| ADR-001 React SPA 단일 코드베이스 + 셸 어댑터 | [`adr/ADR-001-react-spa-shell-adapter.md`](adr/ADR-001-react-spa-shell-adapter.md) |
+| ADR-002 Flutter WebView 채택 | [`adr/ADR-002-flutter-webview-mobile.md`](adr/ADR-002-flutter-webview-mobile.md) |
+| ADR-003 Django REST + Channels | [`adr/ADR-003-django-rest-channels.md`](adr/ADR-003-django-rest-channels.md) |
+| ADR-004 PostgreSQL 단일 DB / 멀티 테넌트 v2 연기 | [`adr/ADR-004-postgres-single-db-multitenant-deferred.md`](adr/ADR-004-postgres-single-db-multitenant-deferred.md) |
+| ADR-005 디자인 토큰 = CSS 변수 + Tailwind 참조 | [`adr/ADR-005-design-tokens-css-vars-tailwind.md`](adr/ADR-005-design-tokens-css-vars-tailwind.md) |
 
 ## 작성 규칙
 

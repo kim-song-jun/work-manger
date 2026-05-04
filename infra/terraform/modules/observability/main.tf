@@ -25,7 +25,7 @@ resource "aws_sns_topic_subscription" "email" {
   endpoint  = each.value
 }
 
-# TODO(prod): add PagerDuty https endpoint subscription once integration key is provisioned.
+# PagerDuty + WAF log group live in pagerduty.tf — kept separate to stay <250 lines.
 
 # Application log group: structured Django JSON logs from api/ws (single shared
 # group lets metric filters span the whole HTTP plane). Per-service log groups

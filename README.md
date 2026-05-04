@@ -86,6 +86,25 @@ cd apps/web && pnpm install && pnpm dev
 
 ---
 
+## 시각 회귀 (Visual Regression)
+
+페이지 스토리는 `apps/web/src/pages/**/*.stories.tsx` 에 있습니다.
+`apps/web/.storybook/chromatic.json` 에 chromatic-ready 마커가 있습니다.
+
+TODO: CI 에 chromatic 액션을 붙이려면 GitHub Secrets 에
+`CHROMATIC_PROJECT_TOKEN` 을 등록한 뒤 다음 워크플로 스텝을 추가하세요
+(현재 CI 에서는 의도적으로 비활성화되어 있습니다).
+
+```yaml
+- name: Publish to Chromatic
+  uses: chromaui/action@v11
+  with:
+    projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+    workingDir: apps/web
+```
+
+---
+
 ## 라이선스
 
 Proprietary — Molcube © 2026

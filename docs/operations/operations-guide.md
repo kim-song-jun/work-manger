@@ -243,28 +243,34 @@ Provider 코드는 `apps/notification/providers/` 에 모드별로 분리되어 
 ## 11. 출시 체크리스트 (Pre-launch)
 
 ### 11.1 v1.0 MVP 출시 전
-- [ ] 부하 테스트 (목표 DAU × 3 트래픽)
-- [ ] 카오스 테스트 (DB failover, Redis down, Celery down)
-- [ ] 보안 점검 (OWASP Top 10, 의존성 audit)
-- [ ] 개인정보처리방침 / 이용약관 / 통신판매업 신고 (해당 시)
-- [ ] 한국 개인정보보호법 / GDPR 검토
-- [ ] App Store / Play Store 심사 통과
-- [ ] Apple Notarization (Mac Electron)
-- [ ] Windows code signing
-- [ ] 모니터링 대시보드 / 알림 룰 모두 활성
-- [ ] 온콜 로테이션 확정
-- [ ] 사용자 매뉴얼 / 도움말 / FAQ 작성
-- [ ] 백업 / 복원 리허설 완료
+
+> 상태 표기: ✅ 완료 · 🟡 부분 완료 · ⏳ 미시작 · 🔴 차단 (blocked)
+> 마지막 업데이트: 2026-05-04
+
+- [ ] ⏳ **부하 테스트** (목표 DAU × 3 트래픽) — Locust/k6 스크립트 미작성. 권장: `tools/load/locustfile.py` 스켈레톤 추가 → 09:00 출근 피크 시뮬. *Owner: TBD · Target: 2026-06-15*
+- [ ] ⏳ **카오스 테스트** (DB failover, Redis down, Celery down) — chaos lib 미도입. 권장: `docker compose pause db` / `pause redis` / Celery worker SIGSTOP 시나리오 스크립트화. *Owner: TBD · Target: 2026-06-30*
+- [ ] 🟡 **보안 점검** (OWASP Top 10, 의존성 audit) — audit log(`apps/audit/`) + 로그인 lockout + 2FA(TOTP) 구현 완료. 외부 펜테스트(pen-test) 미실시. *Owner: TBD · Target: 2026-07-15*
+- [ ] ⏳ **개인정보처리방침 / 이용약관 / 통신판매업 신고** (해당 시) — 법무 검토 미시작. *Owner: TBD · Target: 2026-06-30*
+- [ ] ⏳ **한국 개인정보보호법 / GDPR 검토** — DPO 지정 + SOP-data-export-request / SOP-data-deletion-request 작성 완료. 법무 최종 검토 + 외부 컴플라이언스 감사 미수행. *Owner: TBD · Target: 2026-07-15*
+- [ ] ⏳ **App Store / Play Store 심사 통과** — Flutter 셸(`apps/mobile/`) 빌드 가능. 양 스토어 개발자 계정 등록 + 첫 제출 미진행. *Owner: TBD · Target: 2026-07-31*
+- [ ] ⏳ **Apple Notarization (Mac Electron)** — `apps/desktop/electron-builder.yml` 의 `mac.notarize: false` 상태. Apple Developer ID 인증서 미확보, `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` env 미설정. *Owner: TBD · Target: 2026-07-31*
+- [ ] ⏳ **Windows code signing** — `electron-builder.yml` win.target NSIS 설정 완료. EV / OV 인증서 미확보, `CSC_LINK` / `CSC_KEY_PASSWORD` env 미설정. *Owner: TBD · Target: 2026-07-31*
+- [ ] 🟡 **모니터링 대시보드 / 알림 룰 모두 활성** — Terraform observability 모듈(`infra/terraform/modules/observability/main.tf`) 작성 완료(SNS topic + CloudWatch log group + metric filter). 실제 prod 환경 deploy + Grafana / PagerDuty 연동 미진행. *Owner: TBD · Target: 2026-06-15*
+- [ ] ⏳ **온콜 로테이션 확정** — PagerDuty 계정 미연동. 로테이션 정책 / 보상 협의 미시작. *Owner: TBD · Target: 2026-06-30*
+- [ ] ⏳ **사용자 매뉴얼 / 도움말 / FAQ 작성** — `docs/user-guide/` 미작성. 앱 내 헬프 센터 라우트 미추가. *Owner: TBD · Target: 2026-07-15*
+- [ ] ⏳ **백업 / 복원 리허설** — RDS 자동 백업 활성, PITR 활성(architecture §7.1). stg 복원 리허설 미실시 (`operations-guide.md` §6.3 의 "월 1회" 약속 시작 전). *Owner: TBD · Target: 2026-06-30*
 
 ---
 
 ## 12. 운영 SOP 색인
 
-| SOP | 문서 |
-|---|---|
-| 신규 회사 온보딩 | (작성 예정) |
-| 사용자 데이터 export 요청 처리 | (작성 예정) |
-| 사용자 데이터 삭제 요청 처리 (GDPR / 개인정보보호법) | (작성 예정) |
-| 비밀번호 강제 리셋 (대규모 사고 시) | (작성 예정) |
-| 이메일 도메인 평판 회복 | (작성 예정) |
-| App Store / Play Store 긴급 업데이트 | (작성 예정) |
+| SOP | 문서 | Owner |
+|---|---|---|
+| 신규 회사 온보딩 | [`sop/sop-onboard-new-company.md`](sop/sop-onboard-new-company.md) | Customer Success Lead |
+| 사용자 데이터 export 요청 처리 | [`sop/sop-data-export-request.md`](sop/sop-data-export-request.md) | DPO / 보안 담당 |
+| 사용자 데이터 삭제 요청 처리 (GDPR / 개인정보보호법) | [`sop/sop-data-deletion-request.md`](sop/sop-data-deletion-request.md) | DPO / 보안 담당 |
+| 비밀번호 강제 리셋 (대규모 사고 시) | [`sop/sop-emergency-password-reset.md`](sop/sop-emergency-password-reset.md) | Security Lead |
+| 이메일 도메인 평판 회복 | [`sop/sop-email-reputation-recovery.md`](sop/sop-email-reputation-recovery.md) | DevOps Lead |
+| App Store / Play Store 긴급 업데이트 | [`sop/sop-app-store-emergency-update.md`](sop/sop-app-store-emergency-update.md) | Mobile Lead |
+
+운영 인덱스 전체: [`index.md`](index.md)

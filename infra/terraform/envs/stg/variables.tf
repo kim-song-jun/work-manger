@@ -10,9 +10,23 @@ variable "alert_emails" {
   default     = []
 }
 
+variable "pagerduty_endpoint_url" {
+  type        = string
+  description = "PagerDuty Events API URL — see README §8."
+  default     = ""
+  sensitive   = true
+}
+
 variable "spa_bucket_name" {
   type        = string
-  description = "Globally unique S3 bucket name for the SPA assets."
+  description = "Globally unique S3 bucket name for the SPA assets. Empty → derived from pattern + account_id_short."
+  default     = ""
+}
+
+variable "account_id_short" {
+  type        = string
+  description = "Last-6 digits of AWS account ID."
+  default     = ""
 }
 
 variable "spa_domain_aliases" {
@@ -23,13 +37,13 @@ variable "spa_domain_aliases" {
 
 variable "spa_acm_certificate_arn" {
   type        = string
-  description = "ACM cert ARN in us-east-1 for the SPA aliases."
+  description = "Fallback ACM cert ARN in us-east-1 (used only if module.acm doesn't produce one)."
   default     = ""
 }
 
 variable "alb_acm_certificate_arn" {
   type        = string
-  description = "ACM cert ARN in the ALB's region for the HTTPS listener."
+  description = "Fallback ACM cert ARN in the ALB's region (used only if module.acm doesn't produce one)."
   default     = ""
 }
 
@@ -41,8 +55,32 @@ variable "route53_zone_name" {
 
 variable "api_record_name" {
   type        = string
-  description = "FQDN of the API record (e.g. api.stg.work-manager.molcube.com)."
+  description = "FQDN of the API record."
   default     = ""
+}
+
+variable "spa_record_name" {
+  type        = string
+  description = "FQDN of the SPA record."
+  default     = ""
+}
+
+variable "enable_waf" {
+  type        = bool
+  description = "Attach WAFv2 web ACL to the ALB."
+  default     = true
+}
+
+variable "waf_geo_block_country_codes" {
+  type        = list(string)
+  description = "ISO 3166-1 alpha-2 country codes to block via WAF."
+  default     = []
+}
+
+variable "waf_enable_bot_control" {
+  type        = bool
+  description = "Enable WAF bot-control managed rule set."
+  default     = false
 }
 
 variable "image_api" {

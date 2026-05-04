@@ -13,7 +13,7 @@
  *   - membership 있음 → /m/home, 없음 → /onboarding/welcome
  * SLO 검증: 로그인 → 다음 화면 라우팅 < 3s
  */
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { DEMO_USERS } from "@fixtures/users";
 
 /**
@@ -22,15 +22,31 @@ import { DEMO_USERS } from "@fixtures/users";
  * NOT linked to the input via `for=`/`id`, so `getByLabel` fails. We address
  * each input by its `type=` attribute, which is stable and accessible.
  */
-const emailInput = (page: import("@playwright/test").Page) => page.locator('input[type="email"]');
-const passwordInput = (page: import("@playwright/test").Page) => page.locator('input[type="password"]');
-const submitBtn = (page: import("@playwright/test").Page) =>
+const emailInput = (page: Page) => page.locator('input[type="email"]');
+const passwordInput = (page: Page) => page.locator('input[type="password"]');
+const submitBtn = (page: Page) =>
   page.getByRole("button", { name: /login|로그인|submit|확인|시작/i });
+
+/**
+ * First-load helper. Cold Vite containers can take 15–25s to compile the
+ * /login route on the very first request, blowing past the default 15s
+ * navigationTimeout. We use `waitUntil: "load"` (instead of just
+ * `domcontentloaded`) to actually wait for module graph eval, then poll for
+ * the email input via `waitForFunction` so we don't depend on initial paint.
+ */
+async function gotoLogin(page: Page): Promise<void> {
+  await page.goto("/login", { waitUntil: "load", timeout: 30_000 });
+  await page.waitForFunction(
+    () => Boolean(document.querySelector('input[type="email"]')),
+    null,
+    { timeout: 30_000 },
+  );
+}
 
 test.describe("auth routing", () => {
   test("member logs in and lands on /m/home", async ({ page }) => {
     // Arrange
-    await page.goto("/login", { waitUntil: "domcontentloaded" });
+    await gotoLogin(page);
     await expect(emailInput(page)).toBeVisible({ timeout: 10_000 });
 
     // Act
@@ -48,7 +64,7 @@ test.describe("auth routing", () => {
 
   test("non-member superuser logs in and lands on /onboarding/welcome", async ({ page }) => {
     // Arrange — admin@molcube.com is the docker-created superuser without a Membership.
-    await page.goto("/login", { waitUntil: "domcontentloaded" });
+    await gotoLogin(page);
     await expect(emailInput(page)).toBeVisible({ timeout: 10_000 });
 
     // Act
@@ -64,7 +80,7 @@ test.describe("auth routing", () => {
 
   test("invalid credentials show error and stay on /login", async ({ page }) => {
     // Arrange
-    await page.goto("/login", { waitUntil: "domcontentloaded" });
+    await gotoLogin(page);
     await expect(emailInput(page)).toBeVisible({ timeout: 10_000 });
 
     // Act
