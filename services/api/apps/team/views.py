@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from apps.attendance.models import AttendanceRecord
 from apps.identity.models import Membership
 from apps.leave.models import LeaveRequest
-from core.errors import NotFound
+from core.errors import NotFound, Unprocessable
 from core.permissions import IsActiveMember, active_membership
 
 
@@ -128,6 +128,118 @@ def status_timeline(request):
 @permission_classes([IsActiveMember])
 def status_root(request):
     return status_grid(request._request) if False else status_grid(request)
+
+
+def _matrix_status(rec: AttendanceRecord | None, on_leave: bool) -> str:
+    """Per-day status for the matrix view (office|wfh|leave|break|off)."""
+    if on_leave:
+        return "leave"
+    if rec is None or rec.clock_in_at is None:
+        return "off"
+    if rec.status == AttendanceRecord.Status.ON_BREAK:
+        return "break"
+    if rec.clock_in_kind == AttendanceRecord.Kind.WFH:
+        return "wfh"
+    if rec.status == AttendanceRecord.Status.COMPLETED:
+        # Completed days reflect where they worked from
+        if rec.clock_in_kind == AttendanceRecord.Kind.WFH:
+            return "wfh"
+        return "office"
+    return "office"
+
+
+@api_view(["GET"])
+@permission_classes([IsActiveMember])
+def calendar_matrix(request):
+    """Dense matrix of statuses per member per day.
+
+    GET /v1/team/calendar/matrix?from=YYYY-MM-DD&to=YYYY-MM-DD&group_by=team|all
+    """
+    me = active_membership(request.user)
+    today = django_tz.localdate()
+
+    def _parse(raw: str | None, default: date) -> date:
+        if not raw:
+            return default
+        try:
+            return datetime.strptime(raw, "%Y-%m-%d").date()
+        except ValueError as exc:
+            raise Unprocessable(
+                code="INVALID_DATE",
+                message="from/to 파라미터는 YYYY-MM-DD 형식이어야 합니다.",
+            ) from exc
+
+    start = _parse(request.query_params.get("from"), today - timedelta(days=6))
+    end = _parse(request.query_params.get("to"), today)
+    if end < start:
+        raise Unprocessable(code="INVALID_RANGE", message="to는 from 이후여야 합니다.")
+
+    days_count = (end - start).days + 1
+    day_keys = [start + timedelta(days=i) for i in range(days_count)]
+
+    members = list(
+        Membership.objects.filter(company=me.company, is_active=True)
+        .select_related("user", "department")
+        .order_by("department__name", "user__name")
+    )
+
+    records = AttendanceRecord.objects.filter(
+        company=me.company, work_date__gte=start, work_date__lte=end
+    ).select_related("membership")
+    rec_map: dict = {}
+    for r in records:
+        rec_map[(r.membership_id, r.work_date)] = r
+
+    leaves = LeaveRequest.objects.filter(
+        company=me.company,
+        status=LeaveRequest.Status.APPROVED,
+        start_date__lte=end,
+        end_date__gte=start,
+    )
+    leave_set: set = set()
+    for lv in leaves:
+        d = max(lv.start_date, start)
+        last = min(lv.end_date, end)
+        while d <= last:
+            leave_set.add((lv.membership_id, d))
+            d = d + timedelta(days=1)
+
+    rows = []
+    for m in members:
+        rows.append(
+            {
+                "membership_id": str(m.id),
+                "name": m.user.name,
+                "department": m.department.name if m.department else None,
+                "days": [
+                    {
+                        "date": dk.isoformat(),
+                        "status": _matrix_status(
+                            rec_map.get((m.id, dk)),
+                            (m.id, dk) in leave_set,
+                        ),
+                    }
+                    for dk in day_keys
+                ],
+            }
+        )
+
+    group_by = (request.query_params.get("group_by") or "all").lower()
+    payload: dict = {
+        "from": start.isoformat(),
+        "to": end.isoformat(),
+        "rows": rows,
+    }
+    if group_by == "team":
+        groups: dict[str, list] = {}
+        for r in rows:
+            key = r.get("department") or "미배정"
+            groups.setdefault(key, []).append(r)
+        payload["groups"] = [
+            {"department": k, "rows": v, "count": len(v)}
+            for k, v in sorted(groups.items())
+        ]
+    return Response({"data": payload, "meta": {"count": len(rows), "days": days_count}})
 
 
 @api_view(["GET"])

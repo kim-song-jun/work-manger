@@ -1,0 +1,37 @@
+# Flutter / Dart artifacts
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter/
+
+# Generated
+*.g.dart
+*.freezed.dart
+ios/Pods/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+android/.gradle/
+android/local.properties
+android/key.properties
+*.iml
+.idea/
+
+# Firebase plugin files — NEVER commit
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+firebase_options.dart
+lib/firebase_options.dart
+
+# Signing
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+
+# Coverage
+coverage/

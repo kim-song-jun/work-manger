@@ -1,0 +1,45 @@
+{
+  "name": "@work-manager/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Work Manager Electron desktop shell (tray + notifications + auto clock-in trigger)",
+  "author": "Molcube <support@molcube.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/molcube/work-manager.git"
+  },
+  "main": "dist/main/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "clean": "rimraf dist release",
+    "build:ts": "tsc -p tsconfig.json",
+    "dev": "npm run build:ts && cross-env NODE_ENV=development electron dist/main/index.js",
+    "start": "electron dist/main/index.js",
+    "build:win": "npm run build:ts && electron-builder --win --publish=never",
+    "build:mac": "npm run build:ts && electron-builder --mac --publish=never",
+    "build:linux": "npm run build:ts && electron-builder --linux --publish=never",
+    "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.0",
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.5",
+    "@typescript-eslint/eslint-plugin": "^8.18.2",
+    "@typescript-eslint/parser": "^8.18.2",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "eslint": "^9.17.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

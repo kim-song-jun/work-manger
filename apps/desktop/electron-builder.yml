@@ -1,0 +1,50 @@
+appId: com.molcube.workmanager
+productName: Work Manager
+copyright: Copyright (c) 2026 Molcube
+asar: true
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - assets/**/*
+  - package.json
+  - "!**/*.map"
+  - "!**/__tests__/**"
+
+mac:
+  category: public.app-category.business
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: false
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+
+linux:
+  category: Office
+  target:
+    - AppImage
+
+# S3-ready; flip provider to `s3` once bucket + creds wired (WM_UPDATE_FEED_URL).
+# `null` here keeps `--publish=never` builds from trying to assemble a publish
+# manifest (which requires a `repository` field). Set `WM_PUBLISH_PROVIDER=github`
+# in CI when you actually want to publish a draft release.
+publish: null

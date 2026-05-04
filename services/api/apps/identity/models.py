@@ -71,6 +71,9 @@ class Company(models.Model):
     fiscal_year_start = models.DateField()
     default_locale = models.CharField(max_length=8, default="ko")
     timezone = models.CharField(max_length=64, default="Asia/Seoul")
+    # Spec §7.6 — when True, attendance.clock_in is blocked for memberships
+    # already at/over the 52h weekly threshold. Default off (warn-only).
+    compliance_block_when_over = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=django_tz.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 

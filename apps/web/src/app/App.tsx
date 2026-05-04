@@ -55,6 +55,10 @@ import { AdminReportsPage } from "@pages/admin-reports";
 import { AdminExpiringLeavePage } from "@pages/admin-expiring-leave";
 import { AdminAuditPage } from "@pages/admin-audit";
 import { AdminCodesPage } from "@pages/admin-codes";
+import { AdminCompliancePage } from "@pages/admin-compliance";
+import { ComplianceMobilePage } from "@pages/m-compliance";
+import { ComplianceBlockPage } from "@pages/m-compliance-block";
+import { WebTeamCalendarPage } from "@pages/web-team-calendar";
 
 export function App() {
   const { i18n, t } = useTranslation();
@@ -139,6 +143,8 @@ export function App() {
         <Route path="help" element={<HelpPage />} />
         <Route path="loc-picker" element={<LocPickerPage />} />
         <Route path="error-gps" element={<ErrorGpsPage />} />
+        <Route path="compliance" element={<ComplianceMobilePage />} />
+        <Route path="compliance/block" element={<ComplianceBlockPage />} />
       </Route>
 
       <Route path="/web" element={<WebShell />}>
@@ -146,6 +152,7 @@ export function App() {
         <Route path="inbox" element={<WebInboxPage />} />
         <Route path="records" element={<WebRecordsPage />} />
         <Route path="team-leave" element={<WebTeamLeavePage />} />
+        <Route path="team-calendar" element={<WebTeamCalendarPage />} />
       </Route>
 
       <Route path="/dashboard" element={<Navigate to="/web" replace />} />
@@ -166,6 +173,7 @@ export function App() {
         <Route path="expiring-leave" element={<AdminExpiringLeavePage />} />
         <Route path="audit" element={<AdminAuditPage />} />
         <Route path="codes" element={<AdminCodesPage />} />
+        <Route path="compliance" element={<AdminCompliancePage />} />
       </Route>
 
       <Route path="/__health" element={<HealthPage />} />

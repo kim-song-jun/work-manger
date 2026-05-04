@@ -117,6 +117,14 @@ class InvalidState(AttendanceError):
     message = "현재 상태에서 수행할 수 없습니다."
 
 
+class OverHoursLimit(AttendanceError):
+    """Raised when company opted in to 52h block AND member is at/over the limit."""
+
+    code = "OVER_HOURS_LIMIT"
+    http_status = 422
+    message = "주 52시간 한도를 초과하여 출근할 수 없습니다."
+
+
 # ---------- Geo / location ----------
 
 def haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -284,6 +292,13 @@ def clock_in(
             matched_location=replayed.clock_in_location,
             replayed=True,
         )
+
+    # 1b) Compliance block (spec §7.6) — only when company opted in.
+    if getattr(company, "compliance_block_when_over", False):
+        from apps.compliance import services as compliance_services  # local import
+
+        if compliance_services.block_clock_in_if_over(membership):
+            raise OverHoursLimit()
 
     # 2) Pre-validate kind and location matching at the service layer to
     #    preserve existing error details (nearest_location_id / distance_m)

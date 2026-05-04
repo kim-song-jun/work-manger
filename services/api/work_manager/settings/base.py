@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "apps.admin_api",
     "apps.audit",
     "apps.realtime",
+    "apps.compliance",
 ]
 
 MIDDLEWARE = [

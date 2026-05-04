@@ -173,6 +173,8 @@ services/api/
 
 ## 5. 모바일 (Flutter WebView)
 
+> 구현체: [`apps/mobile/`](../../apps/mobile/) · 사용 가이드: [`apps/mobile/README.md`](../../apps/mobile/README.md)
+
 ### 5.1 역할
 
 - 단순 컨테이너. 비즈니스 로직 없음.
@@ -185,51 +187,112 @@ services/api/
 
 ### 5.2 통신 방식
 
-- WebView ↔ Native: JavaScriptChannel (Android), userContentController (iOS)
-- 노출 객체: `window.NativeBridge` (메서드 + 이벤트 리스너)
+- WebView: `flutter_inappwebview` 단일 패키지로 Android (JavaScriptChannel)
+  / iOS (WKUserContentController) 모두 처리.
+- 노출 객체: `window.NativeBridge` (Promise 반환 메서드 + 이벤트 리스너)
+- 인젝션 시점: 매 `onLoadStop` 마다 [`apps/mobile/lib/bridge/inject.dart`](../../apps/mobile/lib/bridge/inject.dart)
+  의 JS shim 을 재주입. SPA 의 soft-navigation 후에도 브리지가 유지됨.
 
 ```dart
-// flutter_inappwebview 예시
-controller.addJavaScriptHandler(handlerName: 'requestLocation', ...)
+// apps/mobile/lib/bridge/native_bridge.dart
+controller.addJavaScriptHandler(
+  handlerName: 'requestLocation',
+  callback: (_) => _requestLocation(), // → {latitude, longitude, accuracy_m, ts}
+);
 ```
+
+| 브리지 메서드 | 반환 |
+|---|---|
+| `requestLocation()` | `{ latitude, longitude, accuracy_m, ts }` 또는 `{ error: 'PERMISSION_DENIED' | 'POSITION_UNAVAILABLE' | 'TIMEOUT' }` |
+| `watchLocation()` / `stopWatching()` | 시작/정지. 이후 fixes 는 `window.addEventListener('wm:location', ...)` 로 push. |
+| `registerDeviceToken()` | `{ platform: 'ANDROID' | 'IOS', token }` (FCM) — `/v1/notifications/devices` 등록에 사용 |
+| `haptic('light' | 'medium' | 'heavy')` | `{ ok: true }` |
+| `appInfo()` | `{ version, build, platform }` |
+| `share()` | `{ error: 'NOT_IMPLEMENTED' }` (보류) |
+
+FE 측 wrapper: [`apps/web/src/shared/lib/native.ts`](../../apps/web/src/shared/lib/native.ts).
+`apps/web/src/shared/lib/geo.ts` 는 `window.NativeBridge.requestLocation` 가
+존재하면 `navigator.geolocation` 보다 우선 사용한다.
 
 ### 5.3 빌드 / 배포
 
 - Android: AAB → Google Play (내부 → 닫힌 → 프로덕션)
 - iOS: TestFlight → App Store
 - WebView URL 은 환경별 (`dev.work-manager.molcube.com`, `app.work-manager.molcube.com`)
+- 빌드 명령: `flutter build appbundle --release --dart-define=WEBVIEW_URL=...` /
+  `flutter build ipa --release --dart-define=WEBVIEW_URL=...`
+- Firebase plugin 파일 (`google-services.json`, `GoogleService-Info.plist`,
+  `firebase_options.dart`) 은 git 에 커밋하지 않음 (`apps/mobile/.gitignore`).
 
 ---
 
 ## 6. 데스크탑 (Electron)
 
+데스크탑은 SPA (`apps/web`) 를 BrowserWindow 로 호스팅하고, OS 레벨 기능 (트레이 / 알림 / 자동 출퇴근 트리거) 만 메인 프로세스에서 제공한다. 렌더러는 `window.ElectronBridge` 만 통해 메인과 통신하며, 이 어댑터가 부재하면 (= 일반 브라우저 / 모바일 WebView) FE 는 in-app Toast 로 graceful fallback (`apps/web/src/shared/lib/desktop.ts`).
+
 ### 6.1 구조
 
 ```
 apps/desktop/
-├── main/                  # main process (TS)
-│   ├── tray.ts
-│   ├── notifications.ts
-│   ├── auto-clock.ts      # 정규 출퇴근 시각 자동 트리거
-│   └── ipc.ts
-├── preload/               # contextBridge
-│   └── bridge.ts          # window.ElectronBridge
-├── renderer/              # React (web 코드 재사용)
-└── electron-builder.yml
+├── src/
+│   ├── main/                       # main process (TS, NodeNext)
+│   │   ├── index.ts                # app lifecycle, single-instance, BrowserWindow
+│   │   ├── tray.ts                 # Tray + 컨텍스트 메뉴 (근무상태/출퇴근/환경설정/종료)
+│   │   ├── notifications.ts        # OS 알림, kind별 debounce (1/min)
+│   │   ├── auto-clock-in.ts        # 정규 시각 + offset(기본 30s) one-shot 타이머
+│   │   ├── ipc.ts                  # ipcMain.handle 등록 (wm:* 채널)
+│   │   ├── updater.ts              # electron-updater (generic / S3 / GH)
+│   │   └── store.ts                # electron-store (windowBounds, scheduledStart)
+│   ├── preload/
+│   │   └── bridge.ts               # contextBridge → window.ElectronBridge
+│   └── shared/
+│       └── ipc-contracts.ts        # IPC_INVOKE / IPC_EVENT + payload types
+├── assets/                         # tray.png, icon.png
+├── build/entitlements.mac.plist
+├── electron-builder.yml
+├── tsconfig.json                   # NodeNext / ES2022 / strict
+├── vitest.config.ts
+└── package.json                    # type:module, electron@33, builder@25
 ```
 
-### 6.2 주요 기능
+### 6.2 IPC 계약
 
-- 트레이 아이콘 (현재 상태 표시: 본사 / 재택 / 휴게)
-- OS 알림 (출근 임박, 초과근무 자동 요청)
-- 자동 출퇴근 (사용자 설정에 따라 OS 부팅 / 잠금 해제 시 트리거)
-- 자동 업데이트 (electron-updater + S3)
+| 방향 | 채널 | 페이로드 |
+|---|---|---|
+| R→M (invoke) | `wm:get-app-version` | → `string` |
+| R→M (invoke) | `wm:set-status` | `{ status: WORKING\|BREAK\|OFF\|REMOTE }` |
+| R→M (invoke) | `wm:notify` | `{ kind, title, body, deepLink? }` → `boolean` |
+| R→M (invoke) | `wm:schedule-auto-clock-in` | `{ scheduledStartIso, offsetSeconds? }` → `{ scheduledInMs } \| null` |
+| R→M (invoke) | `wm:cancel-auto-clock-in` | — |
+| R→M (invoke) | `wm:open-external` | `string` (http/https only) |
+| M→R (send) | `wm:status-changed` | `{ status }` |
+| M→R (send) | `wm:notification-clicked` | `{ kind, deepLink? }` |
+| M→R (send) | `wm:auto-clock-in` | `{ firedAtIso, scheduledStartIso }` |
 
-### 6.3 배포
+자동 출퇴근 트리거는 메인이 시각만 잡고, 실제 `POST /attendance/clock-in` 호출은 렌더러가 결정한다 (위치 캡처 + Idempotency-Key + 확인 UX 가 한 곳에 모이도록).
 
-- Mac: notarized DMG (애플 공증 필수)
-- Windows: signed installer (.exe / .msi)
+### 6.3 주요 기능
+
+- 트레이 / 메뉴바 아이콘 (현재 근무 상태 표시, 컨텍스트 메뉴: 출근/퇴근/환경설정/종료)
+- OS 알림 (출근 임박, 초과근무 자동 요청, 결재 등) — kind 별 1분 debounce
+- 자동 출퇴근 트리거 (사용자 정규 시각 + offset 에 한 번 발사, 렌더러가 호출 여부 결정)
+- 자동 업데이트 (electron-updater, `WM_UPDATE_FEED_URL` env / S3 ready)
+- 윈도우 위치/크기 영속화 (`electron-store`, OS user-data dir)
+- contextIsolation ON, sandbox OFF (preload 만 노출), `setWindowOpenHandler` 로 외부 링크는 OS 브라우저로 위임
+
+### 6.4 환경 변수
+
+| Var | 기본 | 용도 |
+|---|---|---|
+| `WM_WEB_URL` | `http://localhost:4444` | BrowserWindow 가 로드할 SPA URL |
+| `WM_UPDATE_FEED_URL` | (unset) | electron-updater generic provider feed |
+
+### 6.5 배포
+
+- Mac: notarized DMG (애플 공증 필수, `mac.notarize: true` 토글 + `APPLE_ID/APPLE_APP_SPECIFIC_PASSWORD/APPLE_TEAM_ID`)
+- Windows: signed NSIS installer (.exe), `CSC_LINK` / `CSC_KEY_PASSWORD`
 - Linux: AppImage (선택)
+- 출시 전 unsigned 산출물은 `apps/desktop/release/` (gitignored)
 
 ---
 
