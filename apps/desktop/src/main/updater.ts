@@ -11,7 +11,9 @@
  * can surface a "restart to update" toast (consumed via ElectronBridge.on).
  */
 import { BrowserWindow, app } from "electron";
-import { autoUpdater } from "electron-updater";
+import electronUpdaterPkg from "electron-updater";
+
+const { autoUpdater } = electronUpdaterPkg;
 
 export interface UpdaterLogger {
   info: (msg: string) => void;

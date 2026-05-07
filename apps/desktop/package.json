@@ -15,7 +15,7 @@
   },
   "scripts": {
     "clean": "rimraf dist release",
-    "build:ts": "tsc -p tsconfig.json",
+    "build:ts": "tsc -p tsconfig.json && node -e \"require('fs').writeFileSync('dist/preload/package.json', JSON.stringify({type:'commonjs'},null,2)+'\\n')\"",
     "dev": "npm run build:ts && cross-env NODE_ENV=development electron dist/main/index.js",
     "start": "electron dist/main/index.js",
     "build:win": "npm run build:ts && electron-builder --win --publish=never",
