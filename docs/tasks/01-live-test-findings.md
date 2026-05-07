@@ -117,3 +117,53 @@ created: 2026-05-07
 - Android 에뮬레이터 + Flutter 빌드 (Flutter SDK 위치 사용자 확인 필요)
 - GAP-A (Admin settings dead link), GAP-G (Electron 렌더러 실패) 가 출시 차단
 - GAP-B, GAP-C, GAP-D, GAP-E, GAP-F 는 polish 우선순위
+
+---
+
+## 2차 라운드: 갭 fix + 환경 셋업 (2026-05-07 후반부)
+
+### Web GAPs A~F 모두 fix + 검증 완료 (commit 2e8d89c)
+
+| GAP | Fix | 검증 |
+|---|---|---|
+| A | `apps/web/src/widgets/admin-shell/ui/AdminNav.tsx` — `/admin/settings` 제거 | 사이드바에서 `설정` 사라짐 ✅ |
+| B | `apps/web/src/entities/approval/api/fetchApprovals.ts` — BackendApprovalRow → ApprovalRow 변환 (uppercase enum + requester_name → kind/employee_name) + i18n trip/manual_clock_in 키 추가 | `/admin/approvals` 가 `[초과근무]` `[연차]` + 직원명 정상 표시 ✅ |
+| C | `apps/web/src/widgets/admin-shell/ui/AdminNav.tsx` — `/admin/compliance` 추가 + i18n `nav_compliance` | 사이드바 `52시간` 추가 ✅ |
+| D | `apps/web/src/pages/not-found/index.tsx` 신규 + `App.tsx:185` wildcard 교체 + i18n `common.notfound_*` 키 | `/some/wrong/url` → 404 페이지 + `홈으로` CTA, URL 보존 ✅ |
+| E | `apps/web/src/pages/m-notifications/index.tsx` — useEffect redirect 제거, 인라인 EmptyState | URL `/m/notifications` 보존 + 인라인 빈 상태 ✅ |
+| F | `apps/web/src/pages/m-home/index.tsx` — useQuery(fetchBalance) 사용, 하드코딩 "11" 제거 | `/m/home` 잔여 연차 = 15일 (`/m/leave` 와 일치) ✅ |
+
+### GAP-G (Electron) — 추가 검증 완료 (asar 재빌드)
+
+- `apps/desktop/release/win-unpacked/Work Manager.exe` 재빌드 (electron-builder unpacked 단계 OK, 코드사이닝은 EV 인증서 부재로 skip)
+- 재실행 시: 4 프로세스 (main + renderer + GPU + utility), `MainWindowTitle = 근무 관리` ✅, 109MB working set
+- Setup.exe 는 `WIN_CSC_LINK` 인증서 미확보로 미생성 — 출시 시 인증서 등록 필요 (operations §11.1 ⏳ Windows code signing)
+
+### Android 환경 부트스트랩 (2026-05-07 21:24~)
+
+| 컴포넌트 | 위치 | 상태 |
+|---|---|---|
+| Flutter SDK | `C:\dev\flutter` (3.27.4 stable) | ✅ |
+| JDK 17 | `C:\dev\jdk\jdk-17.0.13+11` (Adoptium Temurin) | ✅ |
+| Android cmdline-tools | `C:\dev\android\cmdline-tools\latest\` | ✅ |
+| platform-tools (adb) | `C:\dev\android\platform-tools\` | ✅ |
+| platforms;android-34 | `C:\dev\android\platforms\android-34` | ✅ |
+| build-tools;34.0.0 | `C:\dev\android\build-tools\34.0.0` | ✅ |
+| emulator | `C:\dev\android\emulator\` | ✅ |
+| system-images;android-34;google_apis;x86_64 | `C:\dev\android\system-images\android-34\google_apis\x86_64` | ✅ |
+| AVD `wm_test` (pixel_5 + Android 34 + google_apis) | `~/.android/avd/wm_test.avd` | ✅ |
+
+영구 사용자 env vars 설정:
+- `FLUTTER_ROOT=C:\dev\flutter`
+- `ANDROID_HOME=C:\dev\android` / `ANDROID_SDK_ROOT=C:\dev\android`
+- `JAVA_HOME=C:\dev\jdk\jdk-17.0.13+11`
+- `Path` += `C:\dev\flutter\bin;C:\dev\android\cmdline-tools\latest\bin;C:\dev\android\platform-tools;C:\dev\android\emulator;C:\dev\jdk\jdk-17.0.13+11\bin`
+
+`flutter doctor` 결과:
+- ✅ Flutter / Windows / Android toolchain (SDK 34.0.0) / Chrome / VS Code / Network
+- ✗ Visual Studio (Windows native — mobile 빌드엔 불필요)
+- ! Android Studio (cmdline-tools 로 대체 — 빌드 가능)
+
+`flutter pub get` (`apps/mobile`) ✅ — 의존성 설치 완료.
+
+Emulator 부팅 시도 — cold boot 진행 중 (qemu-system-x86_64 985MB working set, 2분+ 소요 정상).
