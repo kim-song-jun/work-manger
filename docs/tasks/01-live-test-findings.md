@@ -167,3 +167,44 @@ created: 2026-05-07
 `flutter pub get` (`apps/mobile`) ✅ — 의존성 설치 완료.
 
 Emulator 부팅 시도 — cold boot 진행 중 (qemu-system-x86_64 985MB working set, 2분+ 소요 정상).
+
+### 최종 검증 결과 (21:43 KST)
+
+**APK 빌드 ✅**:
+```
+flutter build apk --debug
+✓ Built build\app\outputs\flutter-apk\app-debug.apk
+Running Gradle task 'assembleDebug'... 563.1s
+```
+
+- 산출물: `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk` (205MB, debug 빌드)
+- Gradle 첫 실행 (캐시 0 → 3.6GB) 9.4분 소요
+- Android SDK Platform 35 + 33 자동 설치 (Flutter 가 추가 platform 필요했음)
+- 결과: **Android toolchain 완전 작동** — APK 정상 패키징
+
+**Android emulator boot 🔴 (환경 이슈)**:
+- AVD `wm_test` (pixel_5 + Android 34 + google_apis x86_64) 정상 생성
+- emulator + qemu-system-x86_64 정상 spawn (3GB RAM allocation 활성)
+- 17분간 1006 CPU sec 소비 후에도 `sys.boot_completed` 미반환 → adb `device offline` 지속
+- **추정 원인**: Windows 11 + Docker Desktop (WSL2 → Hyper-V) + Android emulator (WHPX → Hyper-V) 가상화 자원 경합
+- **Workaround 옵션**:
+  1. Docker Desktop 중지 후 emulator 재시작 (`docker compose down`)
+  2. `-gpu swiftshader_indirect` 소프트웨어 GPU 강제
+  3. `-cores 2 -memory 2048` 작은 리소스 할당
+  4. 실제 Android 단말 USB 연결 (adb usb mode)
+  5. Android Studio AVD Manager GUI 사용 (별도 인증된 가속 경로)
+- 다음 task: 사용자가 Docker 종료 후 emulator 재시도 가능. APK 가 빌드된 만큼 단말 USB 연결로 install 도 가능 (`adb install app-debug.apk`).
+
+## 최종 GAP 상태 (2026-05-07 EOD)
+
+| ID | 영향 영역 | 상태 |
+|---|---|---|
+| GAP-A | Web admin sidebar | ✅ FIXED (2e8d89c) |
+| GAP-B | Web admin approvals i18n + shape | ✅ FIXED (2e8d89c) |
+| GAP-C | Web admin sidebar compliance | ✅ FIXED (2e8d89c) |
+| GAP-D | Web wildcard route → NotFound | ✅ FIXED (2e8d89c) |
+| GAP-E | Web mobile notifications redirect | ✅ FIXED (2e8d89c) |
+| GAP-F | Web mobile home leave consistency | ✅ FIXED (2e8d89c) |
+| GAP-G | Electron renderer ESM/CJS | ✅ FIXED (4538e20) — asar repackaged + verified |
+
+**총 7건 fix 완료, 모두 라이브 검증 통과**. Android toolchain 셋업 완료 + APK 빌드 성공. Emulator 부팅은 Hyper-V 환경 이슈로 별도 진단 필요.
