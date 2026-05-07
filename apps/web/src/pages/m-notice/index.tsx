@@ -69,7 +69,8 @@ export function NoticePage() {
             color: pinnedOnly ? "var(--brand, #2563EB)" : "var(--grey-500)",
             background: "none",
             border: 0,
-            padding: 0,
+            minHeight: 32,
+            padding: "6px 0",
             cursor: "pointer",
           }}
           aria-pressed={pinnedOnly}

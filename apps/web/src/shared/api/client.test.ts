@@ -42,6 +42,7 @@ describe("shared/api · client", () => {
     const r = await api<{ data: { ok: boolean } }>("/v1/ping");
     expect(r.data.ok).toBe(true);
     expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.mock.calls[0][0]).toBe("/v1/ping");
     const [, init] = spy.mock.calls[0];
     const headers = init!.headers as Headers;
     expect(headers.get("Accept")).toBe("application/json");

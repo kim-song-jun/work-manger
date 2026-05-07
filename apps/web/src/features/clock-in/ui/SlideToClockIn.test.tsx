@@ -13,11 +13,15 @@
  *   - 네트워크 호출 (HomePage 통합 테스트가 다룸)
  * Coverage target: ≥ 80% lines for SlideToClockIn.tsx
  */
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SlideToClockIn } from "./SlideToClockIn";
 
 describe("SlideToClockIn", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("shows the clock-in label when inactive", () => {
     render(
       <SlideToClockIn
@@ -55,5 +59,25 @@ describe("SlideToClockIn", () => {
     );
     const el = screen.getByRole("slider");
     expect(el).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("commits from the keyboard fallback", () => {
+    vi.useFakeTimers();
+    const onCommit = vi.fn();
+    render(
+      <SlideToClockIn
+        active={false}
+        onCommit={onCommit}
+        labelIn="A"
+        labelOut="B"
+      />,
+    );
+    const slider = screen.getByRole("slider");
+    fireEvent.keyDown(slider, { key: "Enter" });
+
+    act(() => {
+      vi.advanceTimersByTime(60);
+    });
+    expect(onCommit).toHaveBeenCalledTimes(1);
   });
 });

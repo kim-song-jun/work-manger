@@ -125,6 +125,7 @@ export function AdminApprovalsPage() {
                 aria-label={t("admin.appr_select_all")}
                 checked={allChecked}
                 onChange={toggleAll}
+                style={{ width: 24, height: 24, cursor: "pointer" }}
               />
               <span style={{ color: "var(--grey-600)" }}>
                 {t("admin.appr_select_all")}
@@ -148,6 +149,7 @@ export function AdminApprovalsPage() {
                   aria-label={`select-${r.id}`}
                   checked={selected.has(r.id)}
                   onChange={() => toggle(r.id)}
+                  style={{ width: 24, height: 24, cursor: "pointer", flex: "0 0 auto" }}
                 />
                 <Avatar name={r.employee_name} size={36} />
                 <div style={{ minWidth: 140 }}>

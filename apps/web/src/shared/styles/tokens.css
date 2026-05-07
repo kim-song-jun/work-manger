@@ -42,10 +42,15 @@
 
   /* Elevation */
   --shadow-0: none;
-  --shadow-1: 0 1px 3px rgba(0,0,0,0.06);
-  --shadow-2: 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-3: 0 4px 12px rgba(0,0,0,0.12);
-  --shadow-4: 0 8px 24px rgba(0,0,0,0.16);
+  --shadow-1: 0px 1px 3px rgba(0,0,0,0.06);
+  --shadow-2: 0px 2px 8px rgba(0,0,0,0.08);
+  --shadow-3: 0px 4px 12px rgba(0,0,0,0.12);
+  --shadow-4: 0px 8px 24px rgba(0,0,0,0.16);
+  --shadow-xs: var(--shadow-1);
+  --shadow-sm: var(--shadow-2);
+  --shadow-md: var(--shadow-3);
+  --shadow-lg: var(--shadow-4);
+  --shadow-xl: var(--shadow-4);
 
   /* Radii */
   --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px; --r-pill: 9999px;
@@ -60,15 +65,15 @@
   --motion-standard: 250ms;
   --motion-slow:     400ms;
   --motion-page:     350ms;
-  --ease-enter:    cubic-bezier(0, 0, 0.2, 1);
-  --ease-exit:     cubic-bezier(0.4, 0, 1, 1);
-  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-enter:    cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-exit:     cubic-bezier(0.4, 0.0, 1, 1);
+  --ease-standard: cubic-bezier(0.4, 0.0, 0.2, 1);
   --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Type */
-  --font-kr: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+  --font-kr: 'Toss Product Sans', 'Pretendard', -apple-system, BlinkMacSystemFont,
              'Apple SD Gothic Neo', 'SF Pro Display', Roboto, 'Noto Sans KR', sans-serif;
-  --font-num: 'Pretendard', 'SF Pro Display', -apple-system, system-ui, sans-serif;
+  --font-num: 'Toss Product Sans', 'Pretendard', 'SF Pro Display', -apple-system, system-ui, sans-serif;
   --font-mono: 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -76,6 +81,7 @@
 body.theme-dark {
   --brand: #4D8DF8; --brand-hover: #6BA3FA;
   --brand-soft: #1A2F4E; --brand-softer: #131E30;
+  --blue-50: #1A2F4E; --blue-500: #4D8DF8; --blue-600: #6BA3FA;
   --grey-900: #F2F4F6; --grey-800: #E5E8EB; --grey-700: #D1D6DB;
   --grey-600: #B0B8C1; --grey-500: #8B95A1; --grey-400: #6B7684;
   --grey-300: #4E5968; --grey-200: #333D4B; --grey-100: #242B35;
@@ -102,7 +108,7 @@ body.font-lg { font-size: 17px; }
 }
 
 /* Helpers */
-.num-tab { font-family: var(--font-num); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.num-tab { font-family: var(--font-num); font-variant-numeric: tabular-nums; letter-spacing: 0; }
 
 @keyframes wm-shimmer {
   0% { background-position: -200% 0; }

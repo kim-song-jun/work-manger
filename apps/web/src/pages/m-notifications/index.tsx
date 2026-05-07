@@ -48,9 +48,11 @@ export function NotificationsPage() {
   const filtered =
     filter === "all" ? items : items.filter((i) => i.kind === filter);
 
-  if (!q.isLoading && items.length === 0) {
-    nav("/m/notifications/empty", { replace: true });
-  }
+  useEffect(() => {
+    if (!q.isLoading && items.length === 0) {
+      nav("/m/notifications/empty", { replace: true });
+    }
+  }, [items.length, nav, q.isLoading]);
 
   const filters: { v: "all" | NotificationKind; key: string }[] = [
     { v: "all", key: "mobile.notifications.filter_all" },
@@ -70,6 +72,8 @@ export function NotificationsPage() {
             disabled={markAll.isPending}
             className="text-[13px] font-bold"
             style={{
+              minHeight: 32,
+              padding: "6px 0",
               background: "transparent",
               border: "none",
               color: "var(--brand)",

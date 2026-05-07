@@ -128,7 +128,17 @@ export function AdminEmployeesPage() {
                   <td style={{ padding: "12px 16px", textAlign: "right" }}>
                     <Link
                       to={`/admin/employees/${emp.id}`}
-                      style={{ color: "var(--brand)", fontWeight: 600 }}
+                      aria-label={`${emp.name} ${t("admin.emp_detail_overview")}`}
+                      style={{
+                        color: "var(--brand)",
+                        fontWeight: 600,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 32,
+                        height: 32,
+                        textDecoration: "none",
+                      }}
                     >
                       →
                     </Link>

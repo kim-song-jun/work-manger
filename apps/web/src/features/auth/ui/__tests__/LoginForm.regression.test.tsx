@@ -112,6 +112,7 @@ describe("LoginForm · routing regression", () => {
     // Token persisted to BOTH stores so route guards can't read stale state.
     expect(localStorage.getItem("wm:access")).toBe("AT");
     expect(useAuthStore.getState().accessToken).toBe("AT");
+    expect(useAuthStore.getState().me?.memberships).toHaveLength(1);
   });
 
   it("/v1/me 401 (unauthenticated /me) → nav('/onboarding/welcome'), NOT '/m/home'", async () => {
@@ -143,6 +144,7 @@ describe("LoginForm · routing regression", () => {
     });
     const targets = navigateSpy.mock.calls.map(([target]) => target);
     expect(targets).not.toContain("/m/home");
+    expect(useAuthStore.getState().me).toBeNull();
   });
 
   it("/v1/me network error (non-HttpError throw) → nav('/onboarding/welcome')", async () => {

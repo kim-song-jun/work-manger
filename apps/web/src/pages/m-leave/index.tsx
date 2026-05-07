@@ -5,7 +5,7 @@ import { fetchBalance } from "@entities/leave";
 
 export function LeavePage() {
   const { t } = useTranslation();
-  const q = useQuery({ queryKey: ["leave-balance"], queryFn: fetchBalance });
+  const q = useQuery({ queryKey: ["leave-balance"], queryFn: () => fetchBalance() });
 
   return (
     <>

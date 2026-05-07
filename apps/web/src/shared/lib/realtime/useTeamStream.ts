@@ -4,30 +4,38 @@
  */
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@shared/lib/store/useAuthStore";
 
 type WsEvent = { type: string; payload?: unknown };
 
-function getToken(): string | null {
-  try {
-    return localStorage.getItem("wm:access");
-  } catch {
-    return null;
-  }
-}
-
-function makeUrl(token: string | null): string {
+function makeUrl(token: string): string {
   const base = (typeof location !== "undefined" ? location.origin : "")
     .replace(/^http/, "ws");
-  const tk = token ? `?token=${encodeURIComponent(token)}` : "";
-  return `${base}/v1/ws/team${tk}`;
+  return `${base}/v1/ws/team?token=${encodeURIComponent(token)}`;
+}
+
+function closeSocketQuietly(ws: WebSocket): void {
+  if (ws.readyState === WebSocket.CONNECTING) {
+    ws.addEventListener("open", () => ws.close(), { once: true });
+    return;
+  }
+  try {
+    ws.close();
+  } catch {
+    /* ignore */
+  }
 }
 
 export function useTeamStream(enabled: boolean = true): void {
   const qc = useQueryClient();
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const hasMembership = useAuthStore((s) => Boolean(s.me?.memberships?.length));
   useEffect(() => {
     if (!enabled) return;
+    if (!accessToken) return;
+    if (!hasMembership) return;
     if (typeof WebSocket === "undefined") return;
-    const url = makeUrl(getToken());
+    const url = makeUrl(accessToken);
     let ws: WebSocket | null = null;
     let cancelled = false;
     try {
@@ -51,11 +59,7 @@ export function useTeamStream(enabled: boolean = true): void {
     });
     return () => {
       cancelled = true;
-      try {
-        ws?.close();
-      } catch {
-        /* ignore */
-      }
+      if (ws) closeSocketQuietly(ws);
     };
-  }, [enabled, qc]);
+  }, [enabled, accessToken, hasMembership, qc]);
 }

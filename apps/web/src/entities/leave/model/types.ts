@@ -29,7 +29,7 @@ export type LeaveApplyBody = {
   kind: LeaveKind;
 };
 
-export type LeaveRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type LeaveRequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 
 export type LeaveRequest = {
   id: string;

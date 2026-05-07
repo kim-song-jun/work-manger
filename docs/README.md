@@ -19,6 +19,7 @@
 | 운영 SOP | [`operations/sop/`](operations/sop/) | 온보딩 / 데이터 처리 / 보안 사고 / 평판 / 스토어 긴급 업데이트 |
 | 의사결정 기록 (ADR) | [`adr/README.md`](adr/README.md) | ADR-001 ~ ADR-005 (React SPA / Flutter WebView / Django / Postgres / 디자인 토큰) |
 | 디자인 시스템 | [`design/design-system.md`](design/design-system.md) | 토큰 / 타이포 / 컴포넌트 / 모션 |
+| E2E / UI 감사 | [`qa/e2e-ui-ux-audit.md`](qa/e2e-ui-ux-audit.md) | Docker E2E 시나리오 매트릭스 / UI·UX 비교 / 검증 게이트 |
 | 로드맵 | [`roadmap.md`](roadmap.md) | 마일스톤 · 우선순위 · 마감 |
 
 ### SOP 빠른 링크

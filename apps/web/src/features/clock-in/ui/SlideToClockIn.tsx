@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
+import type {
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+} from "react";
 import { Icon } from "@shared/ui";
 
 type Props = {
@@ -12,50 +16,80 @@ type Props = {
 
 export function SlideToClockIn({ onCommit, disabled, labelIn, labelOut, active }: Props) {
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const pctRef = useRef(0);
+  const pointerStartedAtRef = useRef(0);
   const [pct, setPct] = useState(0);
   const [committing, setCommitting] = useState(false);
 
   // reset on disabled change
   useEffect(() => {
-    if (disabled) setPct(0);
+    if (disabled) {
+      pctRef.current = 0;
+      setPct(0);
+    }
   }, [disabled]);
 
-  function onDown(e: ReactPointerEvent<HTMLDivElement>) {
+  function resetPct(): void {
+    pctRef.current = 0;
+    setPct(0);
+  }
+
+  function commit(): void {
+    setCommitting(true);
+    setTimeout(() => {
+      try {
+        onCommit();
+      } finally {
+        setCommitting(false);
+        resetPct();
+      }
+    }, 50);
+  }
+
+  function startDrag(
+    startClientX: number,
+    moveEvent: "pointermove" | "mousemove",
+    upEvent: "pointerup" | "mouseup",
+  ): void {
     if (disabled || committing) return;
-    e.preventDefault();
     const track = trackRef.current;
     if (!track) return;
     const rect = track.getBoundingClientRect();
     const knobSize = 56;
     const max = rect.width - knobSize - 8;
-    const startX = e.clientX;
+    const startX = startClientX;
     const startPct = pct;
 
-    function move(ev: PointerEvent) {
-      const dx = ev.clientX - startX;
+    function updateFromClientX(clientX: number) {
+      const dx = clientX - startX;
       const next = Math.max(0, Math.min(1, startPct + dx / max));
+      pctRef.current = next;
       setPct(next);
     }
-    function up() {
-      document.removeEventListener("pointermove", move);
-      document.removeEventListener("pointerup", up);
-      setPct((v) => {
-        if (v > 0.88) {
-          setCommitting(true);
-          // give UI a tick before firing
-          setTimeout(() => {
-            try {
-              onCommit();
-            } finally {
-              setCommitting(false);
-            }
-          }, 50);
-        }
-        return 0;
-      });
+    function move(ev: PointerEvent | MouseEvent) {
+      updateFromClientX(ev.clientX);
     }
-    document.addEventListener("pointermove", move);
-    document.addEventListener("pointerup", up);
+    function up(ev: PointerEvent | MouseEvent) {
+      document.removeEventListener(moveEvent, move);
+      document.removeEventListener(upEvent, up);
+      updateFromClientX(ev.clientX);
+      if (pctRef.current > 0.88) commit();
+      else resetPct();
+    }
+    document.addEventListener(moveEvent, move);
+    document.addEventListener(upEvent, up);
+  }
+
+  function onDown(e: ReactPointerEvent<HTMLDivElement>) {
+    e.preventDefault();
+    pointerStartedAtRef.current = Date.now();
+    startDrag(e.clientX, "pointermove", "pointerup");
+  }
+
+  function onMouseDown(e: ReactMouseEvent<HTMLDivElement>) {
+    if (Date.now() - pointerStartedAtRef.current < 500) return;
+    e.preventDefault();
+    startDrag(e.clientX, "mousemove", "mouseup");
   }
 
   // Keyboard fallback: Enter/Space completes the slide programmatically.
@@ -65,16 +99,9 @@ export function SlideToClockIn({ onCommit, disabled, labelIn, labelOut, active }
     if (disabled || committing) return;
     if (e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
-    setCommitting(true);
     setPct(1);
-    setTimeout(() => {
-      try {
-        onCommit();
-      } finally {
-        setCommitting(false);
-        setPct(0);
-      }
-    }, 50);
+    pctRef.current = 1;
+    commit();
   }
 
   const trackBg = active ? "var(--success-soft)" : "var(--brand-soft)";
@@ -94,6 +121,8 @@ export function SlideToClockIn({ onCommit, disabled, labelIn, labelOut, active }
       aria-valuenow={Math.round(pct * 100)}
       aria-disabled={disabled || committing}
       tabIndex={disabled ? -1 : 0}
+      onPointerDown={onDown}
+      onMouseDown={onMouseDown}
       onKeyDown={onKeyDown}
       className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       style={{
@@ -122,7 +151,6 @@ export function SlideToClockIn({ onCommit, disabled, labelIn, labelOut, active }
         {(active ? labelOut : labelIn) + "  →"}
       </span>
       <div
-        onPointerDown={onDown}
         style={{
           position: "absolute",
           top: 4,

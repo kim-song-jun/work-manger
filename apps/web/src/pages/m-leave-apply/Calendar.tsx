@@ -50,7 +50,17 @@ export function Calendar({ year, month, start, end, onPick, onPrev, onNext }: Pr
           type="button"
           onClick={onPrev}
           aria-label={t("common.prev")}
-          style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--grey-600)" }}
+          style={{
+            width: 36,
+            height: 36,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            color: "var(--grey-600)",
+          }}
         >
           <Icon.chevL width={20} height={20} />
         </button>
@@ -61,7 +71,17 @@ export function Calendar({ year, month, start, end, onPick, onPrev, onNext }: Pr
           type="button"
           onClick={onNext}
           aria-label={t("common.next")}
-          style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--grey-600)" }}
+          style={{
+            width: 36,
+            height: 36,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            color: "var(--grey-600)",
+          }}
         >
           <Icon.chevR width={20} height={20} />
         </button>

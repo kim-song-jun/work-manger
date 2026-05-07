@@ -1,4 +1,18 @@
-const BASE = import.meta.env.VITE_API_URL ?? "";
+function apiBase(): string {
+  const configured = import.meta.env.VITE_API_URL ?? "";
+  if (!configured) return "";
+  try {
+    const url = new URL(configured);
+    if (typeof window !== "undefined" && url.hostname === "api") {
+      return "";
+    }
+  } catch {
+    return configured;
+  }
+  return configured.replace(/\/$/, "");
+}
+
+const BASE = apiBase();
 
 type ApiError = { code: string; message: string; details?: unknown };
 

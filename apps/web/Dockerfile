@@ -1,7 +1,7 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
-COPY package.json ./
-RUN npm install --no-audit --no-fund --legacy-peer-deps
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
 FROM node:24-alpine AS dev
 WORKDIR /app

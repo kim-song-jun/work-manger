@@ -16,14 +16,10 @@ export function ForgotForm() {
     setSubmitting(true);
     setError(null);
     try {
-      await api("/v1/auth/forgot", { method: "POST", json: { email } });
+      await api("/v1/auth/password/forgot", { method: "POST", json: { email } });
       setDone(true);
     } catch (err) {
-      if (err instanceof HttpError && err.status === 404) {
-        setDone(true); // pretend success while endpoint stubs
-      } else {
-        setError(t("common.error"));
-      }
+      setError(err instanceof HttpError ? err.message : t("common.error"));
     } finally {
       setSubmitting(false);
     }
@@ -59,7 +55,7 @@ export function ForgotForm() {
             </div>
             <Link
               to="/login"
-              className="block text-center text-[13px] font-semibold"
+              className="flex min-h-8 items-center justify-center text-center text-[13px] font-semibold"
               style={{ color: "var(--brand)" }}
             >
               {t("auth.back_to_login")}
@@ -86,7 +82,7 @@ export function ForgotForm() {
             </Button>
             <Link
               to="/login"
-              className="block text-center text-[13px] mt-4 font-semibold"
+              className="mt-4 flex min-h-8 items-center justify-center text-center text-[13px] font-semibold"
               style={{ color: "var(--brand)" }}
             >
               {t("auth.back_to_login")}

@@ -1,30 +1,14 @@
-import { api, HttpError } from "@shared/api";
+import { api } from "@shared/api";
 import type { LeaveApplyBody, LeaveRequest } from "../model/types";
 
 type Envelope<T> = { data: T };
 
-export async function applyLeave(body: LeaveApplyBody): Promise<LeaveRequest | null> {
-  try {
-    const r = await api<Envelope<LeaveRequest>>("/v1/leave/requests", {
-      method: "POST",
-      json: body,
-    });
-    return r.data;
-  } catch (e) {
-    if (e instanceof HttpError && e.status === 404) {
-      // Backend stub: pretend it succeeded so the UI can demo end-to-end.
-      return {
-        id: "stub-" + Date.now(),
-        start_date: body.start_date,
-        end_date: body.end_date,
-        kind: body.kind,
-        days: leaveDays(body),
-        status: "PENDING",
-        reason: body.reason ?? "",
-      };
-    }
-    throw e;
-  }
+export async function applyLeave(body: LeaveApplyBody): Promise<LeaveRequest> {
+  const r = await api<Envelope<LeaveRequest>>("/v1/leave/requests", {
+    method: "POST",
+    json: body,
+  });
+  return r.data;
 }
 
 export function leaveDays(body: Pick<LeaveApplyBody, "kind" | "start_date" | "end_date">): number {

@@ -93,6 +93,33 @@ def test_join_with_invalid_code(client, employee):
     assert r.json()["error"]["code"] == "JOIN_CODE_INVALID"
 
 
+def test_profile_patch_updates_user_membership_and_department(client, owner, settings):
+    settings.DEBUG = True
+    auth(client, owner)
+    r = client.post("/v1/dev/bootstrap-company", {"name": "ProfileCo"}, format="json")
+    assert r.status_code == 201
+
+    r = client.patch(
+        "/v1/onboarding/profile",
+        {
+            "name": "Owner Updated",
+            "department_name": "People",
+            "position": "Lead",
+            "employee_no": "EMP-1",
+        },
+        format="json",
+    )
+    assert r.status_code == 200, r.content
+    owner.refresh_from_db()
+    membership = Membership.objects.select_related("department").get(user=owner)
+    assert owner.name == "Owner Updated"
+    assert membership.department is not None
+    assert membership.department.name == "People"
+    assert membership.position == "Lead"
+    assert membership.employee_no == "EMP-1"
+    assert r.json()["data"]["memberships"][0]["company"]["name"] == "ProfileCo"
+
+
 def test_admin_codes_require_admin_role(client, employee):
     auth(client, employee)
     # employee with no membership at all → 403 (IsActiveMember fails)

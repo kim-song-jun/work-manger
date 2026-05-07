@@ -1,4 +1,4 @@
-.PHONY: up down logs ps build api-shell migrate makemigrations test test-be test-fe test-all fe-shell precommit precommit-install audit
+.PHONY: up down logs ps build api-shell migrate makemigrations test test-be test-fe test-desktop test-mobile test-e2e test-all package-desktop package-mobile package-all fe-shell precommit precommit-install audit
 
 up:
 	docker compose up -d --build
@@ -24,20 +24,42 @@ migrate:
 makemigrations:
 	docker compose exec api python manage.py makemigrations
 
-# 단일 진입점 — BE 우선 실행 (기존 동작 호환).
-test: test-be
+# 단일 진입점 — Docker 기반 전체 회귀.
+test: test-all
 
-# Backend pytest (settings.test = sqlite in-memory fallback).
+# Backend pytest (one-shot Docker container).
 test-be:
-	docker compose exec -T api pytest --ds=work_manager.settings.test -q
+	docker compose --profile test run --rm --build api-test
 
-# Frontend vitest + typecheck.
+# Frontend typecheck + vitest + production build (one-shot Docker container).
 test-fe:
-	docker compose exec -T web npm run typecheck
-	docker compose exec -T web npm run test
+	docker compose --profile test run --rm --build web-test
 
-# 전체 회귀 (BE + FE) — CI 와 동등한 로컬 검증.
-test-all: test-be test-fe
+# Electron desktop shell typecheck + vitest (one-shot Docker container).
+test-desktop:
+	docker compose --profile test run --rm desktop-test
+
+# Flutter WebView shell unit tests (one-shot Docker container).
+test-mobile:
+	docker compose --profile test run --rm mobile-test
+
+# Real-stack Playwright regression (api/ws/web/db/redis/ntfy + demo seed).
+test-e2e:
+	docker compose up -d --build db redis ntfy api ws web
+	docker compose --profile seed run --rm seed
+	docker compose --profile e2e run --rm e2e
+
+# 전체 회귀 — BE + web + desktop + mobile + real-stack e2e.
+test-all: test-be test-fe test-desktop test-mobile test-e2e
+
+# Local installable/test app artifacts, built inside Docker.
+package-desktop:
+	docker compose --profile package run --rm desktop-package
+
+package-mobile:
+	docker compose --profile package run --rm mobile-package
+
+package-all: package-desktop package-mobile
 
 fe-shell:
 	docker compose exec web sh

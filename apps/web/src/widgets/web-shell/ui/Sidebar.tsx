@@ -21,7 +21,7 @@ export function Sidebar({ bp, onNavigate }: Props) {
   const loc = useLocation();
   const me = useMe();
   const role = me.data?.memberships?.[0]?.role;
-  const orgName = me.data?.memberships?.[0]?.org_name ?? "Workspace";
+  const orgName = me.data?.memberships?.[0]?.company?.name ?? "Workspace";
   const railMode = bp === "md";
 
   const items: Item[] = [

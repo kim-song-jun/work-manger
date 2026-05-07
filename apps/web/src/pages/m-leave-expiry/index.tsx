@@ -7,7 +7,10 @@ import { fetchBalance } from "@entities/leave";
 export function LeaveExpiryAlertPage() {
   const { t } = useTranslation();
   const nav = useNavigate();
-  const q = useQuery({ queryKey: ["leave", "balance"], queryFn: fetchBalance });
+  const q = useQuery({
+    queryKey: ["leave", "balance"],
+    queryFn: () => fetchBalance(),
+  });
   const expiring = q.data?.expiring ?? 0;
 
   return (

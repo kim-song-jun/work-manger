@@ -5,8 +5,8 @@
  * Middle pane: scrollable list with current selection.
  * Right pane: selected item detail + APPROVE / REJECT actions.
  *
- * Subscribes to the realtime websocket so peer decisions arrive without
- * polling. Optimistic invalidation refreshes both inbox and notifications.
+ * The app-level provider owns realtime subscriptions. Optimistic invalidation
+ * refreshes both inbox and notifications.
  */
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -25,7 +25,6 @@ import {
 } from "@entities/inbox";
 import type { InboxItem, InboxStatus } from "@entities/inbox";
 import { useMe } from "@entities/user";
-import { useInboxStream } from "@shared/lib";
 import { InboxRejectReasonForm } from "./InboxRejectReasonForm";
 
 type Scope = "me" | "company";
@@ -37,7 +36,6 @@ export function WebInboxPage() {
   const toast = useToast();
   const qc = useQueryClient();
   const me = useMe();
-  useInboxStream();
 
   const isAdmin = useMemo(() => {
     const role = me.data?.memberships?.[0]?.role;

@@ -52,8 +52,9 @@ List<GeofenceItem> normalizeGeofencePayload(List<dynamic> raw) {
   }).where((g) => g.id.isNotEmpty).toList(growable: false);
 }
 
-/// Public façade. Real registration is delegated to `flutter_workmanager`
-/// + `geofence_service` (or `native_geofence`) when `initBackground()` runs.
+/// Public facade. Native registration is intentionally hidden behind this shim
+/// so the WebView contract stays stable while Android/iOS geofence engines can
+/// evolve independently.
 class GeofenceServiceShim {
   GeofenceServiceShim._();
 
@@ -65,7 +66,7 @@ class GeofenceServiceShim {
   /// call lives behind a thin wrapper so unit tests can swap it.
   static Future<void> initBackground() async {
     if (kDebugMode) debugPrint('[geofence] initBackground (15 min cadence)');
-    // TODO(native): call into flutter_workmanager once it's added to
+    // TODO(native): call into workmanager once native registration is wired to
     // pubspec.yaml. Kept as a stub so unit tests can run without the
     // platform plugin.
   }
@@ -76,7 +77,7 @@ class GeofenceServiceShim {
     if (kDebugMode) {
       debugPrint('[geofence] registered ${_registered.length} regions');
     }
-    // TODO(native): forward to geofence_service / native_geofence here.
+    // TODO(native): forward to platform-specific geofence registration here.
   }
 }
 

@@ -290,7 +290,15 @@ def test_endpoints_require_authentication(client):
 
 # ---------- Overtime ----------
 
-def test_overtime_create_and_list(auth_client, member):
+def test_overtime_create_and_list(auth_client, member, monkeypatch):
+    inbox_pushes = []
+
+    def fake_notify_inbox(membership, event, payload):
+        inbox_pushes.append((membership, event, payload))
+        return True
+
+    monkeypatch.setattr("apps.realtime.broadcast.notify_inbox", fake_notify_inbox)
+
     r = auth_client.post(
         "/v1/overtime/requests",
         {"requested_minutes": 90, "reason": "장애 대응"},
@@ -299,10 +307,15 @@ def test_overtime_create_and_list(auth_client, member):
     assert r.status_code == 201, r.content
     ot_id = r.json()["data"]["id"]
     assert OvertimeRequest.objects.filter(id=ot_id).exists()
-    # An ApprovalTask should be enqueued
-    assert ApprovalTask.objects.filter(
+    # An ApprovalTask should be enqueued and pushed to the approver inbox stream.
+    task = ApprovalTask.objects.get(
         target_type=ApprovalTask.TargetType.OVERTIME, target_id=ot_id
-    ).exists()
+    )
+    assert inbox_pushes
+    pushed_membership, event, payload = inbox_pushes[0]
+    assert pushed_membership.id == task.approver_id
+    assert event == "inbox.task.created"
+    assert payload["task_id"] == str(task.id)
 
     r2 = auth_client.get("/v1/overtime/requests")
     assert r2.status_code == 200

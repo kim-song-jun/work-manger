@@ -23,7 +23,12 @@ import "@shared/i18n";
 
 vi.mock("@entities/user", () => ({
   useMe: () => ({
-    data: { id: "1", email: "a@b.c", name: "A", memberships: [{ org_name: "Acme", role: "ADMIN" }] },
+    data: {
+      id: "1",
+      email: "a@b.c",
+      name: "A",
+      memberships: [{ id: "m1", company: { id: "c1", name: "Acme" }, role: "ADMIN" }],
+    },
     isLoading: false,
   }),
 }));

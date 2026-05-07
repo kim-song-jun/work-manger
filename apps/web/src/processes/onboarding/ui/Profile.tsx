@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Avatar, Button, Icon } from "@shared/ui";
 import { api, HttpError } from "@shared/api";
+import { fetchMe } from "@entities/user";
+import { useAuthStore } from "@shared/lib/store/useAuthStore";
 import { OnbShell } from "./OnbShell";
 
 type Form = { name: string; team: string; role: string; emp_no: string };
@@ -10,8 +12,10 @@ type Form = { name: string; team: string; role: string; emp_no: string };
 export function Profile() {
   const { t } = useTranslation();
   const nav = useNavigate();
+  const setStoreMe = useAuthStore((s) => s.setMe);
   const [form, setForm] = useState<Form>({ name: "", team: "", role: "", emp_no: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function field(k: keyof Form, v: string) {
     setForm({ ...form, [k]: v });
@@ -19,12 +23,31 @@ export function Profile() {
 
   async function onNext() {
     setSubmitting(true);
+    setError(null);
     try {
-      await api("/v1/onboarding/profile", { method: "POST", json: form });
-    } catch (e) {
-      if (e instanceof HttpError && e.status !== 404) {
-        // ignore for now; UX-only step
+      await api("/v1/onboarding/profile", {
+        method: "PATCH",
+        json: {
+          name: form.name,
+          department_name: form.team,
+          position: form.role,
+          employee_no: form.emp_no,
+        },
+      });
+      try {
+        const me = await fetchMe();
+        setStoreMe(me);
+      } catch {
+        setStoreMe(null);
       }
+    } catch (e) {
+      if (e instanceof HttpError) {
+        setError(t("auth.invalid"));
+      } else {
+        setError(String(e));
+      }
+      setSubmitting(false);
+      return;
     }
     nav("/onboarding/location");
   }
@@ -83,6 +106,12 @@ export function Profile() {
           />
         </div>
       ))}
+
+      {error && (
+        <div className="text-[13px] text-center mb-2" style={{ color: "var(--danger)" }}>
+          {error}
+        </div>
+      )}
 
       <div className="flex-1" />
       <Button size="lg" fullWidth disabled={!form.name || submitting} onClick={onNext}>

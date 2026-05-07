@@ -47,6 +47,7 @@ describe("LoginForm", () => {
 
   it("renders email + password + submit", () => {
     withProviders(<LoginForm />);
+    expect(screen.getByTestId("auth-shell")).toBeInTheDocument();
     // labels come from i18n (key returned in test) — assert by type / role
     expect(screen.getAllByDisplayValue("").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByRole("button")).toBeInTheDocument();

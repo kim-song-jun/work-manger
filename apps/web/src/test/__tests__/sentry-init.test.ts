@@ -37,7 +37,7 @@ describe("FE Sentry init guard", () => {
     initSpy.mockClear();
     // VITE_SENTRY_DSN undefined / "" 시 import 시점에 호출되면 안 됨.
     vi.stubGlobal("import.meta", { env: { VITE_SENTRY_DSN: "", MODE: "test" } });
-    await import("../../../main");
+    await import("../../main");
     expect(initSpy).not.toHaveBeenCalled();
   });
 

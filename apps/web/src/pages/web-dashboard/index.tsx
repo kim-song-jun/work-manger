@@ -2,8 +2,7 @@
  * /web — desktop dashboard
  *
  * Hero KPIs (today / accumulated / leave) + team preview + recent records +
- * pending inbox. Subscribes to the realtime inbox stream so that decided
- * approvals refresh the pending list without polling.
+ * pending inbox. The app-level provider owns realtime subscriptions.
  */
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -16,12 +15,10 @@ import { fetchTeam } from "@entities/team";
 import type { TeamMember } from "@entities/team";
 import { fetchInbox } from "@entities/inbox";
 import type { InboxList } from "@entities/inbox";
-import { useInboxStream } from "@shared/lib";
 import { formatTime, formatMinutes, formatDateLabel } from "./format";
 
 export function WebDashboardPage() {
   const { t } = useTranslation();
-  useInboxStream();
 
   const today = useQuery<AttendanceToday | null>({
     queryKey: ["attendance", "today"],
@@ -30,7 +27,7 @@ export function WebDashboardPage() {
   });
   const balance = useQuery<LeaveBalance | null>({
     queryKey: ["leave", "balance"],
-    queryFn: fetchBalance,
+    queryFn: () => fetchBalance(),
     staleTime: 60_000,
   });
   const team = useQuery<TeamMember[] | null>({

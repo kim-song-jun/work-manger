@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button, TextField } from "@shared/ui";
 import { api, HttpError } from "@shared/api";
+import { AuthShell } from "./AuthShell";
 
 export function SignupForm() {
   const { t } = useTranslation();
@@ -32,13 +33,13 @@ export function SignupForm() {
   }
 
   return (
-    <main className="min-h-screen grid place-items-center px-5">
-      <form
-        onSubmit={onSubmit}
-        className="w-full max-w-[360px] bg-white rounded-lg shadow-2 p-6"
-      >
-        <h1 className="text-[22px] font-bold mb-6 text-ink-900">{t("auth.signup")}</h1>
-        <div className="space-y-3">
+    <AuthShell
+      title={t("auth.signup_title")}
+      subtitle={t("auth.signup_sub")}
+      footer="MOLCUBE | Work Manager"
+    >
+      <form onSubmit={onSubmit} className="flex h-full flex-col">
+        <div className="space-y-4">
           <TextField
             label={t("auth.name")}
             value={name}
@@ -46,7 +47,7 @@ export function SignupForm() {
             required
           />
           <TextField
-            label={t("auth.email")}
+            label={t("auth.work_email")}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -62,18 +63,22 @@ export function SignupForm() {
             error={err ?? undefined}
           />
         </div>
-        <div className="mt-6">
+        <div className="mt-8">
           <Button type="submit" fullWidth size="lg" disabled={loading}>
-            {loading ? "…" : t("auth.submit")}
+            {loading ? t("common.loading") : t("auth.signup")}
           </Button>
         </div>
         <p className="mt-4 text-center text-[13px] text-ink-600">
           {t("auth.have_account")}{" "}
-          <Link to="/login" className="text-brand font-medium">
+          <Link
+            to="/login"
+            className="inline-flex min-h-8 items-center align-middle font-semibold"
+            style={{ color: "var(--brand)" }}
+          >
             {t("auth.login")}
           </Link>
         </p>
       </form>
-    </main>
+    </AuthShell>
   );
 }

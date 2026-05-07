@@ -18,7 +18,7 @@ import { DEMO_USERS } from "@fixtures/users";
 
 test.use({
   permissions: ["geolocation"],
-  geolocation: { latitude: 37.5665, longitude: 126.978 },
+  geolocation: { latitude: 37.5, longitude: 127.0 },
 });
 
 test.describe("slide-to-clock-in", () => {
@@ -30,6 +30,12 @@ test.describe("slide-to-clock-in", () => {
     const session = await loginViaApi(DEMO_USERS.admin);
     await attachAuthToContext(context, session);
 
+    await page.goto("/m/home", { waitUntil: "domcontentloaded", timeout: 30_000 });
+
+    // Act
+    const slider = page.getByRole("slider").first();
+    await expect(slider).toBeVisible({ timeout: 5_000 });
+
     const clockInPromise = page.waitForRequest(
       (r) => r.url().includes("/v1/attendance/clock-in") && r.method() === "POST",
       { timeout: 5_000 },
@@ -38,12 +44,6 @@ test.describe("slide-to-clock-in", () => {
       (r) => r.url().includes("/v1/attendance/clock-in") && r.request().method() === "POST",
       { timeout: 5_000 },
     );
-
-    await page.goto("/m/home");
-
-    // Act
-    const slider = page.getByRole("slider").first();
-    await expect(slider).toBeVisible({ timeout: 5_000 });
 
     const start = Date.now();
     await dragSliderToRight(page, slider);

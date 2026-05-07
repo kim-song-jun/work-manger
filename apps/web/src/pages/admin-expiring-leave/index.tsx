@@ -2,8 +2,7 @@ import { useQuery, useQueries } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Card, Skeleton } from "@shared/ui";
 import { fetchEmployees } from "@entities/employee";
-import { api, HttpError } from "@shared/api";
-import type { LeaveBalance } from "@entities/leave";
+import { fetchBalance, type LeaveBalance } from "@entities/leave";
 
 const EXPIRING_DAYS = 30;
 const MAX_FANOUT = 50;
@@ -11,19 +10,7 @@ const MAX_FANOUT = 50;
 type EmpBalance = { id: string; name: string; team?: string | null; balance: LeaveBalance | null };
 
 async function fetchBalanceFor(employeeId: string): Promise<LeaveBalance | null> {
-  // Backend currently only exposes /v1/leave/balance for the calling user;
-  // when a per-employee endpoint exists we can pass `?employee_id=...`.
-  try {
-    const r = await api<{ data: LeaveBalance }>(
-      `/v1/leave/balance?employee_id=${encodeURIComponent(employeeId)}`,
-    );
-    return r.data;
-  } catch (e) {
-    if (e instanceof HttpError && (e.status === 404 || e.status === 403)) {
-      return null;
-    }
-    throw e;
-  }
+  return fetchBalance({ employeeId });
 }
 
 export function AdminExpiringLeavePage() {
@@ -63,14 +50,6 @@ export function AdminExpiringLeavePage() {
       <div className="text-[13px] mb-3" style={{ color: "var(--grey-600)" }}>
         {t("admin.expiring_sub", { days: EXPIRING_DAYS })}
       </div>
-      <div
-        className="text-[12px] mb-3"
-        style={{ color: "var(--grey-500)", fontStyle: "italic" }}
-      >
-        {/* TODO: aggregate endpoint */}
-        {t("admin.expiring_todo")}
-      </div>
-
       {loading ? (
         <Card padding={18}>
           <Skeleton height={20} />

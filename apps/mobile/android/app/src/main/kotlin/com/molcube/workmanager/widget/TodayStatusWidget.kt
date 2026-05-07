@@ -3,6 +3,7 @@ package com.molcube.workmanager.widget
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -10,7 +11,6 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
-import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -49,12 +49,12 @@ private fun TodayStatusContent(snap: WMSnapshot) {
         Spacer(GlanceModifier.height(6.dp))
         Text(
             text = workedHHmm(snap.workedMinutes),
-            style = TextStyle(fontSize = 28f.sp(), fontWeight = FontWeight.Medium,
+            style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Medium,
                 color = GlanceTheme.colors.onSurface),
         )
         Text(
             text = snap.clockInAt?.let { "출근 ${formatTime(it)}" } ?: "아직 출근 전",
-            style = TextStyle(fontSize = 11f.sp(), color = GlanceTheme.colors.onSurfaceVariant),
+            style = TextStyle(fontSize = 11.sp, color = GlanceTheme.colors.onSurfaceVariant),
         )
     }
 }
@@ -70,7 +70,7 @@ private fun StatusPill(status: String) {
     Box(
         modifier = GlanceModifier.background(ColorProvider(android.graphics.Color.valueOf(bg).toArgb()))
             .cornerRadius(12.dp).padding(horizontal = 8.dp, vertical = 3.dp),
-    ) { Text(label, style = TextStyle(fontSize = 11f.sp())) }
+    ) { Text(label, style = TextStyle(fontSize = 11.sp)) }
 }
 
 private fun workedHHmm(minutes: Int): String {
@@ -86,5 +86,3 @@ private fun formatTime(iso: String): String {
     } catch (_: Throwable) { iso }
 }
 
-private fun Float.sp(): androidx.compose.ui.unit.TextUnit =
-    androidx.compose.ui.unit.TextUnit(this, androidx.compose.ui.unit.TextUnitType.Sp)

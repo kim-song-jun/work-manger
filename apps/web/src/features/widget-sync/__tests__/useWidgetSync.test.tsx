@@ -11,12 +11,16 @@
  *   - No-ops when window.NativeBridge is absent (web context)
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Mock } from "vitest";
 import { renderHook } from "@testing-library/react";
 
 import { useWidgetSync } from "../model/useWidgetSync";
+import type { TodayStatusPayload } from "@shared/lib/native";
 
 type Bridge = {
-  pushTodayStatus: ReturnType<typeof vi.fn>;
+  pushTodayStatus: Mock<
+    (payload: TodayStatusPayload) => Promise<{ ok: boolean }>
+  >;
 };
 
 function setBridge(b: Bridge | undefined) {
@@ -36,7 +40,9 @@ describe("useWidgetSync", () => {
   afterEach(() => setBridge(undefined));
 
   it("pushes mapped payload once when bridge present", () => {
-    const push = vi.fn(async () => ({ ok: true }));
+    const push = vi.fn(
+      async (_payload: TodayStatusPayload) => ({ ok: true }),
+    );
     setBridge({ pushTodayStatus: push });
 
     renderHook(() =>
@@ -57,7 +63,9 @@ describe("useWidgetSync", () => {
   });
 
   it("does not double-push for identical inputs", () => {
-    const push = vi.fn(async () => ({ ok: true }));
+    const push = vi.fn(
+      async (_payload: TodayStatusPayload) => ({ ok: true }),
+    );
     setBridge({ pushTodayStatus: push });
 
     const { rerender } = renderHook(

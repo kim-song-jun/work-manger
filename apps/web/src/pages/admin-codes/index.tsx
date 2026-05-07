@@ -79,6 +79,8 @@ export function AdminCodesPage() {
                         disabled={revoke.isPending}
                         className="text-[13px] font-semibold"
                         style={{
+                          minHeight: 32,
+                          padding: "6px 0",
                           color: "var(--danger)",
                           background: "none",
                           border: "none",

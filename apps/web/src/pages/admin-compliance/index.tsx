@@ -1,10 +1,9 @@
 /**
  * /admin/compliance — ADMIN-only board: company-wide weekly hours table.
  *
- * Sort: hours desc (server-side). Bulk-message stub button — wired only
- * to a toast for now since the messaging endpoint is out of scope.
+ * Sort: hours desc (server-side). This page is read-only until a real
+ * messaging endpoint exists.
  */
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Card, Skeleton } from "@shared/ui";
@@ -28,21 +27,11 @@ function statusLabel(status: ComplianceStatus, t: (k: string) => string): string
 
 export function AdminCompliancePage() {
   const { t } = useTranslation();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const q = useQuery({
     queryKey: ["admin-compliance"],
     queryFn: () => fetchCompanyCompliance(),
   });
-
-  function toggle(id: string) {
-    setSelected((s) => {
-      const next = new Set(s);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
 
   const members: CompanyComplianceMember[] = q.data?.members ?? [];
 
@@ -54,25 +43,6 @@ export function AdminCompliancePage() {
           {t("compliance.admin_sub")}
           {q.data?.week_start ? ` · ${q.data.week_start}` : ""}
         </div>
-      </div>
-
-      <div style={{ marginBottom: 12 }}>
-        <button
-          type="button"
-          aria-label="bulk-message"
-          disabled={selected.size === 0}
-          style={{
-            padding: "8px 14px",
-            borderRadius: "var(--r-sm)",
-            background: selected.size ? "var(--grey-900)" : "var(--grey-200)",
-            color: selected.size ? "var(--white)" : "var(--grey-500)",
-            fontWeight: 600,
-            border: "none",
-            cursor: selected.size ? "pointer" : "not-allowed",
-          }}
-        >
-          {t("compliance.bulk_message")} ({selected.size})
-        </button>
       </div>
 
       {q.isLoading ? (
@@ -91,7 +61,6 @@ export function AdminCompliancePage() {
           >
             <thead>
               <tr style={{ background: "var(--grey-50)" }}>
-                <th style={{ width: 36 }} />
                 <th style={th}>{t("compliance.col_member")}</th>
                 <th style={th}>{t("compliance.col_dept")}</th>
                 <th style={{ ...th, textAlign: "right" }}>{t("compliance.col_hours")}</th>
@@ -102,7 +71,7 @@ export function AdminCompliancePage() {
               {members.length === 0 && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={4}
                     style={{ padding: 18, textAlign: "center", color: "var(--grey-500)" }}
                   >
                     {t("compliance.empty")}
@@ -111,14 +80,6 @@ export function AdminCompliancePage() {
               )}
               {members.map((m) => (
                 <tr key={m.membership_id} style={{ borderTop: "1px solid var(--grey-100)" }}>
-                  <td style={{ textAlign: "center" }}>
-                    <input
-                      aria-label={`select-${m.membership_id}`}
-                      type="checkbox"
-                      checked={selected.has(m.membership_id)}
-                      onChange={() => toggle(m.membership_id)}
-                    />
-                  </td>
                   <td style={td}>{m.name}</td>
                   <td style={td}>{m.department ?? "-"}</td>
                   <td style={{ ...td, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>

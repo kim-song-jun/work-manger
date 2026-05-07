@@ -1,4 +1,4 @@
-export type OvertimeStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type OvertimeStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 
 export type OvertimeRequest = {
   id: string;
@@ -18,4 +18,10 @@ export type OvertimeRequestBody = {
 export type OvertimeSettings = {
   auto_enabled: boolean;
   auto_threshold_minutes: number;
+};
+
+export type OvertimeHistoryMonth = {
+  ym: string; // YYYY-MM
+  approved_minutes: number;
+  approved_count: number;
 };

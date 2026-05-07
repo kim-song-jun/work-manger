@@ -108,6 +108,8 @@ export function CustomizePage() {
           onClick={() => tw.reset()}
           className="text-[13px] font-bold mt-4"
           style={{
+            minHeight: 32,
+            padding: "6px 0",
             background: "transparent",
             color: "var(--brand)",
             border: "none",

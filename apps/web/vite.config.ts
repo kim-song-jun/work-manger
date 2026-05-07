@@ -2,6 +2,9 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 
+const apiProxyTarget = process.env.API_PROXY_TARGET ?? "http://api:4455";
+const wsProxyTarget = process.env.WS_PROXY_TARGET ?? "http://ws:4456";
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -20,14 +23,15 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 4444,
     strictPort: true,
+    allowedHosts: ["web"],
     proxy: {
       "/v1/ws": {
-        target: process.env.VITE_WS_URL ?? "http://ws:4456",
+        target: wsProxyTarget,
         changeOrigin: true,
         ws: true,
       },
       "/v1": {
-        target: process.env.VITE_API_URL ?? "http://api:4455",
+        target: apiProxyTarget,
         changeOrigin: true,
       },
     },

@@ -91,6 +91,7 @@ class ProfileSerializer(serializers.Serializer):
     locale = serializers.CharField(max_length=8, required=False)
     position = serializers.CharField(max_length=64, required=False, allow_blank=True)
     employee_no = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    department_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
 
 
 @api_view(["PATCH"])
@@ -108,13 +109,25 @@ def profile(request):
     if user_changed:
         user.save()
 
-    m_changed = False
+    m_update_fields: list[str] = []
     for f in ("position", "employee_no"):
         if f in s.validated_data:
             setattr(membership, f, s.validated_data[f])
-            m_changed = True
-    if m_changed:
-        membership.save(update_fields=["position", "employee_no", "updated_at"])
+            m_update_fields.append(f)
+    if "department_name" in s.validated_data:
+        dept_name = s.validated_data["department_name"].strip()
+        if dept_name:
+            dept, _ = Department.objects.get_or_create(
+                company=membership.company,
+                name=dept_name,
+                defaults={"path": f"/{dept_name}"},
+            )
+            membership.department = dept
+        else:
+            membership.department = None
+        m_update_fields.append("department")
+    if m_update_fields:
+        membership.save(update_fields=[*m_update_fields, "updated_at"])
 
     return Response({"data": UserMeSerializer(user).data})
 

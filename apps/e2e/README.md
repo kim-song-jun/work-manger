@@ -11,7 +11,9 @@ For test header / docstring conventions see [`docs/guidelines/testing-standards.
 ```
 apps/e2e/
 ├── specs/
+│   ├── all-pages.spec.ts     # full route inventory + permissions + API/console/design basics
 │   ├── auth.spec.ts          # login routing (member → /m/home, etc.)
+│   ├── onboarding.spec.ts    # signup → company code → profile → /m/home
 │   ├── clock-in.spec.ts      # slide-to-clock-in golden path
 │   ├── leave-apply.spec.ts   # @employee — apply 2-day leave
 │   ├── inbox-approve.spec.ts # @manager   — approve first PENDING
@@ -31,27 +33,31 @@ filtering (e.g. `npx playwright test --grep @employee`).
 
 ## Running
 
-Host:
+Docker-only (canonical):
 
 ```bash
-cd apps/e2e
-npm install --no-audit --no-fund
-npx playwright install chromium  # once
-npm test                          # full suite, BASE_URL=http://localhost:4444
-npx playwright test specs/auth.spec.ts --project=chromium
+make test-e2e
 ```
 
-Container (CI parity):
+Equivalent explicit commands:
 
 ```bash
+docker compose up -d --build db redis ntfy api ws web
 docker compose --profile seed run --rm seed
 docker compose --profile e2e run --rm e2e
 ```
 
-Override retries (default 0 locally, 2 in CI):
+The e2e container opens `http://localhost:4444` through a local proxy to
+`web:4444`. This keeps browser secure-context APIs such as geolocation working
+while still running entirely inside Docker.
+
+Local host execution is not the verification path. Use it only for quick
+spec authoring after the Docker path is green.
+
+Override retries inside Docker:
 
 ```bash
-WM_E2E_RETRIES=2 npx playwright test
+WM_E2E_RETRIES=2 docker compose --profile e2e run --rm e2e
 ```
 
 ## FE testids
@@ -64,6 +70,7 @@ requires updating both the FE component AND this list.
 | testid           | Owner component                                                        | Used by                                       |
 |------------------|------------------------------------------------------------------------|-----------------------------------------------|
 | `inbox-item`     | `apps/web/src/pages/m-inbox/index.tsx` — wrapping div per inbox card    | `inbox-approve.spec.ts`, `realtime.spec.ts`   |
+| `data-inbox-item-id` | `apps/web/src/pages/m-inbox/index.tsx` — unique task id per inbox card | `inbox-approve.spec.ts`                    |
 | `inbox-approve`  | `apps/web/src/features/inbox-decide/ui/InboxQuickActions.tsx` — Button  | `inbox-approve.spec.ts`                       |
 
 (Other testids predate this suite — see `docs/guidelines/testing-standards.md`

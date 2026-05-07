@@ -59,7 +59,7 @@ def _create(request):
         status=OvertimeRequest.Status.PENDING,
     )
     approver = _pick_approver(request.membership)
-    ApprovalTask.objects.create(
+    task = ApprovalTask.objects.create(
         company=request.company,
         target_type=ApprovalTask.TargetType.OVERTIME,
         target_id=ot.id,
@@ -67,6 +67,22 @@ def _create(request):
         approver=approver,
         status=ApprovalTask.Status.PENDING,
     )
+    try:
+        from apps.realtime import broadcast as ws_broadcast
+
+        ws_broadcast.notify_inbox(
+            approver,
+            "inbox.task.created",
+            {
+                "task_id": str(task.id),
+                "target_type": task.target_type,
+                "target_id": str(task.target_id),
+                "requester_id": str(task.requester_id),
+                "created_at": task.created_at.isoformat(),
+            },
+        )
+    except Exception:  # noqa: BLE001
+        pass
     return Response(
         {"data": OvertimeRequestSerializer(ot).data},
         status=status.HTTP_201_CREATED,

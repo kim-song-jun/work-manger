@@ -58,7 +58,13 @@ export function AdminEmployeeDetailPage() {
       <Link
         to="/admin/employees"
         className="text-[13px]"
-        style={{ color: "var(--grey-600)", textDecoration: "none" }}
+        style={{
+          color: "var(--grey-600)",
+          textDecoration: "none",
+          display: "inline-flex",
+          alignItems: "center",
+          minHeight: 32,
+        }}
       >
         ← {t("admin.common_back")}
       </Link>

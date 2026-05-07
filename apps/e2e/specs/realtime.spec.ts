@@ -24,9 +24,11 @@ test.describe("realtime inbox push @manager", () => {
     const managerCtx = await browser.newContext();
     const managerPage = await managerCtx.newPage();
     const managerSession = await loginAs(managerPage, DEMO_USERS.manager);
+    const wsReady = managerPage.waitForEvent("websocket", { timeout: 5_000 }).catch(() => null);
 
     await managerPage.goto("/m/inbox", { waitUntil: "load", timeout: 30_000 });
     await expect(managerPage).toHaveURL(/\/m\/inbox/);
+    await wsReady;
 
     // Settle initial inbox list and snapshot row count
     await managerPage
@@ -56,15 +58,7 @@ test.describe("realtime inbox push @manager", () => {
       extraHTTPHeaders: { authorization: `Bearer ${empSession.accessToken}` },
     });
 
-    // Watch for the inbox refetch that should fire when the WS push lands.
     // The FE invalidates ["inbox"] on push → refetch hits /v1/inbox.
-    const refetchPromise = managerPage.waitForResponse(
-      (r) =>
-        (r.url().includes("/v1/inbox") || r.url().includes("/v1/ws/inbox")) &&
-        r.request().method() === "GET",
-      { timeout: 5_000 },
-    );
-
     const start = Date.now();
     const otRes = await empApi.post("/v1/overtime/requests", {
       data: {
@@ -81,8 +75,7 @@ test.describe("realtime inbox push @manager", () => {
     }
 
     // Wait for either the WS-triggered refetch OR the row count delta — whichever
-    // arrives first within the SLO window.
-    await refetchPromise.catch(() => null);
+    // arrives within the SLO window.
     await expect
       .poll(async () => managerPage.getByTestId("inbox-item").count(), {
         timeout: 2_000,

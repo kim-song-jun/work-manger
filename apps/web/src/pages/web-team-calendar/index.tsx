@@ -142,6 +142,7 @@ export function WebTeamCalendarPage() {
                 type="button"
                 onClick={() => setOffset((o) => Math.max(0, o - PAGE))}
                 disabled={offset === 0}
+                style={{ minHeight: 32, padding: "6px 10px" }}
               >
                 {t("common.prev")}
               </button>
@@ -149,6 +150,7 @@ export function WebTeamCalendarPage() {
                 type="button"
                 onClick={() => setOffset((o) => Math.min(rows.length - PAGE, o + PAGE))}
                 disabled={offset + PAGE >= rows.length}
+                style={{ minHeight: 32, padding: "6px 10px" }}
               >
                 {t("common.next")}
               </button>

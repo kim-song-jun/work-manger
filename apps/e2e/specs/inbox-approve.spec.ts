@@ -40,6 +40,8 @@ test.describe("manager inbox approval @manager", () => {
 
     const firstItem = page.getByTestId("inbox-item").first();
     await expect(firstItem).toBeVisible({ timeout: 5_000 });
+    const itemId = await firstItem.getAttribute("data-inbox-item-id");
+    if (!itemId) throw new Error("inbox item is missing data-inbox-item-id");
     const approveBtn = firstItem.getByTestId("inbox-approve");
 
     const approvePromise = page.waitForRequest(
@@ -54,7 +56,9 @@ test.describe("manager inbox approval @manager", () => {
 
     // Assert — POST observed, row disappears within 3s, total flow < 4s SLO.
     expect(req.method()).toBe("POST");
-    await expect(firstItem).toBeHidden({ timeout: 3_000 });
+    await expect(page.locator(`[data-inbox-item-id="${itemId}"]`)).toBeHidden({
+      timeout: 3_000,
+    });
     const elapsed = Date.now() - start;
     expect(elapsed, `approve→hidden should be < 4s (SLO), was ${elapsed}ms`).toBeLessThan(4_000);
   });

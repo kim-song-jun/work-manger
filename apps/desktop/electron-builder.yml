@@ -82,7 +82,7 @@ linux:
 # (dev) is handled by `electron-builder --publish=never` in package.json.
 publish:
   - provider: s3
-    bucket: ${env.WM_UPDATE_BUCKET}
+    bucket: ${env.WM_UPDATE_BUCKET:-work-manager-dev-updates}
     path: /desktop/${env.WM_UPDATE_CHANNEL:-prod}
     region: ${env.AWS_REGION:-ap-northeast-2}
     acl: null

@@ -59,6 +59,7 @@ import { AdminCompliancePage } from "@pages/admin-compliance";
 import { ComplianceMobilePage } from "@pages/m-compliance";
 import { ComplianceBlockPage } from "@pages/m-compliance-block";
 import { WebTeamCalendarPage } from "@pages/web-team-calendar";
+import { RequireMember } from "./routeGuards";
 
 export function App() {
   const { i18n, t } = useTranslation();
@@ -90,7 +91,11 @@ export function App() {
           top: 8,
           left: 8,
           zIndex: 1000,
+          display: "flex",
+          alignItems: "center",
           padding: "8px 12px",
+          minWidth: 40,
+          minHeight: 40,
           background: "var(--grey-900)",
           color: "var(--white)",
           borderRadius: "var(--r-sm)",
@@ -118,7 +123,7 @@ export function App() {
         <Route path="done" element={<DonePage />} />
       </Route>
 
-      <Route path="/m" element={<MobileShell />}>
+      <Route path="/m" element={<RequireMember><MobileShell /></RequireMember>}>
         <Route index element={<Navigate to="home" replace />} />
         <Route path="home" element={<HomePage />} />
         <Route path="team" element={<TeamPage />} />
@@ -147,7 +152,7 @@ export function App() {
         <Route path="compliance/block" element={<ComplianceBlockPage />} />
       </Route>
 
-      <Route path="/web" element={<WebShell />}>
+      <Route path="/web" element={<RequireMember><WebShell /></RequireMember>}>
         <Route index element={<WebDashboardPage />} />
         <Route path="inbox" element={<WebInboxPage />} />
         <Route path="records" element={<WebRecordsPage />} />

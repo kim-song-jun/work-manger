@@ -8,6 +8,7 @@ Idempotent — re-running clears the demo company first, then re-seeds.
 
 Creates:
   - 1 Company "Acme" (code "ACMEDM"), 4 departments
+  - 1 reusable onboarding join code "ACMEDM"
   - 1 OWNER, 1 ADMIN, 2 MANAGERs, 25 EMPLOYEEs (29 memberships)
   - WorkSchedule (09:00–18:00) per membership
   - 7 days of AttendanceRecord per active employee with realistic clock-in scatter
@@ -30,6 +31,7 @@ from apps.approval.models import ApprovalTask
 from apps.attendance.models import AttendanceRecord, OvertimeRequest, WorkSchedule
 from apps.identity.models import (
     Company,
+    CompanyJoinCode,
     Department,
     Location,
     Membership,
@@ -81,6 +83,7 @@ class Command(BaseCommand):
             owner, admin, managers, employees = self._create_memberships(
                 company, departments
             )
+            self._create_join_code(company, admin)
             self._create_locations(company)
             self._create_schedules(owner, admin, *managers, *employees)
             active = [owner, admin, *managers, *employees]
@@ -197,6 +200,14 @@ class Command(BaseCommand):
             )
             employees.append(emp)
         return owner, admin, managers, employees
+
+    def _create_join_code(self, company, created_by) -> None:
+        CompanyJoinCode.objects.create(
+            company=company,
+            code=DEMO_COMPANY_CODE,
+            max_uses=None,
+            created_by=created_by,
+        )
 
     def _create_locations(self, company) -> None:
         Location.objects.create(

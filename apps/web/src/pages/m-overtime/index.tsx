@@ -7,9 +7,9 @@ import { OvertimeForm } from "@features/overtime-request";
 import {
   fetchOvertimeHistory,
   fetchOvertimeSettings,
+  updateOvertimeSettings,
 } from "@entities/overtime";
-import type { OvertimeRequest } from "@entities/overtime";
-import { api, HttpError } from "@shared/api";
+import type { OvertimeHistoryMonth } from "@entities/overtime";
 
 type Tab = "request" | "settings" | "history";
 
@@ -34,13 +34,13 @@ function HistoryList() {
     );
   return (
     <Card padding={0}>
-      {items.map((it: OvertimeRequest, i) => (
+      {items.map((it: OvertimeHistoryMonth, i) => (
         <ListRow
-          key={it.id}
+          key={it.ym}
           divider={i < items.length - 1}
-          title={it.work_date}
-          subtitle={fmtMin(it.requested_minutes)}
-          meta={it.status}
+          title={it.ym}
+          subtitle={fmtMin(it.approved_minutes)}
+          meta={`${it.approved_count}`}
         />
       ))}
     </Card>
@@ -54,14 +54,7 @@ function SettingsPanel() {
   const q = useQuery({ queryKey: ["overtime", "settings"], queryFn: fetchOvertimeSettings });
   const data = q.data ?? { auto_enabled: false, auto_threshold_minutes: 30 };
   const m = useMutation({
-    mutationFn: async (next: typeof data) => {
-      try {
-        await api("/v1/overtime/settings", { method: "PUT", json: next });
-      } catch (e) {
-        if (!(e instanceof HttpError && e.status === 404)) throw e;
-      }
-      return next;
-    },
+    mutationFn: updateOvertimeSettings,
     onSuccess: (next) => {
       qc.setQueryData(["overtime", "settings"], next);
       toast.show(t("mobile.overtime.submitted"), "success");

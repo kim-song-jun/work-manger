@@ -15,6 +15,7 @@ type InboxEvent =
   | { type: "inbox.task.decided"; id: string; status: "APPROVED" | "REJECTED" }
   | { type: "inbox.task.created"; id: string }
   | { type: "notification.created"; id: string }
+  | { event: string; payload?: unknown; [k: string]: unknown }
   | { type: string; [k: string]: unknown };
 
 function getToken(): string | null {
@@ -38,7 +39,19 @@ function wsUrl(): string | null {
   return base.replace(/^http/, "ws") + "/v1/ws/inbox";
 }
 
-export function useInboxStream(opts: { enabled?: boolean } = {}) {
+function closeSocketQuietly(sock: WebSocket): void {
+  if (sock.readyState === WebSocket.CONNECTING) {
+    sock.addEventListener("open", () => sock.close(), { once: true });
+    return;
+  }
+  try {
+    sock.close();
+  } catch {
+    /* noop */
+  }
+}
+
+export function useInboxStream(opts: { enabled?: boolean; token?: string | null } = {}) {
   const enabled = opts.enabled ?? true;
   const qc = useQueryClient();
   const sockRef = useRef<WebSocket | null>(null);
@@ -46,14 +59,16 @@ export function useInboxStream(opts: { enabled?: boolean } = {}) {
 
   useEffect(() => {
     if (!enabled || typeof WebSocket === "undefined") return;
+    const authToken = opts.token ?? getToken();
+    if (!authToken) return;
+    const token = authToken;
     let cancelled = false;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
     function connect() {
       const url = wsUrl();
       if (!url) return;
-      const token = getToken();
-      const full = token ? `${url}?token=${encodeURIComponent(token)}` : url;
+      const full = `${url}?token=${encodeURIComponent(token)}`;
       let sock: WebSocket;
       try {
         sock = new WebSocket(full);
@@ -69,9 +84,15 @@ export function useInboxStream(opts: { enabled?: boolean } = {}) {
       sock.addEventListener("message", (ev) => {
         try {
           const msg = JSON.parse(String(ev.data)) as InboxEvent;
-          if (msg.type === "inbox.task.decided" || msg.type === "inbox.task.created") {
+          const eventType =
+            "type" in msg && typeof msg.type === "string"
+              ? msg.type
+              : "event" in msg && typeof msg.event === "string"
+                ? msg.event
+                : "";
+          if (eventType === "inbox.task.decided" || eventType === "inbox.task.created") {
             qc.invalidateQueries({ queryKey: ["inbox"] });
-          } else if (msg.type === "notification.created") {
+          } else if (eventType === "notification.created") {
             qc.invalidateQueries({ queryKey: ["notifications"] });
             qc.invalidateQueries({ queryKey: ["inbox"] });
           }
@@ -99,9 +120,9 @@ export function useInboxStream(opts: { enabled?: boolean } = {}) {
       cancelled = true;
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (sockRef.current) {
-        try { sockRef.current.close(); } catch { /* noop */ }
+        closeSocketQuietly(sockRef.current);
         sockRef.current = null;
       }
     };
-  }, [enabled, qc]);
+  }, [enabled, opts.token, qc]);
 }

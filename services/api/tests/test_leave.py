@@ -323,6 +323,48 @@ def test_balance_endpoint(auth_client, membership, company):
     assert Decimal(body["remaining"]) == Decimal("10")
 
 
+def test_admin_balance_endpoint_can_query_employee(company, membership):
+    admin_user = User.objects.create_user(
+        email="leave-admin@example.com",
+        password="Strong!Pass99",
+        name="Leave Admin",
+    )
+    Membership.objects.create(
+        company=company,
+        user=admin_user,
+        role=Membership.Role.ADMIN,
+        hired_at=date(2020, 1, 1),
+    )
+    _seed_grant(company, membership, days="7")
+    client = APIClient()
+    client.force_authenticate(admin_user)
+
+    resp = client.get(f"/v1/leave/balance?employee_id={membership.id}")
+
+    assert resp.status_code == 200, resp.content
+    body = resp.json()["data"]
+    assert Decimal(body["granted_total"]) == Decimal("7")
+    assert Decimal(body["remaining"]) == Decimal("7")
+
+
+def test_employee_balance_endpoint_rejects_other_employee(auth_client, company):
+    other_user = User.objects.create_user(
+        email="other@example.com",
+        password="Strong!Pass99",
+        name="Other",
+    )
+    other = Membership.objects.create(
+        company=company,
+        user=other_user,
+        role=Membership.Role.EMPLOYEE,
+        hired_at=date(2024, 1, 1),
+    )
+
+    resp = auth_client.get(f"/v1/leave/balance?employee_id={other.id}")
+
+    assert resp.status_code == 403, resp.content
+
+
 def test_policy_endpoint_auto_creates(auth_client, membership):
     assert LeavePolicy.objects.count() == 0
     resp = auth_client.get("/v1/leave/policy")

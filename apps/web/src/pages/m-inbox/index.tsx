@@ -96,11 +96,14 @@ export function InboxPage() {
             const km = KIND_COLORS[tt];
             const name = requesterName(it);
             const reason = summaryReason(it);
-            // E2E hook: `data-testid="inbox-item"` on the wrapping div is
-            // consumed by apps/e2e/specs/{inbox-approve,realtime}.spec.ts.
+            // E2E hooks are consumed by apps/e2e/specs/{inbox-approve,realtime}.spec.ts.
             // See apps/e2e/README.md "FE testids" for the full list.
             return (
-              <div key={it.id} data-testid="inbox-item">
+              <div
+                key={it.id}
+                data-testid="inbox-item"
+                data-inbox-item-id={it.id}
+              >
                 <Card padding={14}>
                   <div className="flex items-center gap-2">
                     <span

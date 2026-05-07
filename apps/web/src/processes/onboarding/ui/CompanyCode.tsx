@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@shared/ui";
 import { api, HttpError } from "@shared/api";
+import { fetchMe } from "@entities/user";
+import { useAuthStore } from "@shared/lib/store/useAuthStore";
 import { OnbShell } from "./OnbShell";
 
 const LEN = 6;
@@ -10,6 +12,7 @@ const LEN = 6;
 export function CompanyCode() {
   const { t } = useTranslation();
   const nav = useNavigate();
+  const setStoreMe = useAuthStore((s) => s.setMe);
   const [code, setCode] = useState<string[]>(Array(LEN).fill(""));
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -29,17 +32,24 @@ export function CompanyCode() {
     setSubmitting(true);
     setError(null);
     try {
-      await api("/v1/onboarding/company-code", {
+      await api("/v1/onboarding/join-company", {
         method: "POST",
         json: { code: code.join("") },
       });
-    } catch (e) {
-      if (e instanceof HttpError && e.status !== 404) {
-        setError(t("auth.invalid"));
-        setSubmitting(false);
-        return;
+      try {
+        const me = await fetchMe();
+        setStoreMe(me);
+      } catch {
+        setStoreMe(null);
       }
-      // 404 = endpoint stub — proceed
+    } catch (e) {
+      if (e instanceof HttpError) {
+        setError(t("auth.invalid"));
+      } else {
+        setError(String(e));
+      }
+      setSubmitting(false);
+      return;
     }
     nav("/onboarding/profile");
   }

@@ -26,7 +26,10 @@ export function LeaveApplyForm({ onDone, defaultDate, defaultEndDate }: Props) {
   const toast = useToast();
   const qc = useQueryClient();
   const today = defaultDate ?? new Date().toISOString().slice(0, 10);
-  const balanceQ = useQuery({ queryKey: ["leave", "balance"], queryFn: fetchBalance });
+  const balanceQ = useQuery({
+    queryKey: ["leave", "balance"],
+    queryFn: () => fetchBalance(),
+  });
 
   const {
     register,

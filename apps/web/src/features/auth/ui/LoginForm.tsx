@@ -5,6 +5,7 @@ import { Button, TextField } from "@shared/ui";
 import { api, HttpError, setAccessToken } from "@shared/api";
 import { useAuthStore } from "@shared/lib/store/useAuthStore";
 import { fetchMe } from "@entities/user";
+import { AuthShell } from "./AuthShell";
 
 type LoginResponse = {
   data: { access_token: string; refresh_token: string };
@@ -14,15 +15,11 @@ export function LoginForm() {
   const { t } = useTranslation();
   const nav = useNavigate();
   const setStoreToken = useAuthStore((s) => s.setToken);
+  const setStoreMe = useAuthStore((s) => s.setMe);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  // Defer navigation to a post-commit useEffect. Calling `nav()` directly
-  // inside the async submit handler races with React's batched state updates,
-  // and in production builds an upstream redirect can unmount LoginForm
-  // before the navigate flushes — leaving the user stranded on /login even
-  // after a successful POST /v1/auth/login.
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,27 +35,18 @@ export function LoginForm() {
         method: "POST",
         json: { email, password },
       });
-      // Persist the token BEFORE any side-effecting fetch so that:
-      //  1) the next /v1/me request carries Authorization: Bearer …
-      //  2) route guards reading useAuthStore see the new token immediately
-      // Write to BOTH the localStorage shim (legacy module-level `access`
-      // var inside @shared/api) AND the zustand store (route guards read this).
       setAccessToken(r.data.access_token);
       setStoreToken(r.data.access_token);
       try {
         const me = await fetchMe();
+        setStoreMe(me);
         if (me && me.memberships && me.memberships.length > 0) {
           setRedirectTo("/m/home");
         } else {
-          // No memberships (or fetchMe swallowed a 401 → null) means the
-          // user has no company yet → onboarding, not the member home.
           setRedirectTo("/onboarding/welcome");
         }
       } catch {
-        // /v1/me threw a non-401 error (network, 5xx, parse). Treat as
-        // "unknown membership" → onboarding. Routing the user to /m/home
-        // here would land them on a guarded page that immediately bounces
-        // back to /login with a stale token, which is the original bug.
+        setStoreMe(null);
         setRedirectTo("/onboarding/welcome");
       }
     } catch (err) {
@@ -70,20 +58,15 @@ export function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen grid place-items-center px-5">
-      <form
-        onSubmit={onSubmit}
-        className="w-full max-w-[360px] p-6"
-        style={{
-          background: "var(--white)",
-          borderRadius: "var(--r-md)",
-          boxShadow: "var(--shadow-2)",
-        }}
-      >
-        <h1 className="text-[22px] font-bold mb-6 text-ink-900">{t("auth.login")}</h1>
-        <div className="space-y-3">
+    <AuthShell
+      title={t("auth.login_title")}
+      subtitle={t("auth.login_sub")}
+      footer="MOLCUBE | Work Manager"
+    >
+      <form onSubmit={onSubmit} className="flex h-full flex-col">
+        <div className="space-y-4">
           <TextField
-            label={t("auth.email")}
+            label={t("auth.work_email")}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -98,23 +81,32 @@ export function LoginForm() {
             error={error ?? undefined}
           />
         </div>
-        <div className="mt-6">
+        <div className="mt-8">
           <Button type="submit" fullWidth size="lg" disabled={loading}>
-            {loading ? "…" : t("auth.submit")}
+            {loading ? t("common.loading") : t("auth.login")}
           </Button>
         </div>
-        <div className="mt-3 text-center">
-          <Link to="/forgot" className="text-[13px] font-semibold" style={{ color: "var(--brand)" }}>
-            {t("auth.forgot")}
+        <div className="mt-3 flex items-center justify-between text-[13px]">
+          <span style={{ color: "var(--grey-600)" }}>{t("auth.forgot")}</span>
+          <Link
+            to="/forgot"
+            className="inline-flex min-h-8 items-center font-semibold"
+            style={{ color: "var(--brand)" }}
+          >
+            {t("auth.help")}
           </Link>
         </div>
         <p className="mt-4 text-center text-[13px] text-ink-600">
           {t("auth.no_account")}{" "}
-          <Link to="/signup" className="font-semibold" style={{ color: "var(--brand)" }}>
+          <Link
+            to="/signup"
+            className="inline-flex min-h-8 items-center align-middle font-semibold"
+            style={{ color: "var(--brand)" }}
+          >
             {t("auth.signup")}
           </Link>
         </p>
       </form>
-    </main>
+    </AuthShell>
   );
 }

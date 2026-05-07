@@ -1,18 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, HttpError } from "@shared/api";
+import type { MeMembership, MeUser } from "./store/useAuthStore";
 
-export type Membership = {
-  org_id: string;
-  org_name?: string;
-  role?: string;
-};
-
-export type Me = {
-  id: string;
-  email: string;
-  name?: string;
-  memberships: Membership[];
-};
+export type Membership = MeMembership;
+export type Me = MeUser;
 
 type MeEnvelope = { data: Me };
 

@@ -61,7 +61,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // Background tasks (geofence periodic poll registered from Dart via
-    // the flutter_workmanager plugin)
+    // the workmanager plugin)
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     // Coroutines

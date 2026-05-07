@@ -2,7 +2,7 @@
   "name": "@work-manager/e2e",
   "private": true,
   "version": "0.1.0",
-  "description": "Playwright end-to-end tests for the work-manager monorepo (web:4444 → api:4455).",
+  "description": "Playwright end-to-end tests for the work-manager monorepo (Docker localhost proxy → web/api).",
   "engines": {
     "node": ">=20"
   },

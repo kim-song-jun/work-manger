@@ -14,6 +14,7 @@ export function OnbShell({ step, total = 6, children, back = true }: Props) {
   const nav = useNavigate();
   return (
     <div
+      data-testid="onboarding-shell"
       className="min-h-screen w-full flex justify-center"
       style={{ background: "var(--grey-200)" }}
     >

@@ -29,7 +29,7 @@
     <application
         android:label="근무 관리"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_launcher"
         android:usesCleartextTraffic="true">
 
         <!-- Cleartext only allowed for 10.0.2.2 (emulator host) in dev builds.

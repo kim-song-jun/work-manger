@@ -66,11 +66,11 @@ work-manager/
 | 도구 | 버전 | 비고 |
 |---|---|---|
 | Docker Desktop | 최신 | Engine + Compose v2 |
-| Node.js | **24.x** | apps/web · apps/desktop |
-| Python | **3.12** | services/api |
+| Node.js | **24.x** | 선택: editor tooling only. 검증/개발 실행은 Docker |
+| Python | **3.12** | 선택: editor tooling only. 검증/개발 실행은 Docker |
 | `pre-commit` | 3.x+ | `pip install pre-commit` |
 | Terraform | **1.9.x** | infra/terraform (선택, 인프라 작업 시) |
-| Flutter SDK | 3.24+ | apps/mobile (선택) |
+| Flutter SDK | 3.24+ | 선택: editor tooling only. 검증/개발 실행은 Docker |
 | Apple Developer cert | — | macOS Electron 코드사이닝 (선택) |
 
 ### 한 줄 셋업 (One-liner)
@@ -85,9 +85,15 @@ pre-commit install && cp .env.example .env && docker compose up -d --build
 |---|---|
 | `make up` / `make down` | 전체 스택 기동 / 종료 |
 | `make migrate` | Django 마이그레이션 실행 |
-| `make test` | BE pytest (= `make test-be`) |
-| `make test-fe` | FE typecheck + vitest |
-| `make test-all` | BE + FE 전체 회귀 |
+| `make test` | Docker 기반 전체 회귀 (= `make test-all`) |
+| `make test-be` | API pytest one-shot Docker container |
+| `make test-fe` | Web typecheck + vitest + production build one-shot Docker container |
+| `make test-desktop` | Electron desktop typecheck + vitest one-shot Docker container |
+| `make test-mobile` | Flutter mobile `flutter test` one-shot Docker container |
+| `make test-e2e` | Real-stack Playwright: api/ws/web/db/redis/ntfy + seed |
+| `make test-all` | BE + web + desktop + mobile + e2e 전체 회귀 |
+| `make package-desktop` | Docker build of local desktop test artifact (`apps/desktop/release/linux-unpacked`) |
+| `make package-mobile` | Docker build of local mobile debug APK (`apps/mobile/build/app/outputs/flutter-apk/app-debug.apk`) |
 | `make precommit` | 모든 파일에 pre-commit 훅 실행 |
 | `make audit` | pip-audit + npm audit 로컬 실행 |
 
@@ -109,17 +115,15 @@ DSN 미설정 시 SDK init 은 자동 skip → 로컬 / CI 무영향.
 
 ---
 
-## 빠른 시작 (예정)
+## 빠른 시작
 
 ```bash
-# Backend
-cd services/api && python -m venv .venv && .venv/Scripts/activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver 8000
+# Docker-only dev stack
+make up
+docker compose --profile seed run --rm seed
 
-# Frontend
-cd apps/web && pnpm install && pnpm dev
+# Docker-only verification
+make test
 ```
 
 ---

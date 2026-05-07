@@ -3,6 +3,7 @@ package com.molcube.workmanager.widget
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -39,18 +40,18 @@ private fun ThisWeekContent(snap: WMSnapshot) {
         modifier = GlanceModifier.fillMaxSize().padding(14.dp)
             .background(GlanceTheme.colors.surface),
     ) {
-        Text("이번 주", style = TextStyle(fontSize = 11f.sp(),
+        Text("이번 주", style = TextStyle(fontSize = 11.sp,
             color = GlanceTheme.colors.onSurfaceVariant))
         Spacer(GlanceModifier.height(2.dp))
         Row {
             Text(
                 text = "%.1f".format(snap.weekHours),
-                style = TextStyle(fontSize = 26f.sp(), fontWeight = FontWeight.Medium,
+                style = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Medium,
                     color = GlanceTheme.colors.onSurface),
             )
             Spacer(GlanceModifier.width(4.dp))
             Text("시간 / ${target.toInt()}",
-                style = TextStyle(fontSize = 11f.sp(),
+                style = TextStyle(fontSize = 11.sp,
                     color = GlanceTheme.colors.onSurfaceVariant))
         }
         Spacer(GlanceModifier.height(6.dp))
@@ -67,13 +68,10 @@ private fun ThisWeekContent(snap: WMSnapshot) {
         }
         Spacer(GlanceModifier.height(8.dp))
         Text("잔여 연차 ${formatLeave(snap.annualLeaveRemaining)}일",
-            style = TextStyle(fontSize = 11f.sp(),
+            style = TextStyle(fontSize = 11.sp,
                 color = GlanceTheme.colors.onSurfaceVariant))
     }
 }
 
 private fun formatLeave(v: Double): String =
     if (v == v.toInt().toDouble()) v.toInt().toString() else "%.1f".format(v)
-
-private fun Float.sp(): androidx.compose.ui.unit.TextUnit =
-    androidx.compose.ui.unit.TextUnit(this, androidx.compose.ui.unit.TextUnitType.Sp)

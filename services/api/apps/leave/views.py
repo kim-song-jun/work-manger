@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.approval.models import ApprovalTask
+from apps.identity.models import Membership
 from core.errors import Forbidden, NotFound, Unprocessable
 from core.permissions import IsActiveMember, attach_membership
 
@@ -36,7 +37,23 @@ def _parse_date(raw: str | None, default: date) -> date:
 @permission_classes([IsAuthenticated, IsActiveMember])
 def balance(request):
     membership = attach_membership(request)
-    payload = services.compute_balance(membership)
+    target = membership
+    employee_id = request.query_params.get("employee_id")
+    if employee_id:
+        if membership.role not in ("ADMIN", "OWNER"):
+            raise Forbidden()
+        target = (
+            Membership.objects.filter(
+                id=employee_id,
+                company=membership.company,
+                is_active=True,
+            )
+            .select_related("company", "department")
+            .first()
+        )
+        if target is None:
+            raise NotFound("MEMBERSHIP_NOT_FOUND", "Employee not found.")
+    payload = services.compute_balance(target)
     return Response({"data": BalanceSerializer(payload).data})
 
 

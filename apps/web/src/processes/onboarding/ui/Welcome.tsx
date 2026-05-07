@@ -14,6 +14,7 @@ export function Welcome() {
 
   return (
     <div
+      data-testid="onboarding-welcome"
       className="min-h-screen w-full flex justify-center"
       style={{ background: "var(--grey-200)" }}
     >
@@ -54,6 +55,7 @@ export function Welcome() {
             const Ic = Icon[f.icon];
             return (
               <div
+                data-testid="onboarding-feature"
                 key={f.titleKey}
                 className="flex items-center gap-3.5 p-3.5 text-left"
                 style={{ background: "var(--white)", borderRadius: 14 }}
@@ -93,7 +95,11 @@ export function Welcome() {
           </Button>
           <div className="text-[13px] text-ink-500">
             {t("auth.have_account")}{" "}
-            <Link to="/login" className="font-bold" style={{ color: "var(--brand)" }}>
+            <Link
+              to="/login"
+              className="inline-flex min-h-8 items-center align-middle font-bold"
+              style={{ color: "var(--brand)" }}
+            >
               {t("auth.login")}
             </Link>
           </div>

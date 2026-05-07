@@ -5,12 +5,15 @@ import { defineConfig, devices } from "@playwright/test";
  *
  * Targets:
  *   - host run:      BASE_URL defaults to http://localhost:4444
- *   - container run: BASE_URL=http://web:4444 (set in docker-compose `e2e` service)
+ *   - container run: BASE_URL=http://localhost:4444 via the e2e container's
+ *     local proxy to web:4444. Browser secure-context APIs, especially
+ *     geolocation, require localhost/HTTPS.
  *
  * Workers are forced to 1 in CI so that the seeded demo company stays
  * deterministic across specs (single shared Postgres state).
  */
 const isCI = !!process.env.CI;
+const baseURL = process.env.BASE_URL ?? "http://localhost:4444";
 
 /**
  * Retry policy. Locally (CI=undefined) we want 0 retries — flake should be
@@ -41,7 +44,7 @@ export default defineConfig({
   expect: { timeout: 5_000 },
   outputDir: "test-results",
   use: {
-    baseURL: process.env.BASE_URL ?? "http://localhost:4444",
+    baseURL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

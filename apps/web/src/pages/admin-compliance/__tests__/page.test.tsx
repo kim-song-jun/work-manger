@@ -1,24 +1,17 @@
 /**
- * Test: pages/admin-compliance · AdminCompliancePage
+ * Test: pages/admin-compliance - AdminCompliancePage
  * Type: Unit (vitest + RTL, jsdom)
- * Why:  관리자 보드는 회사 전체 주간 누적을 한눈에 보여주므로 행 렌더링과
- *       상태별 색상이 어긋나면 운영 결정에 영향을 준다. mocked GET 응답으로
- *       테이블 렌더링과 status 셀 data-status 속성을 회귀 보호한다.
- * Covers:
- *   - 인증된 응답에서 회사 멤버 행이 렌더링된다
- *   - status 셀에 data-status 속성이 정확히 매핑된다 (WARN/OVER)
- * Out of scope:
- *   - 정렬 로직 (서버 사이드)
- *   - bulk message 실제 전송 (현재는 stub)
- * Coverage target: 행 렌더링 + status 매핑
+ * Why: The admin compliance board is the company-wide 52h weekly hours view.
+ *      It must render real API rows and map status colors/data attributes
+ *      correctly.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { setAccessToken } from "@shared/api";
 import "@shared/i18n";
 import { AdminCompliancePage } from "../index";
-import { setAccessToken } from "@shared/api";
 
 function makeResponse(body: unknown, init: { ok?: boolean; status?: number } = {}): Response {
   const text = body === undefined ? "" : JSON.stringify(body);
@@ -42,7 +35,7 @@ function renderPage() {
   );
 }
 
-describe("pages/admin-compliance · AdminCompliancePage", () => {
+describe("pages/admin-compliance - AdminCompliancePage", () => {
   beforeEach(() => setAccessToken(null));
   afterEach(() => vi.restoreAllMocks());
 
@@ -58,8 +51,8 @@ describe("pages/admin-compliance · AdminCompliancePage", () => {
               members: [
                 {
                   membership_id: "m-over",
-                  name: "이도현",
-                  department: "엔지니어링",
+                  name: "Lee",
+                  department: "Engineering",
                   role: "EMPLOYEE",
                   hours: "53.00",
                   threshold_hours: "52",
@@ -68,8 +61,8 @@ describe("pages/admin-compliance · AdminCompliancePage", () => {
                 },
                 {
                   membership_id: "m-warn",
-                  name: "윤소라",
-                  department: "디자인",
+                  name: "Park",
+                  department: "Design",
                   role: "MANAGER",
                   hours: "49.50",
                   threshold_hours: "52",
@@ -87,12 +80,10 @@ describe("pages/admin-compliance · AdminCompliancePage", () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText("이도현")).toBeInTheDocument();
-      expect(screen.getByText("윤소라")).toBeInTheDocument();
+      expect(screen.getByText("Lee")).toBeInTheDocument();
+      expect(screen.getByText("Park")).toBeInTheDocument();
     });
-    const overPill = screen.getByTestId("status-m-over");
-    const warnPill = screen.getByTestId("status-m-warn");
-    expect(overPill.getAttribute("data-status")).toBe("OVER");
-    expect(warnPill.getAttribute("data-status")).toBe("WARN");
+    expect(screen.getByTestId("status-m-over")).toHaveAttribute("data-status", "OVER");
+    expect(screen.getByTestId("status-m-warn")).toHaveAttribute("data-status", "WARN");
   });
 });

@@ -32,7 +32,7 @@ export type WebPushFailure =
 function isSupported(): boolean {
   return (
     typeof window !== "undefined" &&
-    "serviceWorker" in navigator &&
+    !!navigator.serviceWorker &&
     "PushManager" in window
   );
 }
@@ -42,7 +42,7 @@ export function urlBase64ToUint8Array(base64Url: string): Uint8Array {
   const padding = "=".repeat((4 - (base64Url.length % 4)) % 4);
   const base64 = (base64Url + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = atob(base64);
-  const out = new Uint8Array(raw.length);
+  const out = new Uint8Array(new ArrayBuffer(raw.length));
   for (let i = 0; i < raw.length; i += 1) out[i] = raw.charCodeAt(i);
   return out;
 }
@@ -105,9 +105,10 @@ export async function registerWebPush(): Promise<WebPushRegisterResult> {
 
   let subscription: PushSubscription;
   try {
+    const applicationServerKey = urlBase64ToUint8Array(publicKey) as BufferSource;
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
+      applicationServerKey,
     });
   } catch {
     return { ok: false, reason: "SUBSCRIBE_FAILED" };
