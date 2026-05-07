@@ -1,5 +1,5 @@
-/** Pending approvals (leave / overtime / outwork) shown to admin. */
-export type ApprovalKind = "leave" | "overtime" | "outwork";
+/** Pending approvals (leave / overtime / trip / manual_clock_in) shown to admin. */
+export type ApprovalKind = "leave" | "overtime" | "outwork" | "trip" | "manual_clock_in";
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 
 export type ApprovalRow = {

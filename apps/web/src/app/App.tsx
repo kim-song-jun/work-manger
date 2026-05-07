@@ -58,6 +58,7 @@ import { AdminCodesPage } from "@pages/admin-codes";
 import { AdminCompliancePage } from "@pages/admin-compliance";
 import { ComplianceMobilePage } from "@pages/m-compliance";
 import { ComplianceBlockPage } from "@pages/m-compliance-block";
+import { NotFoundPage } from "@pages/not-found";
 import { WebTeamCalendarPage } from "@pages/web-team-calendar";
 import { RequireMember } from "./routeGuards";
 
@@ -182,7 +183,7 @@ export function App() {
       </Route>
 
       <Route path="/__health" element={<HealthPage />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
     </>
   );

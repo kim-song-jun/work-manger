@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Card, Skeleton } from "@shared/ui";
+import { Card, Icon, Skeleton } from "@shared/ui";
 import { SubHeader } from "@widgets/sub-header";
 import {
   fetchNotifications,
@@ -22,7 +21,6 @@ const KIND_COLOR: Record<NotificationKind, string> = {
 
 export function NotificationsPage() {
   const { t } = useTranslation();
-  const nav = useNavigate();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<"all" | NotificationKind>("all");
 
@@ -47,12 +45,7 @@ export function NotificationsPage() {
   const items = q.data?.items ?? [];
   const filtered =
     filter === "all" ? items : items.filter((i) => i.kind === filter);
-
-  useEffect(() => {
-    if (!q.isLoading && items.length === 0) {
-      nav("/m/notifications/empty", { replace: true });
-    }
-  }, [items.length, nav, q.isLoading]);
+  const showEmpty = !q.isLoading && items.length === 0;
 
   const filters: { v: "all" | NotificationKind; key: string }[] = [
     { v: "all", key: "mobile.notifications.filter_all" },
@@ -113,6 +106,39 @@ export function NotificationsPage() {
         style={{ padding: "8px 12px 24px", background: "var(--grey-50)" }}
       >
         {q.isLoading && <Skeleton height={64} />}
+        {showEmpty && (
+          <div
+            className="flex flex-col items-center justify-center"
+            style={{ padding: "40px 32px 0", textAlign: "center" }}
+          >
+            <div
+              className="flex items-center justify-center"
+              aria-hidden="true"
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                background: "var(--grey-100)",
+                color: "var(--brand)",
+                marginBottom: 14,
+              }}
+            >
+              <Icon.check width={40} height={40} />
+            </div>
+            <h2
+              className="text-[18px] font-bold mb-1.5"
+              style={{ color: "var(--grey-900)" }}
+            >
+              {t("mobile.notifications.empty_title")}
+            </h2>
+            <div
+              className="text-[13px]"
+              style={{ color: "var(--grey-500)", maxWidth: 260 }}
+            >
+              {t("mobile.notifications.empty_sub")}
+            </div>
+          </div>
+        )}
         {filtered.map((it) => (
           <Card
             key={it.id}

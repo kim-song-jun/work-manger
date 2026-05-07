@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   Avatar,
@@ -14,6 +14,7 @@ import {
 import { clockIn, readGeoFix, SlideToClockIn } from "@features/clock-in";
 import { TweaksFab } from "@widgets/tweaks-panel";
 import type { ClockInBody, ClockKind } from "@entities/attendance";
+import { fetchBalance } from "@entities/leave";
 
 type FakeStatus = "office" | "wfh" | "leave" | "off";
 const FAKE_PEOPLE: { nameKey: string; status: FakeStatus }[] = [
@@ -50,6 +51,15 @@ export function HomePage() {
   const [clockedIn, setClockedIn] = useState(false);
   const [clockedInAt, setClockedInAt] = useState<string | null>(null);
   const [kind] = useState<ClockKind>("OFFICE");
+  const balanceQ = useQuery({
+    queryKey: ["leave", "balance"],
+    queryFn: () => fetchBalance(),
+    staleTime: 60_000,
+  });
+  const remainingDays =
+    balanceQ.data?.remaining !== undefined
+      ? String(balanceQ.data.remaining)
+      : "—";
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -187,7 +197,7 @@ export function HomePage() {
             <KPIStat label={t("home.week_label")} value="32" unit="h" />
           </Card>
           <Card padding={12}>
-            <KPIStat label={t("home.leave_balance")} value="11" unit={t("leave.days_unit")} />
+            <KPIStat label={t("home.leave_balance")} value={remainingDays} unit={t("leave.days_unit")} />
           </Card>
           <Card padding={12}>
             <KPIStat label={t("home.overtime_label")} value="4.3" unit="h" />

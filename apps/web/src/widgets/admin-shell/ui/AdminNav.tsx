@@ -19,7 +19,7 @@ export function AdminNav() {
     { to: "/admin/reports", icon: <Icon.calendar width={17} height={17} />, label: t("admin.nav_reports") },
     { to: "/admin/audit", icon: <Icon.clock width={17} height={17} />, label: t("admin.nav_audit") },
     { to: "/admin/codes", icon: <Icon.lock width={17} height={17} />, label: t("admin.nav_codes") },
-    { to: "/admin/settings", icon: <Icon.settings width={17} height={17} />, label: t("admin.nav_settings") },
+    { to: "/admin/compliance", icon: <Icon.lock width={17} height={17} />, label: t("admin.nav_compliance") },
   ];
   return (
     <nav className="mt-2" aria-label={t("admin.nav_dashboard")}>
