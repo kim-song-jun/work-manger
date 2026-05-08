@@ -74,7 +74,9 @@ work-manager/
 5. **Security Always**: 시크릿 격리 (.env.example 만 commit), JWT + 2FA + lockout 필수, dependency CVE 점검 (`make audit`)
 6. **Mock Data Discipline**: 스키마 변경 = 같은 PR 에서 MSW handlers / seed_demo / pytest fixture 동기화. OpenAPI 타입 drift 시 `npm run types:gen`
 7. **No Ambiguous Skipping**: 추측 금지, 원본 요구조건 보존. ADR 결정 (특히 ADR-006 self-hosted push) 우회 금지
-8. **Ambiguity → Re-enter Planning**: 빌더가 막히면 planner 에스컬레이션
+8. **BE Rebuild Rule**: BE (`services/api/`) 코드 변경 후 `docker compose build api && docker compose up -d api` 실행 필수. 신규 라우트 neighbor smoke (`curl /v1/admin/settings → 401` 등) 통과 확인 후 PR 머지.
+9. **Windows CRLF 방지**: `*.sh` 파일은 항상 LF 로 저장 (`.gitattributes` 영구 설정: `*.sh text eol=lf`). Windows host 빌드 시 CRLF 로 인한 스크립트 실행 오류를 방지한다.
+10. **Ambiguity → Re-enter Planning**: 빌더가 막히면 planner 에스컬레이션
 
 ## 테스트
 
@@ -169,9 +171,14 @@ CI 는 `make test-be` / `make test-fe` / `make test-e2e` 와 동등한 잡을 Gi
 - [Runbook](docs/operations/runbook.md)
 - SOPs: [onboard-new-company](docs/operations/sop/sop-onboard-new-company.md) · [data-export-request](docs/operations/sop/sop-data-export-request.md) · [data-deletion-request](docs/operations/sop/sop-data-deletion-request.md) · [emergency-password-reset](docs/operations/sop/sop-emergency-password-reset.md) · [email-reputation-recovery](docs/operations/sop/sop-email-reputation-recovery.md) · [app-store-emergency-update](docs/operations/sop/sop-app-store-emergency-update.md)
 
+### Operations (continued)
+- [Local 3-Platform Guide](docs/operations/local-3platform.md) — Web/Desktop/Mobile 로컬 검증 + docker-android (WSA EOL 대안)
+
 ### QA & Manuals
 - [E2E + UI/UX Audit](docs/qa/e2e-ui-ux-audit.md)
 - [Admin Company Codes Manual](docs/manuals/admin-company-codes.md)
+- [Admin Manual](docs/manuals/admin.md)
+- [Owner Manual](docs/manuals/owner.md)
 
 ### Conventions
 - [Engineering Guidelines](docs/guidelines/engineering-guidelines.md)
