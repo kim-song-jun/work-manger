@@ -65,4 +65,45 @@ describe("entities/audit · fetchAudit", () => {
     expect(r.items[0].action).toBe("EMP_UPDATE");
     expect(r.next_cursor).toBe("next-1");
   });
+
+  // F-ADMIN-01: BE fallback — `created_at` → `at`, `actor_name` from BE or "(Unknown)" default
+  it("normalises BE-legacy `created_at` → `at` when `at` is absent", async () => {
+    mockFetchOnce({
+      data: {
+        items: [
+          {
+            id: "2",
+            action: "identity.company.settings_updated",
+            actor_id: "u99",
+            created_at: "2026-04-15T10:00:00Z",
+            // `at` intentionally absent — simulates pre-W4c BE
+          },
+        ],
+        next_cursor: null,
+      },
+    });
+    const r = await fetchAudit();
+    expect(r.items[0].at).toBe("2026-04-15T10:00:00Z");
+  });
+
+  it("uses canonical `at` field when BE W4c fix has landed", async () => {
+    mockFetchOnce({
+      data: {
+        items: [
+          {
+            id: "3",
+            action: "auth.login.success",
+            actor_id: "u1",
+            actor_name: "홍길동",
+            at: "2026-05-08T09:00:00Z",
+            created_at: "2026-05-08T09:00:00Z", // also present — canonical takes priority
+          },
+        ],
+        next_cursor: null,
+      },
+    });
+    const r = await fetchAudit();
+    expect(r.items[0].at).toBe("2026-05-08T09:00:00Z");
+    expect(r.items[0].actor_name).toBe("홍길동");
+  });
 });

@@ -6,7 +6,8 @@ import { fetchBalance } from "@entities/leave";
 
 export function LeavePage() {
   const { t } = useTranslation();
-  const q = useQuery({ queryKey: ["leave-balance"], queryFn: () => fetchBalance() });
+  // F-EMPLOYEE-005: unified query key ["leave","balance"] to match invalidation in LeaveApplyForm
+  const q = useQuery({ queryKey: ["leave", "balance"], queryFn: () => fetchBalance() });
 
   return (
     <>
@@ -56,7 +57,16 @@ export function LeavePage() {
           </div>
         )}
 
-        {!q.isLoading && !q.data && (
+        {/* F-LIVE-006: isError fallback — 404/5xx should not cause infinite skeleton */}
+        {!q.isLoading && q.isError && (
+          <Card padding={20}>
+            <div className="text-[14px] text-center" style={{ color: "var(--danger)" }}>
+              {t("common.error_load_failed", { defaultValue: "데이터를 불러오지 못했습니다." })}
+            </div>
+          </Card>
+        )}
+
+        {!q.isLoading && !q.isError && !q.data && (
           <Card padding={20}>
             <div
               className="text-[14px] text-center"

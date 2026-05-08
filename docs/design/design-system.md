@@ -215,6 +215,96 @@ body.font-lg { font-size: 17px; }
 - Input · Field (text, password, search, with adornment)
 - Chip · Badge · Status Dot
 - Switch · Checkbox · Radio
+
+### 7.2 Switch (토글)
+
+> 구현 위치: `apps/web/src/shared/ui/Switch.tsx` (W4d)
+> 관련 finding: F-DESIGN-013
+
+#### Usage
+
+```tsx
+// Boolean (2-state)
+<Switch checked={value} onChange={setValue} label="52시간 초과 차단" />
+
+// Disabled
+<Switch checked={true} disabled label="변경 불가" />
+```
+
+#### Props
+
+```ts
+interface SwitchProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;            // 우측 텍스트 레이블 (SR 도 사용)
+  disabled?: boolean;
+  size?: 'sm' | 'md';       // 기본 'md'
+  id?: string;               // label[htmlFor] 연결용
+}
+```
+
+#### Variants & States
+
+| 상태 | 외형 |
+|---|---|
+| OFF default | `--grey-200` track, `--white` thumb |
+| ON default | `--brand` track, `--white` thumb |
+| OFF hover | `--grey-300` track |
+| ON hover | `--brand-hover` track |
+| Focus (keyboard) | `box-shadow: 0 0 0 3px var(--brand-soft)` (focus ring, `--r-pill`) |
+| Disabled OFF | `--grey-100` track, `--grey-300` thumb, `opacity: 0.5` |
+| Disabled ON | `--brand-soft` track, `--white` thumb, `opacity: 0.5` |
+
+#### 크기 (Size)
+
+| Size | Track w×h | Thumb diameter | 전체 hit-target |
+|---|---|---|---|
+| `md` (기본) | 44×24 px | 20px | 44×44 px (터치 최솟값 준수) |
+| `sm` | 32×18 px | 14px | 32×32 px |
+
+> hit-target 44×44 px 미만 금지 (WCAG 2.5.8 / design-system 원칙).
+
+#### Focus Ring
+
+키보드 탐색 시 항상 가시적 focus ring 을 표시한다.
+
+```css
+.switch:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+```
+
+`outline: none` 단독 사용 금지.
+
+#### Motion
+
+thumb 이동: `transition: transform var(--motion-fast) var(--ease-standard)`.
+track 색상: `transition: background-color var(--motion-fast) var(--ease-standard)`.
+`prefers-reduced-motion: reduce` → duration 0.
+
+#### Contrast
+
+- OFF 상태 track (`--grey-200`) 과 배경(`--white`) 의 대비: 1.5:1 (비인터랙티브 경계선 — WCAG AA 면제).
+- ON 상태 `--brand` (`#3182F6`) 와 thumb `--white`: 3.0:1 이상 (비텍스트 UI component WCAG AA 기준).
+- label 텍스트: `--grey-800` 기본 — 배경 대비 7:1 이상.
+
+#### a11y
+
+```tsx
+<button
+  role="switch"
+  aria-checked={checked}
+  aria-label={label}
+  aria-disabled={disabled}
+  tabIndex={disabled ? -1 : 0}
+>
+```
+
+- `role="switch"` + `aria-checked` 사용.
+- `Space` 키로 토글 가능해야 한다.
+- label 이 없을 경우 `aria-label` 필수.
 - Card (basic / interactive / hero)
 - Avatar · List Item
 - Tabs · Segment · Pagination
@@ -223,7 +313,7 @@ body.font-lg { font-size: 17px; }
 - Modal · Bottom Sheet · Dialog
 - Toast · Banner · Tooltip
 
-### 7.2 폴더 구조
+### 7.3 폴더 구조
 
 ```
 apps/web/src/components/

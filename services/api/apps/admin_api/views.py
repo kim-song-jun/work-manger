@@ -7,18 +7,19 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.utils import timezone as django_tz
-from rest_framework import serializers, status
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from apps.approval.models import ApprovalTask
 from apps.attendance.models import AttendanceRecord
+from apps.audit.services import record as audit_record
 from apps.identity.models import Department, Membership
 from apps.leave.models import LeaveBalance, LeaveRequest
-from core.errors import NotFound, Unprocessable
-from core.permissions import HasRole, active_membership
+from core.errors import Forbidden, NotFound, Unprocessable
+from core.permissions import ROLE_RANK, HasRole, active_membership
 
 User = get_user_model()
 
@@ -158,6 +159,16 @@ def update_employee(request, membership_id):
         raise NotFound()
     s = UpdateEmployeeSerializer(data=request.data, partial=True)
     s.is_valid(raise_exception=True)
+
+    # F-OWNER-03: escalation guard — cannot grant a role higher than own rank
+    if "role" in s.validated_data:
+        new_role = s.validated_data["role"]
+        if ROLE_RANK.get(new_role, 0) > ROLE_RANK.get(me.role, 0):
+            raise Forbidden(message="자신보다 높은 역할은 부여할 수 없어요.")
+
+    # Capture old_role before mutation for audit log
+    old_role = target.role
+
     if "role" in s.validated_data:
         target.role = s.validated_data["role"]
     if "position" in s.validated_data:
@@ -174,6 +185,21 @@ def update_employee(request, membership_id):
         else:
             target.department = None
     target.save()
+
+    # F-OWNER-02: audit log for membership update (especially role changes)
+    audit_payload: dict = {"fields": list(s.validated_data.keys()), "membership_id": str(target.id), "actor_id": str(me.id)}
+    if "role" in s.validated_data:
+        audit_payload["old_role"] = old_role
+        audit_payload["new_role"] = target.role
+    audit_record(
+        request.user,
+        "identity.member.updated",
+        company=me.company,
+        target=target,
+        request=request,
+        payload=audit_payload,
+    )
+
     return Response({"data": EmployeeSerializer(target).data})
 
 

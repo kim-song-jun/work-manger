@@ -105,12 +105,16 @@ def _ensure_approver(task: ApprovalTask, membership) -> None:
 
     - :class:`IsApprover` checks ownership of the inbox slot.
     - :class:`IsAlreadyDecided` flags a duplicate decision attempt.
+    - F-MANAGER-01: self-approve guard — requester != approver.
 
-    We surface them as two distinct HTTP errors (403 vs 409) on purpose so
+    We surface them as distinct HTTP errors (403 vs 409) on purpose so
     clients can show different toasts.
     """
     if not IsApprover(membership).is_satisfied_by(task):
         raise Forbidden(message="이 항목을 승인할 권한이 없습니다.")
+    # F-MANAGER-01/F-MANAGER-10: prevent self-approve
+    if task.requester_id == membership.id:
+        raise Forbidden(message="본인이 신청한 항목은 직접 승인할 수 없습니다.")
     if IsAlreadyDecided().is_satisfied_by(task):
         raise Conflict(code="ALREADY_DECIDED", message="이미 처리된 항목입니다.")
 

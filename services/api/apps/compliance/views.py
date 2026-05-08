@@ -48,3 +48,37 @@ def admin_company_compliance(request):
             "meta": {"count": len(rows)},
         }
     )
+
+
+@api_view(["GET"])
+@permission_classes([HasRole.at_least("MANAGER")])
+def team_compliance(request):
+    """GET /v1/compliance/team?week=YYYY-MM-DD — MANAGER+ 팀 단위 52h 현황.
+
+    F-MANAGER-02: MANAGER 는 본인 부서 멤버만, ADMIN/OWNER 는 전사 조회.
+    """
+    me = active_membership(request.user)
+    week_start = _parse_week(request.query_params.get("week"), date.today())
+    rows = services.company_overview(me.company, week_start)
+
+    # Filter to own department for MANAGER role (ADMIN/OWNER see all)
+    from core.permissions import ROLE_RANK
+    if ROLE_RANK.get(me.role, 0) < ROLE_RANK["ADMIN"]:
+        my_dept = me.department.name if me.department else None
+        if my_dept:
+            rows = [r for r in rows if r.get("department") == my_dept]
+        else:
+            # Manager with no department: only show self
+            rows = [r for r in rows if r.get("membership_id") == str(me.id)]
+
+    return Response(
+        {
+            "data": {
+                "week_start": week_start.isoformat(),
+                "threshold_hours": "52",
+                "members": rows,
+                "scope": "team",
+            },
+            "meta": {"count": len(rows)},
+        }
+    )

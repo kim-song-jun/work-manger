@@ -14,6 +14,11 @@ export function AdminApprovalsPage() {
   const qc = useQueryClient();
   const [status, setStatus] = useState<ApprovalStatus>("pending");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [failedBanner, setFailedBanner] = useState<{
+    succeeded: number;
+    total: number;
+    failed: number;
+  } | null>(null);
 
   const q = useQuery({
     queryKey: ["admin-approvals", status],
@@ -26,7 +31,20 @@ export function AdminApprovalsPage() {
     mutationFn: (decision: "approve" | "reject") =>
       batchDecide(Array.from(selected), decision),
     onSuccess: (out) => {
-      toast.show(`${out.succeeded}/${out.total}`);
+      if (out.failed > 0) {
+        // Show inline banner for partial failures (F-ADMIN-04)
+        setFailedBanner({ succeeded: out.succeeded, total: out.total, failed: out.failed });
+        toast.show(
+          t("admin.appr_partial_fail", {
+            succeeded: out.succeeded,
+            total: out.total,
+            failed: out.failed,
+          }),
+        );
+      } else {
+        toast.show(`${out.succeeded}/${out.total}`);
+        setFailedBanner(null);
+      }
       setSelected(new Set());
       qc.invalidateQueries({ queryKey: ["admin-approvals"] });
     },
@@ -57,6 +75,49 @@ export function AdminApprovalsPage() {
           {t("admin.appr_sub")}
         </div>
       </div>
+
+      {/* F-ADMIN-04: inline banner for partial failures */}
+      {failedBanner && (
+        <div
+          role="alert"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "var(--sp-3) var(--sp-4)",
+            marginBottom: "var(--sp-3)",
+            background: "var(--warn-soft)",
+            border: "1px solid var(--warn)",
+            borderRadius: "var(--r-sm)",
+            fontSize: 13,
+            color: "var(--grey-900)",
+          }}
+        >
+          <span>
+            {t("admin.appr_partial_fail", {
+              succeeded: failedBanner.succeeded,
+              total: failedBanner.total,
+              failed: failedBanner.failed,
+            })}
+          </span>
+          <button
+            type="button"
+            onClick={() => setFailedBanner(null)}
+            aria-label={t("admin.common_cancel")}
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              padding: "var(--sp-1)",
+              color: "var(--grey-700)",
+              fontSize: 16,
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <div
         style={{

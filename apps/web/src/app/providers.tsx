@@ -18,7 +18,10 @@ export function Providers({ children }: { children: ReactNode }) {
       <AuthBootstrap />
       <RealtimeSubscriptions />
       <ToastProvider>
-        <BrowserRouter>{children}</BrowserRouter>
+        {/* F-LIVE-001: future flags suppress v7 upgrade warnings */}
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          {children}
+        </BrowserRouter>
       </ToastProvider>
     </QueryClientProvider>
   );

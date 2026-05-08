@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Card, Skeleton } from "@shared/ui";
 import { fetchExpiringLeave } from "@entities/leave";
 
-const EXPIRING_DAYS = 30;
+const EXPIRING_DAYS = 60;
 
 export function AdminExpiringLeavePage() {
   const { t } = useTranslation();

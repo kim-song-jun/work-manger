@@ -3,6 +3,7 @@ interface ImportMetaEnv {
   readonly VITE_WS_URL?: string;
   readonly VITE_SENTRY_DSN?: string;
   readonly VITE_USER_GUIDE_BASE_URL?: string;
+  readonly VITE_SUPPORT_EMAIL?: string;
   readonly DEV?: boolean;
   readonly PROD?: boolean;
   readonly MODE?: string;

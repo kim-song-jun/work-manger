@@ -1,11 +1,38 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { Button, Card, Icon } from "@shared/ui";
 
+type SuccessState = {
+  start?: string | null;
+  end?: string | null;
+  kind?: string | null;
+};
+
 export function LeaveSuccessPage() {
   const { t } = useTranslation();
   const nav = useNavigate();
+  // F-EMPLOYEE-006: read navigation state passed from m-leave-apply
+  const location = useLocation();
+  const state = (location.state ?? {}) as SuccessState;
+  const { start, end, kind } = state;
+
+  function periodLabel(): string {
+    if (!start && !end) return "—";
+    if (start && end && start !== end) return `${start} ~ ${end}`;
+    return start ?? end ?? "—";
+  }
+
+  function kindLabel(): string {
+    if (!kind) return "—";
+    const keyMap: Record<string, string> = {
+      FULL: "mobile.leave_apply.kind_full",
+      AM_HALF: "mobile.leave_apply.kind_am_half",
+      PM_HALF: "mobile.leave_apply.kind_pm_half",
+    };
+    return t(keyMap[kind] ?? kind, { defaultValue: kind });
+  }
+
   return (
     <div
       className="flex-1 flex flex-col items-center justify-between"
@@ -43,13 +70,13 @@ export function LeaveSuccessPage() {
             <span style={{ color: "var(--grey-500)" }}>
               {t("mobile.leave_apply.period")}
             </span>
-            <b className="num-tab">—</b>
+            <b className="num-tab">{periodLabel()}</b>
           </div>
           <div className="flex justify-between text-[13px]">
             <span style={{ color: "var(--grey-500)" }}>
               {t("mobile.leave_apply.type")}
             </span>
-            <b>—</b>
+            <b>{kindLabel()}</b>
           </div>
         </Card>
       </div>

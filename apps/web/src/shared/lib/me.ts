@@ -22,5 +22,11 @@ export async function fetchMe(): Promise<Me | null> {
 }
 
 export function useMe() {
-  return useQuery({ queryKey: ["me"], queryFn: fetchMe, staleTime: 60_000 });
+  return useQuery({
+    queryKey: ["me"],
+    queryFn: fetchMe,
+    staleTime: 5 * 60 * 1000, // F-LIVE-002/F-LIVE-007: 5 min stale — prevents repeated /v1/me calls
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
 }

@@ -7,7 +7,6 @@ import { SubHeader } from "@widgets/sub-header";
 import {
   fetchNotifications,
   markAllRead,
-  markRead,
 } from "@entities/notification";
 import type { NotificationKind } from "@entities/notification";
 
@@ -30,12 +29,13 @@ export function NotificationsPage() {
     queryFn: fetchNotifications,
   });
 
-  // mark-read on view: when items load, fire markRead for each unread item.
+  // F-EMPLOYEE-009: auto-mark all as read on view using single bulk endpoint (not N+1 individual calls)
   useEffect(() => {
     const items = q.data?.items ?? [];
-    const unread = items.filter((it) => !it.read_at);
-    if (unread.length === 0) return;
-    Promise.all(unread.map((u) => markRead(u.id))).catch(() => {});
+    const hasUnread = items.some((it) => !it.read_at);
+    if (!hasUnread) return;
+    // POST /v1/notifications/read-all — single call, dependency: W4c verifies endpoint exists
+    markAllRead().catch(() => {});
   }, [q.data]);
 
   const markAll = useMutation({

@@ -14,7 +14,8 @@ export function InboxQuickPage() {
   const q = useQuery({ queryKey: ["inbox"], queryFn: () => fetchInbox() });
   // BE /v1/inbox returns approval tasks the caller is the approver of —
   // filter to PENDING for the quick-decide flow.
-  const items = (q.data?.items ?? []).filter((i) => i.status === "PENDING" || i.role === "approve");
+  // F-MANAGER-07: remove legacy `role === "approve"` check; BE does not return role field
+  const items = (q.data?.items ?? []).filter((i) => i.status === "PENDING");
   const [idx, setIdx] = useState(0);
   const item = items[idx];
 

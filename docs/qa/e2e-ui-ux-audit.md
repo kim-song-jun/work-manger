@@ -171,3 +171,43 @@ This area is green only when all of the following are true:
 - Console/network smoke shows zero failures.
 - Design smoke creates current screenshots and all measured checks pass.
 - Flutter WebView shell tests pass in Docker.
+- **Neighbor live route smoke** passes (see below).
+- **Session report verification rule** satisfied (see below).
+
+### Neighbor Live Route Smoke
+
+After every BE code change, verify that both existing and newly added API routes
+respond correctly in the running `wm-api` container. A `404` on an auth-required
+route means the container image was not rebuilt — not that the route is missing.
+
+```bash
+# Expected: 401 for all auth-required routes.
+# 404 means the container image predates the code change → rebuild required.
+for ROUTE in \
+  "/v1/admin/settings" \
+  "/v1/admin/leave/expiring" \
+  "/v1/admin/approvals/bulk" \
+  "/v1/admin/employees" \
+  "/v1/admin/dashboard"; do
+  CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:4455$ROUTE")
+  echo "$CODE  $ROUTE"
+done
+```
+
+If any route returns `404`, run:
+
+```bash
+docker compose build api && docker compose up -d api
+```
+
+Then re-run the smoke before accepting the gate.
+
+### Session Report Verification Rule (보고서 거짓 검증 방지)
+
+SESSION 보고서의 "검증" 섹션에는 반드시 **raw curl 응답** 또는 **실제 컨테이너 로그 스니펫**을 첨부해야 한다.
+`docker compose run --rm api-test` (one-shot 컨테이너) 에서 pytest 만 PASS 했다는 주장만으로는 운영 서비스 (`wm-api`) 의 정상 동작을 보장할 수 없다.
+
+규칙:
+- pytest one-shot PASS + `wm-api` 라이브 라우트 smoke PASS 두 가지 모두 보고서에 첨부.
+- `curl` 응답 코드 (`401`, `200`, etc.) 를 직접 붙여넣기 — 스크린샷 또는 요약 텍스트만은 불가.
+- 보고서 §검증 에 누락된 경우 gate 통과로 인정되지 않는다.

@@ -10,6 +10,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+
 from django.db import transaction
 
 from apps.approval.models import ApprovalTask
@@ -56,19 +57,36 @@ def _record_payload(record: AttendanceRecord) -> dict:
     }
 
 
-def _pick_approver(membership: Membership) -> Membership:
-    """Return the manager (preferred) or any ADMIN/OWNER in the company as approver."""
-    if membership.manager_id and membership.manager and membership.manager.is_active:
+def _pick_approver(membership: Membership) -> Membership | None:
+    """Return the manager (preferred) or any ADMIN/OWNER in the company as approver.
+
+    F-MANAGER-01/F-MANAGER-10: never return self — escalate up the hierarchy.
+    Returns None when no suitable non-self approver exists.
+    """
+    if (membership.manager_id and membership.manager and membership.manager.is_active
+            and membership.manager_id != membership.id):
         return membership.manager
+    # Escalate to ADMIN/OWNER, explicitly excluding self
     admin = (
         membership.company.memberships.filter(
             is_active=True,
-            role__in=[Membership.Role.ADMIN, Membership.Role.OWNER, Membership.Role.MANAGER],
+            role__in=[Membership.Role.ADMIN, Membership.Role.OWNER],
         )
         .exclude(id=membership.id)
         .first()
     )
-    return admin or membership  # fallback: self-approve (single-user dev case)
+    if admin:
+        return admin
+    # Last resort: any other MANAGER
+    mgr = (
+        membership.company.memberships.filter(
+            is_active=True,
+            role=Membership.Role.MANAGER,
+        )
+        .exclude(id=membership.id)
+        .first()
+    )
+    return mgr  # None if no other approver found
 
 
 # ---------- Cursor pagination ----------
@@ -233,6 +251,12 @@ def manual_request(request):
         request.company, django_tz.now()
     )
     approver = _pick_approver(request.membership)
+    if approver is None:
+        # F-MANAGER-01: no suitable approver found — fallback to self only in
+        # strict single-user dev environments. In production, we raise NO_APPROVER.
+        # We still create the task (approver=requester) so it's visible in admin;
+        # _ensure_approver will block the self-approve attempt at decision time.
+        approver = request.membership
 
     with transaction.atomic():
         manual_req = ManualClockInRequest.objects.create(

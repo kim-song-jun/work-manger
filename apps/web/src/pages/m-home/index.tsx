@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -12,21 +12,13 @@ import {
   StatRow,
   useToast,
 } from "@shared/ui";
-import { clockIn, readGeoFix, SlideToClockIn } from "@features/clock-in";
+import { clockIn, clockOut, readGeoFix, SlideToClockIn } from "@features/clock-in";
+import { BreakButton } from "@features/break";
 import { TweaksFab } from "@widgets/tweaks-panel";
 import type { ClockInBody, ClockKind } from "@entities/attendance";
+import { fetchToday } from "@entities/attendance";
 import { fetchBalance } from "@entities/leave";
-
-type FakeStatus = "office" | "wfh" | "leave" | "off";
-const FAKE_PEOPLE: { nameKey: string; status: FakeStatus }[] = [
-  { nameKey: "home.fake_member_1", status: "office" },
-  { nameKey: "home.fake_member_2", status: "office" },
-  { nameKey: "home.fake_member_3", status: "wfh" },
-  { nameKey: "home.fake_member_4", status: "office" },
-  { nameKey: "home.fake_member_5", status: "leave" },
-  { nameKey: "home.fake_member_6", status: "off" },
-  { nameKey: "home.fake_member_7", status: "office" },
-];
+import { fetchTeamGrid } from "@entities/team";
 
 function buildTodayDateLabel(t: (k: string, opts?: Record<string, unknown>) => string): string {
   const d = new Date();
@@ -46,12 +38,40 @@ function buildTodayDateLabel(t: (k: string, opts?: Record<string, unknown>) => s
   });
 }
 
+function fmtIso(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function fmtMinutes(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${h}h ${String(m).padStart(2, "0")}m`;
+}
+
 export function HomePage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const [clockedIn, setClockedIn] = useState(false);
-  const [clockedInAt, setClockedInAt] = useState<string | null>(null);
+  const qc = useQueryClient();
   const [kind] = useState<ClockKind>("OFFICE");
+  const [onBreaking, setOnBreaking] = useState(false);
+
+  // F-EMPLOYEE-001: fetch today's attendance on mount to restore clock-in state
+  const todayQ = useQuery({
+    queryKey: ["attendance", "today"],
+    queryFn: fetchToday,
+    staleTime: 30_000,
+  });
+
+  const todayData = todayQ.data;
+  const clockedIn = todayData?.is_clocked_in ?? false;
+  const clockInAt = todayData?.clock_in_at ?? null;
+  const clockOutAt = todayData?.clock_out_at ?? null;
+  const workedMinutes = todayData?.worked_minutes ?? 0;
+
   const balanceQ = useQuery({
     queryKey: ["leave", "balance"],
     queryFn: () => fetchBalance(),
@@ -62,7 +82,15 @@ export function HomePage() {
       ? String(balanceQ.data.remaining)
       : "—";
 
-  const mutation = useMutation({
+  const teamQ = useQuery({
+    queryKey: ["team-status", "grid"],
+    queryFn: fetchTeamGrid,
+    staleTime: 60_000,
+  });
+  const teamMembers = teamQ.data ?? [];
+
+  // F-EMPLOYEE-002: clock-in mutation — use server response clock_in_at
+  const clockInMutation = useMutation({
     mutationFn: async () => {
       let location: ClockInBody["location"];
       try {
@@ -76,14 +104,11 @@ export function HomePage() {
         kind,
         client_time: new Date().toISOString(),
       };
-      await clockIn(body);
+      return clockIn(body);
     },
     onSuccess: () => {
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2, "0");
-      const mm = String(now.getMinutes()).padStart(2, "0");
-      setClockedInAt(`${hh}:${mm}`);
-      setClockedIn(true);
+      // invalidate today query so server-authoritative data is used
+      qc.invalidateQueries({ queryKey: ["attendance", "today"] });
       toast.show(t("home.clock_in_success"), "success");
     },
     onError: (err) => {
@@ -92,8 +117,22 @@ export function HomePage() {
     },
   });
 
+  // F-EMPLOYEE-003: clock-out mutation with BE API call
+  const clockOutMutation = useMutation({
+    mutationFn: clockOut,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["attendance", "today"] });
+      toast.show(t("home.clock_out_success"), "success");
+    },
+    onError: () => toast.show(t("home.clock_out_failed"), "danger"),
+  });
+
   const greeting = clockedIn ? t("home.good_evening") : t("home.good_morning");
   const dateLabel = useMemo(() => buildTodayDateLabel(t), [t]);
+  const isMutating = clockInMutation.isPending || clockOutMutation.isPending;
+
+  // Derive regular hours label from server data (fall back to dash)
+  const regularLabel = "09–18"; // company schedule — would come from settings eventually
 
   return (
     <>
@@ -120,15 +159,16 @@ export function HomePage() {
             className="num-tab text-[40px] font-bold leading-tight mt-2"
             style={{ color: clockedIn ? "#fff" : "var(--grey-900)" }}
           >
-            {clockedIn ? "0h 36m" : "—"}
+            {/* F-EMPLOYEE-012: use real worked_minutes from BE */}
+            {clockedIn ? fmtMinutes(workedMinutes) : "—"}
           </div>
           <div className="mt-5">
             <StatRow
               variant={clockedIn ? "inverse" : "default"}
               items={[
-                { label: t("home.label_clock_in"), value: clockedInAt ?? "—" },
-                { label: t("home.label_clock_out"), value: "—" },
-                { label: t("home.label_regular"), value: "09–18" },
+                { label: t("home.label_clock_in"), value: fmtIso(clockInAt) },
+                { label: t("home.label_clock_out"), value: fmtIso(clockOutAt) },
+                { label: t("home.label_regular"), value: regularLabel },
               ]}
             />
           </div>
@@ -178,34 +218,46 @@ export function HomePage() {
           <SlideToClockIn
             onCommit={() => {
               if (clockedIn) {
-                setClockedIn(false);
-                setClockedInAt(null);
-                toast.show(t("home.label_clock_out"), "success");
+                // F-EMPLOYEE-003: call BE clock-out API
+                clockOutMutation.mutate();
               } else {
-                mutation.mutate();
+                clockInMutation.mutate();
               }
             }}
-            disabled={mutation.isPending}
+            disabled={isMutating}
             active={clockedIn}
             labelIn={t("home.slide_in")}
             labelOut={t("home.slide_out")}
           />
         </div>
 
-        {/* Quick stats */}
+        {/* F-EMPLOYEE-004: break button when clocked in */}
+        {clockedIn && (
+          <div style={{ marginTop: 10 }}>
+            <BreakButton
+              onBreaking={onBreaking}
+              onBreakStart={() => setOnBreaking(true)}
+              onBreakEnd={() => setOnBreaking(false)}
+            />
+          </div>
+        )}
+
+        {/* Quick stats — F-EMPLOYEE-012: real data from BE */}
         <div className="grid grid-cols-3 gap-2 mt-3.5">
           <Card padding={12}>
-            <KPIStat label={t("home.week_label")} value="32" unit="h" />
+            {/* weekly stats not yet available from a separate endpoint — show dash until W4c adds it */}
+            <KPIStat label={t("home.week_label")} value="—" unit="h" />
           </Card>
           <Card padding={12}>
             <KPIStat label={t("home.leave_balance")} value={remainingDays} unit={t("leave.days_unit")} />
           </Card>
           <Card padding={12}>
-            <KPIStat label={t("home.overtime_label")} value="4.3" unit="h" />
+            {/* overtime accumulation not yet available — show dash */}
+            <KPIStat label={t("home.overtime_label")} value="—" unit="h" />
           </Card>
         </div>
 
-        {/* Team preview */}
+        {/* Team preview — F-EMPLOYEE-012: real team data from BE */}
         <Card padding={14} style={{ marginTop: 10 }} onClick={() => {}}>
           <div className="flex items-center justify-between">
             <div className="text-[14px] font-semibold text-ink-900">
@@ -214,42 +266,46 @@ export function HomePage() {
             <Icon.chevR width={16} height={16} style={{ color: "var(--grey-400)" }} />
           </div>
           <div className="flex items-center mt-2.5">
-            {FAKE_PEOPLE.slice(0, 7).map((p, i) => {
-              const name = t(p.nameKey);
-              return (
-                <div
-                  key={p.nameKey}
-                  style={{ marginLeft: i === 0 ? 0 : -8, position: "relative" }}
-                >
-                  <Avatar name={name} size={32} />
-                  <span
-                    style={{
-                      position: "absolute",
-                      bottom: 0,
-                      right: 0,
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      background: `var(--s-${p.status})`,
-                      border: "2px solid var(--white)",
-                    }}
-                  />
-                </div>
-              );
-            })}
-            <div
-              className="flex items-center justify-center text-[11px] font-bold"
-              style={{
-                marginLeft: -8,
-                width: 32,
-                height: 32,
-                borderRadius: "var(--r-lg)",
-                background: "var(--grey-100)",
-                color: "var(--grey-600)",
-              }}
-            >
-              +5
-            </div>
+            {teamMembers.slice(0, 7).map((p, i) => (
+              <div
+                key={p.id}
+                style={{ marginLeft: i === 0 ? 0 : -8, position: "relative" }}
+              >
+                <Avatar name={p.name} size={32} />
+                <span
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    right: 0,
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    background: `var(--s-${p.status})`,
+                    border: "2px solid var(--white)",
+                  }}
+                />
+              </div>
+            ))}
+            {teamMembers.length > 7 && (
+              <div
+                className="flex items-center justify-center text-[11px] font-bold"
+                style={{
+                  marginLeft: -8,
+                  width: 32,
+                  height: 32,
+                  borderRadius: "var(--r-lg)",
+                  background: "var(--grey-100)",
+                  color: "var(--grey-600)",
+                }}
+              >
+                +{teamMembers.length - 7}
+              </div>
+            )}
+            {teamMembers.length === 0 && !teamQ.isLoading && (
+              <div className="text-[12px]" style={{ color: "var(--grey-500)" }}>
+                {t("home.team_empty")}
+              </div>
+            )}
           </div>
         </Card>
       </div>

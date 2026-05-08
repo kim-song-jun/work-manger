@@ -7,6 +7,7 @@ import { Card, PageHeader, SegmentedControl, Skeleton } from "@shared/ui";
 import { fetchInbox } from "@entities/inbox";
 import type { InboxItem, InboxTargetType } from "@entities/inbox";
 import { InboxQuickActions } from "@features/inbox-decide";
+import { useMe } from "@entities/user";
 
 type Tab = "to-approve" | "mine" | "system";
 
@@ -57,14 +58,23 @@ function summaryReason(it: InboxItem): string | null {
 export function InboxPage() {
   const { t } = useTranslation();
   const nav = useNavigate();
-  const [tab, setTab] = useState<Tab>("to-approve");
+  const me = useMe();
+
+  // F-EMPLOYEE-008: EMPLOYEE role defaults to "mine" tab; MANAGER/ADMIN/OWNER default to "to-approve"
+  const myRole = me.data?.memberships?.[0]?.role ?? "EMPLOYEE";
+  const defaultTab: Tab = myRole === "EMPLOYEE" ? "mine" : "to-approve";
+  const [tab, setTab] = useState<Tab>(defaultTab);
   const q = useQuery({ queryKey: ["inbox"], queryFn: () => fetchInbox() });
 
   const items: InboxItem[] = useMemo(() => q.data?.items ?? [], [q.data?.items]);
   const filtered = useMemo(() => {
     if (tab === "to-approve") return items.filter((i) => i.status === "PENDING");
-    if (tab === "mine") return items.filter((i) => i.status === "APPROVED" || i.role === "mine");
-    return items.filter((i) => i.status === "REJECTED" || i.role === "info");
+    // F-MANAGER-06: BE does not return `role` field — filter by status only
+    // "mine" tab shows APPROVED items (requester perspective); BE endpoint for requester-scope
+    // items does not exist yet (W4c dependency). Until then, show APPROVED items.
+    if (tab === "mine") return items.filter((i) => i.status === "APPROVED");
+    // "system" tab shows REJECTED items
+    return items.filter((i) => i.status === "REJECTED");
   }, [items, tab]);
 
   return (
@@ -82,14 +92,22 @@ export function InboxPage() {
         />
         <div className="flex flex-col gap-2 mt-3">
           {q.isLoading && <Skeleton height={92} />}
-          {!q.isLoading && filtered.length === 0 && (
+          {/* F-LIVE-006: show error state rather than infinite skeleton on 404/5xx */}
+          {!q.isLoading && q.isError && (
+            <Card padding={20}>
+              <div className="text-[14px] text-center" style={{ color: "var(--danger)" }}>
+                {t("common.error_load_failed", { defaultValue: "데이터를 불러오지 못했습니다." })}
+              </div>
+            </Card>
+          )}
+          {!q.isLoading && !q.isError && filtered.length === 0 && (
             <Card padding={20}>
               <div className="text-[14px] text-center" style={{ color: "var(--grey-600)" }}>
                 {t("mobile.inbox.empty")}
               </div>
             </Card>
           )}
-          {filtered.map((it) => {
+          {!q.isError && filtered.map((it) => {
             const tt = targetTypeOf(it);
             const km = KIND_COLORS[tt];
             const name = requesterName(it);

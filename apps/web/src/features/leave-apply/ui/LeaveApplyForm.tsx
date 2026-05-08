@@ -18,7 +18,8 @@ import type { LeaveKind } from "@entities/leave";
 import { leaveApplySchema, type LeaveApplyValues } from "../model/schema";
 
 type Props = {
-  onDone?: () => void;
+  /** F-EMPLOYEE-006: receives the submitted kind so the success page can display it */
+  onDone?: (kind: string) => void;
   defaultDate?: string;
   defaultEndDate?: string;
 };
@@ -79,11 +80,12 @@ export function LeaveApplyForm({ onDone, defaultDate, defaultEndDate }: Props) {
         kind: v.kind as LeaveKind,
         reason: v.reason,
       }),
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       toast.show(t("leave_apply.submitted"), "success");
       qc.invalidateQueries({ queryKey: ["leave", "balance"] });
       qc.invalidateQueries({ queryKey: ["inbox"] });
-      onDone?.();
+      // F-EMPLOYEE-006: pass submitted kind to onDone for success-page display
+      onDone?.(vars.kind);
     },
     onError: () => toast.show(t("leave_apply.failed"), "danger"),
   });

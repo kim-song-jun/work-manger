@@ -289,7 +289,33 @@ Provider 코드는 `apps/notification/providers/` 에 모드별로 분리되어 
 ### 11.1 v1.0 MVP 출시 전
 
 > 상태 표기: ✅ 완료 · 🟡 부분 완료 · ⏳ 미시작 · 🔴 차단 (blocked)
-> 마지막 업데이트: 2026-05-04
+> 마지막 업데이트: 2026-05-08
+
+#### BE 코드 변경 후 필수 절차 (F-LIVE-004)
+
+BE (`services/api/`) 를 변경한 경우 **컨테이너 단순 재시작은 부족하다** — 이미지를 반드시 재빌드해야 한다.
+
+```bash
+docker compose build api && docker compose up -d api
+```
+
+재빌드 후 신규 라우트 smoke 확인 (401 = route OK, 404 = rebuild 미적용):
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" http://localhost:4455/v1/admin/settings
+# → 401 (not 404)
+curl http://localhost:4455/v1/health
+# → {"status": "ok"}
+```
+
+`404` 가 반환되면 빌드가 반영되지 않은 것이므로 빌드를 다시 실행한다. PR 머지 전 위 smoke 를 통과해야 한다.
+
+#### audit log 보존 (F-OWNER-06)
+
+- audit log 는 90일 보존 후 자동 삭제 배치 필요 (`apps/audit/tasks.py` → `purge_old_audit_logs`).
+- 배치는 Celery Beat 에 등록 (`CELERY_BEAT_SCHEDULE`): 매일 자정 실행.
+- Beat 단독 인스턴스 (`wm-beat` 컨테이너) 가 중단되면 배치가 실행되지 않으므로 알림 설정 필수 (§3.4 참고).
+- 7년 이상 데이터 물리 삭제 정책과 혼동 금지 — 90일은 audit log, 7년은 `sop-data-deletion-request.md §7` 의 법적 보존 최소 기간.
 
 - [ ] 🟡 **부하 테스트** (목표 DAU × 3 트래픽) — `tools/load/locustfile.py` 09:00 출근 피크 시뮬 스켈레톤 작성됨 (1000 users / 50 spawn-rate / 5min). 실제 stg 환경에서 측정 + SLA(95p < 800ms) 검증 미실시. *Owner: TBD · Target: 2026-06-15*
 - [ ] 🟡 **카오스 테스트** (DB failover, Redis down, Celery down) — `tools/chaos/scripts/{db_pause,redis_down,celery_pause,ntfy_down}.sh` + `run_all.sh` 4 시나리오 스크립트화 완료. stg 에서 부하 + 카오스 동시 실행 + 회복 검증 미실시. *Owner: TBD · Target: 2026-06-30*

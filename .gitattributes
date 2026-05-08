@@ -1,0 +1,43 @@
+# Permanent line-ending policy
+# Shell scripts MUST have LF endings — Linux Docker containers reject CRLF
+# (e.g. wm-api entrypoint.sh: "set: pipefail: invalid option name" on CRLF)
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Cross-platform LF for code
+*.py text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.dart text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+
+# Windows-only scripts retain CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.apk binary
+*.aab binary
+*.exe binary
+*.dll binary

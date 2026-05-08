@@ -58,7 +58,8 @@ def _create(request):
         auto_generated=False,
         status=OvertimeRequest.Status.PENDING,
     )
-    approver = _pick_approver(request.membership)
+    # F-MANAGER-01: _pick_approver never returns self; fallback for dev/single-user
+    approver = _pick_approver(request.membership) or request.membership
     task = ApprovalTask.objects.create(
         company=request.company,
         target_type=ApprovalTask.TargetType.OVERTIME,
