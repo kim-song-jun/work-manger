@@ -18,6 +18,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/approvals/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Admin override: decide single approval task
+         * @description Admin override: PATCH /v1/admin/approvals/<uuid>.
+         *
+         *     Bypasses :class:`IsApprover` (admin acts on behalf). Idempotency: returns
+         *     409 ALREADY_DECIDED if task is not PENDING.
+         */
+        patch: operations["admin_approvals_partial_update"];
+        trace?: never;
+    };
+    "/v1/admin/approvals/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin bulk decide approval tasks
+         * @description Admin bulk decide: POST /v1/admin/approvals/bulk.
+         *
+         *     Per-id atomic — bad rows don't poison the rest. Out-of-company / non-PENDING
+         *     / unknown ids are reported in ``failed_ids[]`` (not raised).
+         */
+        post: operations["admin_approvals_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/audit": {
         parameters: {
             query?: never;
@@ -179,6 +225,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/leave/expiring": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Aggregate expiring leave for all active company members
+         * @description GET /v1/admin/leave/expiring — aggregate expiring leave for all active members.
+         *
+         *     Replaces FE per-employee fan-out. Returns rows sorted by expiring desc,
+         *     omitting members with 0 expiring days.
+         */
+        get: operations["admin_leave_expiring_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/reports/export": {
         parameters: {
             query?: never;
@@ -216,6 +285,46 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get company settings (ADMIN+)
+         * @description GET /v1/admin/settings — 회사 설정 조회 (ADMIN+).
+         */
+        get: operations["admin_settings_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/settings/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update company settings (OWNER only)
+         * @description PATCH /v1/admin/settings — OWNER 만 쓰기 가능. ADMIN 은 read-only.
+         */
+        patch: operations["admin_settings_update_partial_update"];
         trace?: never;
     };
     "/v1/attendance/break/end": {
@@ -624,6 +733,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/team": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /v1/compliance/team?week=YYYY-MM-DD — MANAGER+ 팀 단위 52h 현황.
+         *
+         *     F-MANAGER-02: MANAGER 는 본인 부서 멤버만, ADMIN/OWNER 는 전사 조회.
+         */
+        get: operations["compliance_team_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/dev/bootstrap-company": {
         parameters: {
             query?: never;
@@ -929,6 +1059,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/notifications/vapid-public-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Return the active VAPID public key for FE Web Push subscription.
+         *
+         *     Public on purpose: it's the same key embedded in static FE bundles via
+         *     ``VITE_VAPID_PUBLIC_KEY``. Exposing the runtime endpoint lets ops rotate
+         *     the key without rebuilding FE artefacts.
+         */
+        get: operations["notifications_vapid_public_key_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/onboarding/complete": {
         parameters: {
             query?: never;
@@ -1152,6 +1305,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description `/v1/team/status` — alias for the grid view.
+         *
+         *     Calls the inner ``_today_data`` helper directly (NOT the wrapped
+         *     ``status_grid`` view, which would receive a DRF ``Request`` and a
+         *     second time pass it through ``api_view`` causing
+         *     ``AssertionError: The `request` argument must be an instance of
+         *     `django.http.HttpRequest```).
+         */
         get: operations["team_status_retrieve"];
         put?: never;
         post?: never;
@@ -1260,7 +1422,47 @@ export interface paths {
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: never;
+    schemas: {
+        BulkDecisionRequest: {
+            decision: components["schemas"]["DecisionEnum"];
+            ids: string[];
+            /** @default  */
+            reason: string;
+        };
+        CompanySettings: {
+            brand_color?: string;
+            readonly code: string;
+            compliance_block_when_over?: boolean;
+            default_locale?: string;
+            /** Format: date */
+            readonly fiscal_year_start: string;
+            leave_promotion_enabled?: boolean;
+            /** Format: uri */
+            logo_url?: string;
+            readonly name: string;
+            timezone?: string;
+        };
+        /**
+         * @description * `approve` - approve
+         *     * `reject` - reject
+         * @enum {string}
+         */
+        DecisionEnum: "approve" | "reject";
+        PatchedAdminDecisionRequest: {
+            decision?: components["schemas"]["DecisionEnum"];
+            /** @default  */
+            reason: string;
+        };
+        PatchedCompanySettingsRequest: {
+            brand_color?: string;
+            compliance_block_when_over?: boolean;
+            default_locale?: string;
+            leave_promotion_enabled?: boolean;
+            /** Format: uri */
+            logo_url?: string;
+            timezone?: string;
+        };
+    };
     responses: never;
     parameters: never;
     requestBodies: never;
@@ -1277,6 +1479,70 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_approvals_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedAdminDecisionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedAdminDecisionRequest"];
+                "multipart/form-data": components["schemas"]["PatchedAdminDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_approvals_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkDecisionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["BulkDecisionRequest"];
+                "multipart/form-data": components["schemas"]["BulkDecisionRequest"];
+            };
+        };
         responses: {
             /** @description No response body */
             200: {
@@ -1493,6 +1759,24 @@ export interface operations {
             };
         };
     };
+    admin_leave_expiring_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_reports_export_retrieve: {
         parameters: {
             query?: never;
@@ -1526,6 +1810,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    admin_settings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanySettings"];
+                };
+            };
+        };
+    };
+    admin_settings_update_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCompanySettingsRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedCompanySettingsRequest"];
+                "multipart/form-data": components["schemas"]["PatchedCompanySettingsRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanySettings"];
+                };
             };
         };
     };
@@ -1947,6 +2275,24 @@ export interface operations {
             };
         };
     };
+    compliance_team_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     dev_bootstrap_company_create: {
         parameters: {
             query?: never;
@@ -2344,6 +2690,24 @@ export interface operations {
         };
     };
     notifications_read_all_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    notifications_vapid_public_key_retrieve: {
         parameters: {
             query?: never;
             header?: never;
