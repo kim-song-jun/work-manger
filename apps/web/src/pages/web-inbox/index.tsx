@@ -11,6 +11,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import {
   Avatar,
   Button,
@@ -25,6 +26,7 @@ import {
 } from "@entities/inbox";
 import type { InboxItem, InboxStatus } from "@entities/inbox";
 import { useMe } from "@entities/user";
+
 import { InboxRejectReasonForm } from "./InboxRejectReasonForm";
 
 type Scope = "me" | "company";

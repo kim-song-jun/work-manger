@@ -1,8 +1,10 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { RequireAdmin, RequireMember } from "./routeGuards";
+
 import { useAuthStore, type MeUser } from "@shared/lib/store/useAuthStore";
+
+import { RequireAdmin, RequireMember } from "./routeGuards";
 
 function meWithRole(role: MeUser["memberships"][number]["role"]): MeUser {
   return {

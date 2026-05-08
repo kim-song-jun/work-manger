@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Card, Skeleton, useToast } from "@shared/ui";
 import { fetchCompanyCodes, revokeCompanyCode } from "@entities/company-code";
 import { IssueCodeForm } from "@features/admin-issue-code";

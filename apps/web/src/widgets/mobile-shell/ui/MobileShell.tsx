@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+
 import { TabBar } from "@shared/ui";
 
 type Props = {

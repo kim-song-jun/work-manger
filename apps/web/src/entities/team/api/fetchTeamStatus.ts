@@ -1,4 +1,5 @@
 import { api, HttpError } from "@shared/api";
+
 import type { TeamMember, TeamGroup, TeamTimeline } from "../model/types";
 
 type Envelope<T> = { data: T };

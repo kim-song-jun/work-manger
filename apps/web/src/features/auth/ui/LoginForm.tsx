@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { Button, TextField } from "@shared/ui";
 import { api, HttpError, setAccessToken } from "@shared/api";
 import { useAuthStore } from "@shared/lib/store/useAuthStore";
 import { fetchMe } from "@entities/user";
+
 import { AuthShell } from "./AuthShell";
 
 type LoginResponse = {

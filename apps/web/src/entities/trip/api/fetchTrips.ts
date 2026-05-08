@@ -1,4 +1,5 @@
 import { api } from "@shared/api";
+
 import type { Trip, TripStatus } from "../model/types";
 
 type Envelope<T> = { data: T };

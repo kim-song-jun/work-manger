@@ -10,6 +10,7 @@
 import "@testing-library/jest-dom/vitest";
 import { afterAll, afterEach, beforeAll } from "vitest";
 import { cleanup } from "@testing-library/react";
+
 import "./i18n-test";
 import { server } from "./msw/server";
 

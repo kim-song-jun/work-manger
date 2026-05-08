@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+
 import { ToastProvider, useToast } from "./Toast";
 
 const meta: Meta = {

@@ -1,7 +1,8 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Icon } from "@shared/ui";
 import type { ReactNode } from "react";
+
+import { Icon } from "@shared/ui";
 
 type Item = {
   to: string;

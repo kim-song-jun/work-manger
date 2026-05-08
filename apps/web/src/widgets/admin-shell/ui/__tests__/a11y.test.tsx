@@ -16,7 +16,9 @@
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+
 import { useAuthStore } from "@shared/lib/store/useAuthStore";
+
 import { AdminShell } from "../AdminShell";
 import "@shared/i18n";
 

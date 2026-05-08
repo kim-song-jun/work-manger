@@ -5,7 +5,9 @@
  *      backend returns a dated object with items.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { setAccessToken } from "@shared/api";
+
 import { fetchTeam } from "../fetchTeam";
 
 function mockFetchOnce(body: unknown) {

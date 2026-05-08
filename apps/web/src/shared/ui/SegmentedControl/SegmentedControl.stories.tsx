@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 import { within, userEvent, expect } from "@storybook/test";
+
 import { SegmentedControl } from "./SegmentedControl";
 
 const meta: Meta<typeof SegmentedControl> = {

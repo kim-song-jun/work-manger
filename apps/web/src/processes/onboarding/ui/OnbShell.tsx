@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { Icon } from "@shared/ui";
+
 import { OnbProgress } from "./OnbProgress";
 
 type Props = {

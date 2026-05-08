@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { Button, Card, Icon } from "@shared/ui";
 
 export function LeaveSuccessPage() {

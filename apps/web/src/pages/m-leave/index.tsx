@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Card, KPIStat, PageHeader, Skeleton } from "@shared/ui";
 import { fetchBalance } from "@entities/leave";
 

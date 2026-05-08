@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { Button, Card } from "@shared/ui";
+
 import { OnbShell } from "./OnbShell";
 
 type Toggle = { key: string; titleKey: string; subKey: string; on: boolean };

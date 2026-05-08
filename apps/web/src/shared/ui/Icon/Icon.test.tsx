@@ -13,6 +13,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
+
 import { Icon } from "./Icon";
 
 const names = Object.keys(Icon) as Array<keyof typeof Icon>;

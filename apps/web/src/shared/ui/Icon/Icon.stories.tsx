@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+
 import { Icon } from "./Icon";
 
 const names = Object.keys(Icon) as Array<keyof typeof Icon>;

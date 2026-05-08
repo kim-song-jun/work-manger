@@ -16,8 +16,10 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
-import { AdminRoute } from "../AdminRoute";
+
 import { useAuthStore } from "@shared/lib/store/useAuthStore";
+
+import { AdminRoute } from "../AdminRoute";
 
 function renderAt(initial: string) {
   return render(

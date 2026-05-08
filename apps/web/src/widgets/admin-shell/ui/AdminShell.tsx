@@ -1,6 +1,8 @@
 import { Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { useAuthStore } from "@shared/lib/store/useAuthStore";
+
 import { AdminNav } from "./AdminNav";
 import { RoleBadge } from "./RoleBadge";
 

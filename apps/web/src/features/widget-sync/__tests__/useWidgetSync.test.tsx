@@ -14,8 +14,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import { renderHook } from "@testing-library/react";
 
-import { useWidgetSync } from "../model/useWidgetSync";
 import type { TodayStatusPayload } from "@shared/lib/native";
+
+import { useWidgetSync } from "../model/useWidgetSync";
 
 type Bridge = {
   pushTodayStatus: Mock<

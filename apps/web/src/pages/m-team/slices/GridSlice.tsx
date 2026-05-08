@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Avatar, Card, Skeleton, StatusDot } from "@shared/ui";
 import { fetchTeamGrid } from "@entities/team";
 import type { TeamMember } from "@entities/team";

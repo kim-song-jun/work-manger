@@ -4,6 +4,7 @@ import type {
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
 } from "react";
+
 import { Icon } from "@shared/ui";
 
 type Props = {

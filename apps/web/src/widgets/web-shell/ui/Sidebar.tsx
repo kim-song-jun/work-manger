@@ -1,9 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { Avatar, Icon } from "@shared/ui";
 import type { IconName } from "@shared/ui";
-import type { Breakpoint } from "../model/useViewport";
 import { useMe } from "@entities/user";
+
+import type { Breakpoint } from "../model/useViewport";
 
 type Item = { to: string; label: string; icon: IconName; badge?: string };
 

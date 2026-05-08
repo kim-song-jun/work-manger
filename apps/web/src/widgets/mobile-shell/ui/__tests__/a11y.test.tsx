@@ -18,6 +18,7 @@
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+
 import { MobileShell } from "../MobileShell";
 import "@shared/i18n";
 

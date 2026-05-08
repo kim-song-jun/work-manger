@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Card, PageHeader, SegmentedControl, Skeleton } from "@shared/ui";
 import { fetchInbox } from "@entities/inbox";
 import type { InboxItem, InboxTargetType } from "@entities/inbox";

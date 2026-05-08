@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { ToastProvider } from "@shared/ui";
 import { setAccessToken } from "@shared/api";
 import { fetchMe } from "@entities/user";

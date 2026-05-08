@@ -1,4 +1,5 @@
 import { api, HttpError } from "@shared/api";
+
 import type { NotificationItem, NotificationList } from "../model/types";
 
 type Envelope<T> = { data: T; next_cursor?: string | null };

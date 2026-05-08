@@ -6,7 +6,9 @@
  */
 import { describe, expect, it } from "vitest";
 import { screen } from "@testing-library/react";
+
 import { renderWithRouter } from "../../../test/renderWithRouter";
+
 import { SignupForm } from "./SignupForm";
 
 describe("SignupForm", () => {

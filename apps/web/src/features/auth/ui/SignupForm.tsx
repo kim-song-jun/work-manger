@@ -1,8 +1,10 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { Button, TextField } from "@shared/ui";
 import { api, HttpError } from "@shared/api";
+
 import { AuthShell } from "./AuthShell";
 
 export function SignupForm() {

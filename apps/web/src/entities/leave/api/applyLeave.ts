@@ -1,4 +1,5 @@
 import { api } from "@shared/api";
+
 import type { LeaveApplyBody, LeaveRequest } from "../model/types";
 
 type Envelope<T> = { data: T };

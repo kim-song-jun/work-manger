@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Card, StatRow, Skeleton } from "@shared/ui";
 import { SubHeader } from "@widgets/sub-header";
 import { fetchRecord } from "@entities/attendance";

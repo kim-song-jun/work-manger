@@ -1,10 +1,12 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { Button } from "@shared/ui";
 import { api, HttpError } from "@shared/api";
 import { fetchMe } from "@entities/user";
 import { useAuthStore } from "@shared/lib/store/useAuthStore";
+
 import { OnbShell } from "./OnbShell";
 
 const LEN = 6;

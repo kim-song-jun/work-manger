@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Avatar, Card, Skeleton } from "@shared/ui";
 import { fetchTeamTimeline } from "@entities/team";
 import type { TeamTimeline, TeamTimelineKind } from "@entities/team";

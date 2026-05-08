@@ -1,4 +1,5 @@
 import { api, HttpError } from "@shared/api";
+
 import type { AttendanceRecord, AttendanceStatus, ClockKind } from "../model/types";
 
 type PageEnvelope<T> = {

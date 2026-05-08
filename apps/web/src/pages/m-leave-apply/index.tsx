@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { Card } from "@shared/ui";
 import { SubHeader } from "@widgets/sub-header";
 import { LeaveApplyForm } from "@features/leave-apply";
+
 import { Calendar } from "./Calendar";
 
 export function LeaveApplyPage() {

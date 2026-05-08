@@ -7,6 +7,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+
 import { Button, Card, Sheet, Skeleton } from "@shared/ui";
 import { fetchRecord, fetchRecords } from "@entities/attendance";
 import type { AttendanceRecord, AttendanceStatus } from "@entities/attendance";

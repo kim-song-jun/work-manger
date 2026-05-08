@@ -14,6 +14,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
+
 import { ToastProvider } from "@shared/ui";
 import "@shared/i18n";
 
@@ -22,8 +23,9 @@ vi.mock("@entities/inbox", () => ({
   rejectInbox: vi.fn(async () => undefined),
 }));
 
-import { QuickDecide } from "../ui/QuickDecide";
 import * as inboxApi from "@entities/inbox";
+
+import { QuickDecide } from "../ui/QuickDecide";
 
 const approve = inboxApi.approveInbox as unknown as ReturnType<typeof vi.fn>;
 const reject = inboxApi.rejectInbox as unknown as ReturnType<typeof vi.fn>;

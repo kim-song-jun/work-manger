@@ -5,7 +5,9 @@
  *      the normalized entity. Missing role/leave fields used to blank the page.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { setAccessToken } from "@shared/api";
+
 import { fetchEmployeeDetail } from "../fetchEmployeeDetail";
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {

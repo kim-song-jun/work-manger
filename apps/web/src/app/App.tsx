@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Route, Routes, Navigate } from "react-router-dom";
+
 import { LoginPage } from "@pages/login";
 import { SignupPage } from "@pages/signup";
 import { HealthPage } from "@pages/health";
 import { ForgotPasswordPage } from "@pages/forgot";
-
 import { MobileShell } from "@widgets/mobile-shell";
 import { HomePage } from "@pages/m-home";
 import { TeamPage } from "@pages/m-team";
@@ -30,7 +30,6 @@ import { HelpPage } from "@pages/m-help";
 import { EmptyNotificationsPage } from "@pages/m-empty-noti";
 import { LocPickerPage } from "@pages/m-loc-picker";
 import { ErrorGpsPage } from "@pages/m-error-gps";
-
 import { WelcomePage } from "@pages/onboarding-welcome";
 import { CompanyCodePage } from "@pages/onboarding-company-code";
 import { ProfilePage } from "@pages/onboarding-profile";
@@ -39,13 +38,11 @@ import { SchedulePage } from "@pages/onboarding-schedule";
 import { NotificationsPage } from "@pages/onboarding-notifications";
 import { WidgetPage } from "@pages/onboarding-widget";
 import { DonePage } from "@pages/onboarding-done";
-
 import { WebShell } from "@widgets/web-shell";
 import { WebDashboardPage } from "@pages/web-dashboard";
 import { WebInboxPage } from "@pages/web-inbox";
 import { WebRecordsPage } from "@pages/web-records";
 import { WebTeamLeavePage } from "@pages/web-team-leave";
-
 import { AdminShell, AdminRoute } from "@widgets/admin-shell";
 import { AdminDashboardPage } from "@pages/admin-dashboard";
 import { AdminApprovalsPage } from "@pages/admin-approvals";
@@ -60,6 +57,7 @@ import { ComplianceMobilePage } from "@pages/m-compliance";
 import { ComplianceBlockPage } from "@pages/m-compliance-block";
 import { NotFoundPage } from "@pages/not-found";
 import { WebTeamCalendarPage } from "@pages/web-team-calendar";
+
 import { RequireMember } from "./routeGuards";
 
 export function App() {

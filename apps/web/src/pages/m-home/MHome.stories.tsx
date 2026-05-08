@@ -10,7 +10,9 @@
  */
 import type { Meta, StoryObj } from "@storybook/react";
 import { within, expect } from "@storybook/test";
+
 import { withPageProviders } from "../../../.storybook/page-decorators";
+
 import { HomePage as Page } from "./index";
 const meta: Meta<typeof Page> = {
   title: "Pages/Mobile/home",

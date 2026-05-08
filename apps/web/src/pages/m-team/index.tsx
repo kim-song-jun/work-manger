@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+
 import { PageHeader, SegmentedControl } from "@shared/ui";
 import { useTeamStream } from "@shared/lib";
+
 import { GridSlice } from "./slices/GridSlice";
 import { GroupedSlice } from "./slices/GroupedSlice";
 import { TimelineSlice } from "./slices/TimelineSlice";

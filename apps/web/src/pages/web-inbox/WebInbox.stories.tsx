@@ -9,7 +9,9 @@
  *   - Real backend integration (covered by Playwright e2e)
  */
 import type { Meta, StoryObj } from "@storybook/react";
+
 import { withPageProviders } from "../../../.storybook/page-decorators";
+
 import { WebInboxPage as Page } from "./index";
 const meta: Meta<typeof Page> = {
   title: "Pages/Web/inbox",

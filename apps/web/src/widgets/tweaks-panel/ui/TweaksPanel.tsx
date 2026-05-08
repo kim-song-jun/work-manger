@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+
 import { Icon, SegmentedControl, Sheet } from "@shared/ui";
 import { registerWebPush, unregisterWebPush } from "@shared/lib/web-push";
+
 import {
   applyTweaks,
   defaultTweaks,

@@ -13,6 +13,7 @@
  * Coverage target: 100% lines for useTweaksStore.ts
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import {
   useTweaksStore,
   applyTweaksToBody,

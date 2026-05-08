@@ -1,5 +1,6 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Card, Skeleton } from "@shared/ui";
 import { fetchEmployees } from "@entities/employee";
 import { fetchBalance, type LeaveBalance } from "@entities/leave";

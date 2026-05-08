@@ -47,13 +47,13 @@ function fakePosition(overrides: Partial<GeolocationCoordinates> = {}) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   delete (window as any).NativeBridge;
 });
 
 describe("getCurrentLocation — NativeBridge path", () => {
   beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (window as any).NativeBridge = {
       requestLocation: vi.fn().mockResolvedValue({
         latitude: 35.1796,
@@ -77,7 +77,7 @@ describe("getCurrentLocation — NativeBridge path", () => {
       longitude: 129.0756,
       accuracy_m: 4.2,
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     expect((window as any).NativeBridge.requestLocation).toHaveBeenCalledOnce();
     expect(navSpy).not.toHaveBeenCalled();
   });
@@ -85,7 +85,7 @@ describe("getCurrentLocation — NativeBridge path", () => {
   it("throws an Error carrying the bridge error code", async () => {
     // Why: callers funnel both browser and native failures through one
     // try/catch. Throwing keeps that path unified.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (window as any).NativeBridge.requestLocation = vi
       .fn()
       .mockResolvedValue({ error: "PERMISSION_DENIED" });

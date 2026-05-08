@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Button, Card, Sheet, useToast } from "@shared/ui";
 import { approveInbox, rejectInbox } from "@entities/inbox";
 import type { InboxItem } from "@entities/inbox";

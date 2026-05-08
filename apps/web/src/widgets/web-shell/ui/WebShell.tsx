@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
+
+import { useViewport } from "../model/useViewport";
+
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
-import { useViewport } from "../model/useViewport";
 
 export function WebShell() {
   const bp = useViewport();

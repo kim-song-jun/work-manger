@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { Button, Card, Icon } from "@shared/ui";
+
 import { OnbShell } from "./OnbShell";
 
 const DAY_KEYS = [

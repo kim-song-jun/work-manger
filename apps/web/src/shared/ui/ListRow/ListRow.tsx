@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode, MouseEvent, KeyboardEvent } from "react";
+
 import { Icon } from "../Icon";
 
 type Props = {

@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { Icon, type IconName } from "../Icon";
 
 type Tab = { key: string; to: string; icon: IconName; labelKey: string };

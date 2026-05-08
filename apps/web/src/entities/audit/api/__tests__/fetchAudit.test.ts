@@ -14,6 +14,7 @@
  * Coverage target: 100% lines for fetchAudit.ts
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { fetchAudit } from "../fetchAudit";
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {

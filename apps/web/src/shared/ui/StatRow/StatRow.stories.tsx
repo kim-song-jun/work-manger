@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+
 import { StatRow } from "./StatRow";
 
 const meta: Meta<typeof StatRow> = {

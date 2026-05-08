@@ -7,7 +7,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+
 import { renderWithRouter } from "../../../test/renderWithRouter";
+
 import { ForgotForm } from "./ForgotForm";
 
 function jsonResponse(body: unknown, status = 200): Response {

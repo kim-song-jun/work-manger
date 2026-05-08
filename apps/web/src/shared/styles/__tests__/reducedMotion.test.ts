@@ -16,6 +16,7 @@
  * Coverage target: structural assertion on the source file
  */
 import { describe, expect, it } from "vitest";
+
 // Vite raw-string import: bundles tokens.css source as a JS string at test time
 // without pulling in @types/node for fs access.
 import css from "../tokens.css?raw";

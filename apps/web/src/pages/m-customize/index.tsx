@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+
 import { Card, SegmentedControl } from "@shared/ui";
 import { SubHeader } from "@widgets/sub-header";
 import { useTweaksStore, applyTweaksToBody } from "@shared/lib/store/useTweaksStore";

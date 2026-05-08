@@ -5,7 +5,9 @@
  *      failures instead of manufacturing a fake success.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { setAccessToken } from "@shared/api";
+
 import { applyLeave } from "../applyLeave";
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {

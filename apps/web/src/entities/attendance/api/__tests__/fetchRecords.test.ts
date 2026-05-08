@@ -5,7 +5,9 @@
  *      navigation. The backend pagination cursor lives under meta.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { setAccessToken } from "@shared/api";
+
 import { fetchRecords } from "../fetchRecords";
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {

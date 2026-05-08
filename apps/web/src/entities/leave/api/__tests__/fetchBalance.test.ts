@@ -6,7 +6,9 @@
  *      the real API shape.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { setAccessToken } from "@shared/api";
+
 import { fetchBalance } from "../fetchBalance";
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {

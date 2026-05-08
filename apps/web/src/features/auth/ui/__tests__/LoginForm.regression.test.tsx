@@ -22,10 +22,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderWithRouter } from "../../../../test/renderWithRouter";
-import { LoginForm } from "../LoginForm";
+
 import { useAuthStore } from "@shared/lib/store/useAuthStore";
 import { setAccessToken } from "@shared/api";
+
+import { renderWithRouter } from "../../../../test/renderWithRouter";
+import { LoginForm } from "../LoginForm";
 
 const navigateSpy = vi.fn();
 

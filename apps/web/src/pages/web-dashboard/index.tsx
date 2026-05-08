@@ -6,6 +6,7 @@
  */
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+
 import { Avatar, Card, Skeleton, StatusDot } from "@shared/ui";
 import { fetchToday, fetchRecords } from "@entities/attendance";
 import type { AttendanceRecord, AttendanceToday } from "@entities/attendance";
@@ -15,6 +16,7 @@ import { fetchTeam } from "@entities/team";
 import type { TeamMember } from "@entities/team";
 import { fetchInbox } from "@entities/inbox";
 import type { InboxList } from "@entities/inbox";
+
 import { formatTime, formatMinutes, formatDateLabel } from "./format";
 
 export function WebDashboardPage() {

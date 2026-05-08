@@ -17,6 +17,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+
 import { ToastProvider } from "@shared/ui";
 import "@shared/i18n";
 
@@ -33,8 +34,9 @@ vi.mock("@entities/leave", () => ({
   leaveDays: () => 1,
 }));
 
-import { LeaveApplyPage } from "../index";
 import * as leaveApi from "@entities/leave";
+
+import { LeaveApplyPage } from "../index";
 
 const applyLeave = leaveApi.applyLeave as unknown as ReturnType<typeof vi.fn>;
 

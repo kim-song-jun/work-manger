@@ -15,7 +15,9 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { ToastProvider } from "@shared/ui";
+
 import "@shared/i18n";
 import { WebDashboardPage } from "./index";
 

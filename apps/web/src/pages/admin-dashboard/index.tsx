@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { Card, KPIStat, Skeleton } from "@shared/ui";
 import { fetchAdminDashboard } from "@entities/admin-dashboard";
 

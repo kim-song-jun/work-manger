@@ -13,6 +13,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+
 import { ToastProvider } from "@shared/ui";
 import "@shared/i18n";
 
@@ -28,8 +29,9 @@ vi.mock("@entities/notification", () => ({
   markAllRead: vi.fn(async () => undefined),
 }));
 
-import { NotificationsPage } from "../index";
 import * as notifApi from "@entities/notification";
+
+import { NotificationsPage } from "../index";
 
 const markRead = notifApi.markRead as unknown as ReturnType<typeof vi.fn>;
 

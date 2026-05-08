@@ -16,6 +16,7 @@
  * Coverage target: 100% lines for desktop.ts
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import * as desktop from "../desktop";
 
 type Listener = (payload: unknown) => void;

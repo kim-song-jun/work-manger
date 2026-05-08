@@ -1,5 +1,6 @@
 import { api, HttpError } from "@shared/api";
 import type { paths } from "@shared/api/openapi-types";
+
 import type { InboxItem, InboxList, InboxStatus } from "../model/types";
 
 // Smoke proof: codegen output is consumed. Once backend declares

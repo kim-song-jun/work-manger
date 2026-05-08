@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+
 import { KPIStat } from "./KPIStat";
 
 const meta: Meta<typeof KPIStat> = {

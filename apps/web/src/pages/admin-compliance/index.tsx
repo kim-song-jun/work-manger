@@ -6,6 +6,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Card, Skeleton } from "@shared/ui";
 import { fetchCompanyCompliance } from "@entities/compliance";
 import type {

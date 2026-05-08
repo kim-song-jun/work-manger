@@ -19,7 +19,7 @@ export function installMissingKeyLogger(i18n: I18nInstance): void {
   tagged[flag] = true;
 
   i18n.on("missingKey", (lngs, namespace, key, _res) => {
-    // eslint-disable-next-line no-console
+     
     console.warn(
       `[i18n] missing key: ns=${namespace} key="${key}" lngs=${lngs.join(",")}`,
     );

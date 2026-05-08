@@ -14,6 +14,7 @@
  * Coverage target: structural — all top-level namespaces traversed
  */
 import { describe, expect, it } from "vitest";
+
 import i18n from "../index";
 
 type Bag = Record<string, unknown>;

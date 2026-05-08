@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+
 import { Button, Card, Sheet, Skeleton } from "@shared/ui";
 import { SubHeader } from "@widgets/sub-header";
 import { fetchTrips, type Trip, type TripStatus } from "@entities/trip";

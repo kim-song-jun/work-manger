@@ -6,7 +6,9 @@
  *      errors instead of rendering a misleading empty directory.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { setAccessToken } from "@shared/api";
+
 import { fetchEmployees } from "../fetchEmployees";
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {

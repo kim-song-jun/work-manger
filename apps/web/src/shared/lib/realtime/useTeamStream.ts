@@ -4,6 +4,7 @@
  */
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+
 import { useAuthStore } from "@shared/lib/store/useAuthStore";
 
 type WsEvent = { type: string; payload?: unknown };

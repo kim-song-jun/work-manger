@@ -49,7 +49,7 @@ interface ElectronBridgeShape {
 }
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+   
   interface Window {
     ElectronBridge?: ElectronBridgeShape;
   }

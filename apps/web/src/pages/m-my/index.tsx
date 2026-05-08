@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { Avatar, Card, Icon, ListRow, PageHeader, Skeleton } from "@shared/ui";
 import { useMe } from "@entities/user";
 import { setAccessToken } from "@shared/api";

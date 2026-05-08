@@ -16,6 +16,7 @@
  * Coverage target: ≥ 90% lines for client.ts
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { api, HttpError, setAccessToken } from "./client";
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {

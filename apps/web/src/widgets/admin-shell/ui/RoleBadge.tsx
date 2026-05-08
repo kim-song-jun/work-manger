@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+
 import { useAuthStore } from "@shared/lib/store/useAuthStore";
 
 const COLOR: Record<string, string> = {

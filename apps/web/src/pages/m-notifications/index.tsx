@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Card, Icon, Skeleton } from "@shared/ui";
 import { SubHeader } from "@widgets/sub-header";
 import {

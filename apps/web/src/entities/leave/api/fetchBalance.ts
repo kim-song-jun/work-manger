@@ -1,5 +1,6 @@
 import { api } from "@shared/api";
 import type { paths } from "@shared/api/openapi-types";
+
 import type { LeaveBalance } from "../model/types";
 
 // Smoke proof: codegen output is consumed. The backend has not yet declared

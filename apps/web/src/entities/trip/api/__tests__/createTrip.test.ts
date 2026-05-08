@@ -14,6 +14,7 @@
  * Coverage target: 100% lines for createTrip.ts
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { createTrip } from "../createTrip";
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {

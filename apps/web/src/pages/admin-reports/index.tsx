@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Button, Card, KPIStat, Skeleton, useToast } from "@shared/ui";
 import {
   fetchMonthlyReport,

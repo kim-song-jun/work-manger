@@ -51,7 +51,7 @@ function mockServiceWorker(opts: {
     value: { ...navigator, serviceWorker: sw },
     configurable: true,
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   (globalThis as any).PushManager = function PushManager() {};
   return { sw, reg };
 }
@@ -72,7 +72,7 @@ beforeEach(() => {
     globalThis,
     "Notification",
   );
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   originalPushManager = (globalThis as any).PushManager;
   originalFetch = globalThis.fetch;
   globalThis.fetch = vi.fn(async (url: RequestInfo | URL) => {
@@ -97,7 +97,7 @@ afterEach(() => {
   if (originalNotification) {
     Object.defineProperty(globalThis, "Notification", originalNotification);
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   (globalThis as any).PushManager = originalPushManager;
   if (originalFetch) globalThis.fetch = originalFetch;
   vi.restoreAllMocks();

@@ -16,6 +16,7 @@
  * Coverage target: 100% lines for useAuthStore.ts
  */
 import { beforeEach, describe, expect, it } from "vitest";
+
 import { useAuthStore, type MeUser } from "./useAuthStore";
 
 const sampleMe: MeUser = {

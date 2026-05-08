@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import { Avatar, Icon } from "@shared/ui";
 import { setAccessToken } from "@shared/api";
 import { useAuthStore } from "@shared/lib/store/useAuthStore";
 import { useMe } from "@entities/user";
+
 import type { Breakpoint } from "../model/useViewport";
 
 type Props = {

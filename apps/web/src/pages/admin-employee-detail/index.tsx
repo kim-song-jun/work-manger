@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Avatar, Card, KPIStat, Skeleton, useToast } from "@shared/ui";
 import {
   fetchEmployeeDetail,

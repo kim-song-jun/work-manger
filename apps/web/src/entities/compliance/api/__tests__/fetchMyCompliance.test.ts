@@ -14,6 +14,7 @@
  * Coverage target: 100% lines for fetchMyCompliance.ts
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { fetchMyCompliance } from "../fetchMyCompliance";
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {

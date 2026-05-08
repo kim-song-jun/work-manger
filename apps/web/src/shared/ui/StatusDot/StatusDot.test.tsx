@@ -13,6 +13,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
+
 import { StatusDot, type StatusKind } from "./StatusDot";
 
 describe("StatusDot", () => {

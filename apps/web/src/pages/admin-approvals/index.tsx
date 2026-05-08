@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+
 import { Avatar, Card, Skeleton, useToast } from "@shared/ui";
 import { fetchApprovals, type ApprovalRow, type ApprovalStatus } from "@entities/approval";
 import { batchDecide, BulkActionBar } from "@features/admin-approve-batch";

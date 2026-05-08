@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
+
 import { api, HttpError } from "@shared/api";
+
 import type { MeMembership, MeUser } from "./store/useAuthStore";
 
 export type Membership = MeMembership;

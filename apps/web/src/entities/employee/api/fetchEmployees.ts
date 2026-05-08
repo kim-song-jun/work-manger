@@ -1,4 +1,5 @@
 import { api } from "@shared/api";
+
 import type { Employee, EmployeeListQuery } from "../model/types";
 
 type Envelope<T> = { data: T };

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import { Icon } from "../Icon";
 
 type Props = {

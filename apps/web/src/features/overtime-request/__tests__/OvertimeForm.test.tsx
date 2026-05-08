@@ -15,6 +15,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
+
 import { ToastProvider } from "@shared/ui";
 import "@shared/i18n";
 
@@ -28,8 +29,9 @@ vi.mock("@entities/overtime", () => ({
   })),
 }));
 
-import { OvertimeForm } from "../ui/OvertimeForm";
 import * as overtimeApi from "@entities/overtime";
+
+import { OvertimeForm } from "../ui/OvertimeForm";
 
 const post = overtimeApi.postOvertimeRequest as unknown as ReturnType<typeof vi.fn>;
 

@@ -15,9 +15,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import "@shared/i18n";
-import { ComplianceMobilePage } from "../index";
 import { setAccessToken } from "@shared/api";
+
+import { ComplianceMobilePage } from "../index";
 
 function makeResponse(body: unknown, init: { ok?: boolean; status?: number } = {}): Response {
   const text = body === undefined ? "" : JSON.stringify(body);

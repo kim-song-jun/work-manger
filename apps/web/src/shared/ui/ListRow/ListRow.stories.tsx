@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { ListRow } from "./ListRow";
+
 import { Avatar } from "../Avatar";
 import { StatusDot } from "../StatusDot";
+
+import { ListRow } from "./ListRow";
 
 const meta: Meta<typeof ListRow> = {
   title: "shared/ui/ListRow",
