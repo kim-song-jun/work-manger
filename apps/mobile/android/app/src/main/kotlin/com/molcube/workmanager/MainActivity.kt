@@ -3,6 +3,8 @@ package com.molcube.workmanager
 import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.updateAll
+import com.molcube.workmanager.geofence.GeofenceMethodChannelHandler
+import com.molcube.workmanager.glance.WorkStatusWidget
 import com.molcube.workmanager.widget.ThisWeekWidget
 import com.molcube.workmanager.widget.TodayStatusWidget
 import com.molcube.workmanager.widget.writeSnapshot
@@ -27,6 +29,12 @@ class MainActivity : FlutterActivity() {
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, widgetChannel)
             .setMethodCallHandler { call, result -> handle(call, result) }
+
+        // iter13 T5: native geofence binding (GeofencingClient).
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            GeofenceMethodChannelHandler.CHANNEL,
+        ).setMethodCallHandler(GeofenceMethodChannelHandler(applicationContext))
     }
 
     private fun handle(call: MethodCall, result: MethodChannel.Result) {
@@ -65,6 +73,8 @@ class MainActivity : FlutterActivity() {
         scope.launch {
             runCatching { TodayStatusWidget().updateAll(ctx) }
             runCatching { ThisWeekWidget().updateAll(ctx) }
+            // iter13 T5: also refresh the compact WorkStatusWidget.
+            runCatching { WorkStatusWidget().updateAll(ctx) }
         }
     }
 }

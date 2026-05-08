@@ -2,5 +2,6 @@
 <resources>
     <string name="wm_widget_today_desc">오늘 근무 상태와 출근 시간을 한눈에 봅니다.</string>
     <string name="wm_widget_week_desc">이번 주 누적 근무시간과 잔여 연차를 표시합니다.</string>
+    <string name="wm_widget_status_desc">근무 상태와 누적 시간을 작게 표시합니다.</string>
     <string name="wm_widget_loading">불러오는 중…</string>
 </resources>

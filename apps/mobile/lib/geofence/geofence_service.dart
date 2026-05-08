@@ -58,26 +58,89 @@ List<GeofenceItem> normalizeGeofencePayload(List<dynamic> raw) {
 class GeofenceServiceShim {
   GeofenceServiceShim._();
 
+  /// MethodChannel bridging Dart ↔ native (Android only at the moment;
+  /// iOS will land once a Mac signing host is available — see SESSION
+  /// 2026-05-08 iter12 §7).
+  static const MethodChannel channel =
+      MethodChannel('com.molcube.workmanager/geofence');
+
   static List<GeofenceItem> _registered = const [];
   static List<GeofenceItem> get registered => List.unmodifiable(_registered);
 
   /// Register a periodic 15-min Workmanager task. Idempotent.
-  /// Implementation note: the actual `Workmanager().registerPeriodicTask`
-  /// call lives behind a thin wrapper so unit tests can swap it.
+  ///
+  /// On Android this triggers `GeofencingClient` initialisation on the
+  /// native side; the platform handles the periodic poll itself, so no
+  /// Dart-side timer is required. On platforms where the channel is not
+  /// registered (iOS until signing lands, plain `flutter test` runs) this
+  /// method is a documented no-op — callers can `await` without try/catch.
   static Future<void> initBackground() async {
     if (kDebugMode) debugPrint('[geofence] initBackground (15 min cadence)');
-    // TODO(native): call into workmanager once native registration is wired to
-    // pubspec.yaml. Kept as a stub so unit tests can run without the
-    // platform plugin.
+    try {
+      await channel.invokeMethod<void>('initBackground');
+    } on MissingPluginException {
+      if (kDebugMode) debugPrint('[geofence] channel not registered (stub)');
+    } on PlatformException catch (e) {
+      if (kDebugMode) debugPrint('[geofence] initBackground failed: $e');
+    }
   }
 
   /// Replace the in-memory + native registration set.
+  ///
+  /// Diff-based: removes geofences absent from [items] and (re-)adds the
+  /// rest. Native side keys by the [GeofenceItem.id], so re-sending an
+  /// unchanged record is a cheap upsert.
   static Future<void> registerAll(List<GeofenceItem> items) async {
+    final previous = _registered;
     _registered = List<GeofenceItem>.from(items);
     if (kDebugMode) {
       debugPrint('[geofence] registered ${_registered.length} regions');
     }
-    // TODO(native): forward to platform-specific geofence registration here.
+    final newIds = items.map((e) => e.id).toSet();
+
+    // Remove any region the FE no longer considers active.
+    for (final old in previous) {
+      if (!newIds.contains(old.id)) {
+        try {
+          await channel.invokeMethod<void>('removeGeofence', {'id': old.id});
+        } on MissingPluginException {
+          return; // channel not wired (iOS / unit tests) — silent stub.
+        } on PlatformException catch (e) {
+          if (kDebugMode) debugPrint('[geofence] remove ${old.id}: $e');
+        }
+      }
+    }
+
+    // Upsert the new set.
+    for (final g in items) {
+      try {
+        await channel.invokeMethod<void>('addGeofence', {
+          'id': g.id,
+          'lat': g.lat,
+          'lng': g.lon,
+          'radius': g.radiusM,
+          'label': g.label,
+        });
+      } on MissingPluginException {
+        return; // channel not wired — first miss aborts the loop quietly.
+      } on PlatformException catch (e) {
+        if (kDebugMode) debugPrint('[geofence] add ${g.id}: $e');
+      }
+    }
+  }
+
+  /// Fetch the native-side active set. Useful for diagnostics + the
+  /// onboarding screen (so the user can confirm the OS actually accepted
+  /// the regions). Returns an empty list if the channel is not registered.
+  static Future<List<String>> getActiveFences() async {
+    try {
+      final res = await channel.invokeListMethod<String>('getActiveFences');
+      return res ?? const [];
+    } on MissingPluginException {
+      return const [];
+    } on PlatformException {
+      return const [];
+    }
   }
 }
 

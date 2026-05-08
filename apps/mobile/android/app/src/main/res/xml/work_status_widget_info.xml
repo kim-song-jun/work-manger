@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Glance / AppWidget metadata for WorkStatusWidget (iter13 T5).
+  2x1 minimalist tile: status badge + today's worked HH:MM. Reads from
+  the shared DataStore (`wm_widget_prefs`) so the existing
+  `widget.pushTodayStatus` MethodChannel feeds it without changes.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="120dp"
+    android:minHeight="60dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
+    android:minResizeWidth="100dp"
+    android:minResizeHeight="50dp"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:description="@string/wm_widget_status_desc"
+    android:initialLayout="@layout/wm_widget_loading" />
