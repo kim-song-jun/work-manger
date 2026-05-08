@@ -18,10 +18,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import "@shared/i18n";
 import { ToastProvider } from "@shared/ui";
-import { AdminApprovalsPage } from "../index";
 import { setAccessToken } from "@shared/api";
+
+import { AdminApprovalsPage } from "../index";
 
 type MockResp = { ok: boolean; status: number; body: unknown };
 
@@ -69,10 +71,10 @@ describe("pages/admin-approvals · AdminApprovalsPage", () => {
               data: [
                 {
                   id: "a1",
-                  kind: "leave",
-                  status: "pending",
-                  employee_id: "e1",
-                  employee_name: "이도현",
+                  target_type: "LEAVE",
+                  status: "PENDING",
+                  requester_id: "e1",
+                  requester_name: "이도현",
                   team: "개발",
                   summary: "5/2 ~ 5/3 · 2일",
                   reason: "가족 행사",
@@ -80,10 +82,10 @@ describe("pages/admin-approvals · AdminApprovalsPage", () => {
                 },
                 {
                   id: "a2",
-                  kind: "overtime",
-                  status: "pending",
-                  employee_id: "e2",
-                  employee_name: "윤소라",
+                  target_type: "OVERTIME",
+                  status: "PENDING",
+                  requester_id: "e2",
+                  requester_name: "윤소라",
                   team: "마케팅",
                   summary: "4/21 18:00~21:30",
                   reason: null,
@@ -118,19 +120,19 @@ describe("pages/admin-approvals · AdminApprovalsPage", () => {
               data: [
                 {
                   id: "a1",
-                  kind: "leave",
-                  status: "pending",
-                  employee_id: "e1",
-                  employee_name: "이도현",
+                  target_type: "LEAVE",
+                  status: "PENDING",
+                  requester_id: "e1",
+                  requester_name: "이도현",
                   summary: "5/2 ~ 5/3",
                   submitted_at: "2026-05-01T00:00:00Z",
                 },
                 {
                   id: "a2",
-                  kind: "leave",
-                  status: "pending",
-                  employee_id: "e2",
-                  employee_name: "윤소라",
+                  target_type: "LEAVE",
+                  status: "PENDING",
+                  requester_id: "e2",
+                  requester_name: "윤소라",
                   summary: "5/4",
                   submitted_at: "2026-05-01T00:00:00Z",
                 },
