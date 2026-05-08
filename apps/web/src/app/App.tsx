@@ -54,12 +54,13 @@ import { AdminAuditPage } from "@pages/admin-audit";
 import { AdminCodesPage } from "@pages/admin-codes";
 import { AdminCompliancePage } from "@pages/admin-compliance";
 import { AdminSettingsPage } from "@pages/admin-settings";
+import { OwnerBillingPage } from "@pages/owner-billing";
 import { ComplianceMobilePage } from "@pages/m-compliance";
 import { ComplianceBlockPage } from "@pages/m-compliance-block";
 import { NotFoundPage } from "@pages/not-found";
 import { WebTeamCalendarPage } from "@pages/web-team-calendar";
 
-import { RequireMember } from "./routeGuards";
+import { RequireMember, RequireOwner } from "./routeGuards";
 import { RoleBasedHomeRedirect } from "./RoleBasedHomeRedirect";
 
 export function App() {
@@ -182,6 +183,18 @@ export function App() {
         <Route path="codes" element={<AdminCodesPage />} />
         <Route path="compliance" element={<AdminCompliancePage />} />
         <Route path="settings" element={<AdminSettingsPage />} />
+      </Route>
+
+      {/* F-OWNER-07: /owner/billing — OWNER-only, reuses the admin shell. */}
+      <Route
+        path="/owner"
+        element={
+          <RequireOwner>
+            <AdminShell />
+          </RequireOwner>
+        }
+      >
+        <Route path="billing" element={<OwnerBillingPage />} />
       </Route>
 
       <Route path="/__health" element={<HealthPage />} />

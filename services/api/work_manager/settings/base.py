@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.oauth",
     "apps.trip",
     "apps.notice",
+    "apps.billing",
 ]
 
 MIDDLEWARE = [

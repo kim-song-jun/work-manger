@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 
 import { Icon } from "@shared/ui";
+import { useAuthStore } from "@shared/lib/store/useAuthStore";
 
 type Item = {
   to: string;
@@ -12,6 +13,10 @@ type Item = {
 
 export function AdminNav() {
   const { t } = useTranslation();
+  const me = useAuthStore((s) => s.me);
+  const role = me?.memberships?.[0]?.role;
+  const isOwner = role === "OWNER";
+
   const items: Item[] = [
     { to: "/admin", icon: <Icon.chart width={17} height={17} />, label: t("admin.nav_dashboard") },
     { to: "/admin/approvals", icon: <Icon.inbox width={17} height={17} />, label: t("admin.nav_approvals") },
@@ -22,6 +27,16 @@ export function AdminNav() {
     { to: "/admin/codes", icon: <Icon.lock width={17} height={17} />, label: t("admin.nav_codes") },
     { to: "/admin/compliance", icon: <Icon.lock width={17} height={17} />, label: t("admin.nav_compliance") },
     { to: "/admin/settings", icon: <Icon.settings width={17} height={17} />, label: t("admin.nav_settings") },
+    // F-OWNER-07: billing nav is OWNER-only (iter13 T6)
+    ...(isOwner
+      ? [
+          {
+            to: "/owner/billing",
+            icon: <Icon.settings width={17} height={17} />,
+            label: t("owner.billing.nav_billing"),
+          },
+        ]
+      : []),
   ];
   return (
     <nav className="mt-2" aria-label={t("admin.nav_aria_label")}>

@@ -43,3 +43,17 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   }
   return <>{children}</>;
 }
+
+export function RequireOwner({ children }: { children: ReactNode }) {
+  // F-OWNER-07: stricter than RequireAdmin — only OWNER may view billing
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const me = useAuthStore((s) => s.me);
+
+  if (!accessToken) return <Navigate to="/login" replace />;
+  if (!me) return <RouteLoading />;
+  const role = me.memberships?.[0]?.role;
+  if (role !== "OWNER") {
+    return <Navigate to="/admin" replace />;
+  }
+  return <>{children}</>;
+}

@@ -15,6 +15,8 @@
  */
 import { HttpResponse, http } from "msw";
 
+import { billingHandlers } from "@shared/msw/handlers/billing";
+
 const ok = <T>(data: T, extra: Record<string, unknown> = {}) =>
   HttpResponse.json({ data, ...extra });
 
@@ -271,4 +273,5 @@ export const handlers = [
   ...notificationHandlers,
   ...attendanceHandlers,
   ...adminHandlers,
+  ...billingHandlers,
 ];
