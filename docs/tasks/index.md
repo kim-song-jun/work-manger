@@ -8,6 +8,7 @@
 
 ## 최근 완료
 
+- **[SESSION 2026-05-08 iter13](SESSION-2026-05-08-iter13-backlog-clear.md)** — iter12 backlog 6항목 + 3-platform 빌드/설치 환경 일체 (T1 OpenAPI regen + T2 weekly stats BE+FE + T3 COMP LeaveType + T4 E2E Playwright 4 페르소나 + T5 mobile geofence native + Glance + T6 billing 스켈레톤). 5개 agent 병렬 dispatch + main 직접 commit. **8 commits push** (bb1d9f4 → 8d34519). 3-platform installable artifacts 재빌드 (web/Electron Setup.exe/APK). ✅
 - **[SESSION 2026-05-08 iter12](SESSION-2026-05-08-iter12-live-test.md)** — 3-platform 라이브 테스트 audit (5 sub-agent + main browser MCP) → 73 findings → 65 fix (P0×8 + P1×37 + P2×20). Wave 1 환경 fix (wm-api stale + CRLF + `.gitattributes`) + Wave 4a/4b/4c/4d/4e parallel fix. **PR #1 머지** (`7028389`). FE vitest 282/282, BE pytest 276/276. ✅
 - **[02-iter12-live-test-fix.md](02-iter12-live-test-fix.md)** — iter12 task doc + Fix Plan + Acceptance ✅
 - **[02-findings-{employee,manager,admin,owner,design,livetest}.md](02-findings-livetest.md)** — Wave 2 audit 6 doc (qa-x4 + designer + main live)
@@ -17,13 +18,16 @@
 
 ## Backlog (다음 세션 권장)
 
-### 코드 (즉시 가능)
-- 모바일 geofence native 등록 — `apps/mobile/lib/geofence/geofence_service.dart:69,80` (Android emulator + iOS Mac 부재로 본 세션 보류)
-- OpenAPI types regen — 신규 admin/settings + admin/approvals/bulk 라우트가 spec 에 노출되도록 drf-spectacular `@extend_schema` 추가
+### 코드 (iter14)
+- **F-OWNER-07 billing 모듈 — Stripe 통합** (T6 에서 스켈레톤만 작성). SDK init + `STRIPE_*` env, `POST /v1/billing/checkout` (Stripe Checkout Session), webhook receiver (`POST /v1/billing/webhook` writing Invoice rows + flipping subscription status to ACTIVE/PAST_DUE), enable "Change plan" CTA, downgrade/cancel flow, payment method management UI, cursor pagination on `/v1/billing/invoices`.
+- **iOS native — geofence + Glance widget 대응본** (T5 에서 Android 만 구현, iOS 는 Mac signing host 부재로 deferred). Dart MethodChannel 은 iOS 에서 graceful no-op.
+- **COMP 휴가 타입 별도 balance bucket** (T3 에서 ANNUAL bucket 공유로 임시 구현). 승인된 overtime → 1:1 comp 일수 자동 적립 로직 + 별도 LeaveBalance kind.
+- **iter13 발견 pre-existing test 정리**: `tests/test_seed_demo.py::test_seed_demo_creates_expected_rows` (T3 의 9 leave requests 반영), `apps/web/src/features/leave-apply/...` 2 vitest cases (post-T3 stale).
+- **F-MANAGER P3 5건 deadcode 정리** (iter12 에서 deferred).
 
 ### 환경 (1회)
 - Android emulator 부팅 — Hyper-V 충돌 해결 OR 실 단말 USB 연결
-- Electron Setup.exe 코드사이닝 (EV 인증서 발급 후)
+- Electron Setup.exe 코드사이닝 (EV 인증서 발급 후) — 현재 `electron-builder.unsigned.yml` 로 unsigned 빌드 가능
 - Apple Notarization (Apple Developer ID + env)
 - App Store / Play Store 개발자 계정 등록
 
