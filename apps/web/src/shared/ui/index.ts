@@ -1,4 +1,6 @@
 export { Avatar } from "./Avatar";
+export { Switch } from "./Switch";
+export type { SwitchProps } from "./Switch";
 export { Button } from "./Button";
 export { Card } from "./Card";
 export { FormField } from "./FormField";

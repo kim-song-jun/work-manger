@@ -60,6 +60,7 @@ import { NotFoundPage } from "@pages/not-found";
 import { WebTeamCalendarPage } from "@pages/web-team-calendar";
 
 import { RequireMember } from "./routeGuards";
+import { RoleBasedHomeRedirect } from "./RoleBasedHomeRedirect";
 
 export function App() {
   const { i18n, t } = useTranslation();
@@ -105,7 +106,8 @@ export function App() {
         {t("common.skip_to_main")}
       </a>
       <Routes>
-      <Route path="/" element={<Navigate to="/m/home" replace />} />
+      {/* F-LIVE-008: role-based redirect — ADMIN/OWNER→/admin, EMPLOYEE/MANAGER→/m/home */}
+      <Route path="/" element={<RoleBasedHomeRedirect />} />
 
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
