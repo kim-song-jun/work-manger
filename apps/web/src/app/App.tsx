@@ -53,6 +53,7 @@ import { AdminExpiringLeavePage } from "@pages/admin-expiring-leave";
 import { AdminAuditPage } from "@pages/admin-audit";
 import { AdminCodesPage } from "@pages/admin-codes";
 import { AdminCompliancePage } from "@pages/admin-compliance";
+import { AdminSettingsPage } from "@pages/admin-settings";
 import { ComplianceMobilePage } from "@pages/m-compliance";
 import { ComplianceBlockPage } from "@pages/m-compliance-block";
 import { NotFoundPage } from "@pages/not-found";
@@ -178,6 +179,7 @@ export function App() {
         <Route path="audit" element={<AdminAuditPage />} />
         <Route path="codes" element={<AdminCodesPage />} />
         <Route path="compliance" element={<AdminCompliancePage />} />
+        <Route path="settings" element={<AdminSettingsPage />} />
       </Route>
 
       <Route path="/__health" element={<HealthPage />} />

@@ -77,6 +77,9 @@ class Company(models.Model):
     # Spec §5.2 — 근로기준법 §61 사용 촉진 제도. When True, the
     # ``leave.promote_unused_leave`` beat task issues 6개월/2개월 전 reminders.
     leave_promotion_enabled = models.BooleanField(default=False)
+    # iter11 Wave 6 — AdminSettingsPage 브랜드 컬러 / 로고.
+    brand_color = models.CharField(max_length=9, default="#5B6CFF")
+    logo_url = models.CharField(max_length=500, blank=True, default="")
     created_at = models.DateTimeField(default=django_tz.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 

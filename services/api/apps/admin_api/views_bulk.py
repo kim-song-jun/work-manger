@@ -27,9 +27,9 @@ from rest_framework.views import APIView
 from apps.approval.models import ApprovalTask
 from apps.approval.views import _apply_decision, _broadcast_decided
 from apps.audit.services import record as audit_record
-from apps.identity.models import Membership
+from apps.identity.models import Company, Membership
 from apps.leave import services as leave_services
-from core.errors import NotFound, Unprocessable
+from core.errors import Forbidden, NotFound, Unprocessable
 from core.permissions import HasRole, active_membership
 
 from .exporters.csv_writer import monthly_report_csv
@@ -238,3 +238,78 @@ def admin_expiring_leave(request):
         )
     rows.sort(key=lambda r: Decimal(r["expiring"]), reverse=True)
     return Response({"data": rows})
+
+
+# ─── Admin company settings (read=ADMIN, write=OWNER) ─────────
+class CompanySettingsSerializer(serializers.Serializer):
+    name = serializers.CharField(read_only=True)
+    code = serializers.CharField(read_only=True)
+    fiscal_year_start = serializers.DateField(read_only=True)
+    default_locale = serializers.CharField(max_length=8, required=False)
+    timezone = serializers.CharField(max_length=64, required=False)
+    brand_color = serializers.RegexField(
+        regex=r"^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$",
+        max_length=9,
+        required=False,
+    )
+    logo_url = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    compliance_block_when_over = serializers.BooleanField(required=False)
+    leave_promotion_enabled = serializers.BooleanField(required=False)
+
+
+def _company_to_dict(c: Company) -> dict:
+    return {
+        "name": c.name,
+        "code": c.code,
+        "fiscal_year_start": c.fiscal_year_start.isoformat(),
+        "default_locale": c.default_locale,
+        "timezone": c.timezone,
+        "brand_color": c.brand_color,
+        "logo_url": c.logo_url,
+        "compliance_block_when_over": c.compliance_block_when_over,
+        "leave_promotion_enabled": c.leave_promotion_enabled,
+    }
+
+
+@api_view(["GET"])
+@permission_classes([HasRole.at_least("ADMIN")])
+def company_settings_get(request):
+    """GET /v1/admin/settings — 회사 설정 조회 (ADMIN+)."""
+    me = active_membership(request.user)
+    return Response({"data": _company_to_dict(me.company)})
+
+
+@api_view(["PATCH"])
+@permission_classes([HasRole.at_least("ADMIN")])
+def company_settings_update(request):
+    """PATCH /v1/admin/settings — OWNER 만 쓰기 가능. ADMIN 은 read-only."""
+    me = active_membership(request.user)
+    if me.role != "OWNER":
+        raise Forbidden(message="회사 설정 변경은 소유주만 가능해요.")
+    s = CompanySettingsSerializer(data=request.data, partial=True)
+    s.is_valid(raise_exception=True)
+    company = me.company
+    writable_fields = (
+        "default_locale",
+        "timezone",
+        "brand_color",
+        "logo_url",
+        "compliance_block_when_over",
+        "leave_promotion_enabled",
+    )
+    update_fields: list[str] = []
+    for f in writable_fields:
+        if f in s.validated_data:
+            setattr(company, f, s.validated_data[f])
+            update_fields.append(f)
+    if update_fields:
+        update_fields.append("updated_at")
+        company.save(update_fields=update_fields)
+        audit_record(
+            request.user,
+            "identity.company.settings_updated",
+            company=company,
+            request=request,
+            payload={"fields": [f for f in update_fields if f != "updated_at"]},
+        )
+    return Response({"data": _company_to_dict(company)})
