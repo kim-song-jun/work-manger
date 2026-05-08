@@ -4,7 +4,7 @@
 
 ## 지금 Active
 
-(없음)
+- **[02-iter12-live-test-fix.md](02-iter12-live-test-fix.md)** — iter12: 3-platform (Web / Electron / Android-WSA) 라이브 테스트 + 4 페르소나 × designer audit → P0~P2 전수 fix. Worktree `iter12-live-test` (base `84d0aa0`).
 
 ## 최근 완료
 
