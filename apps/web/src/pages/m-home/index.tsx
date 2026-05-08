@@ -16,7 +16,7 @@ import { clockIn, clockOut, readGeoFix, SlideToClockIn } from "@features/clock-i
 import { BreakButton } from "@features/break";
 import { TweaksFab } from "@widgets/tweaks-panel";
 import type { ClockInBody, ClockKind } from "@entities/attendance";
-import { fetchToday } from "@entities/attendance";
+import { fetchToday, fetchWeeklyStats } from "@entities/attendance";
 import { fetchBalance } from "@entities/leave";
 import { fetchTeamGrid } from "@entities/team";
 
@@ -50,6 +50,15 @@ function fmtMinutes(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return `${h}h ${String(m).padStart(2, "0")}m`;
+}
+
+/** F-EMPLOYEE-012: format minute totals as a one-decimal hour value
+ *  (e.g. 32h 18m -> "32.3"). Used for the weekly + overtime KPI tiles
+ *  whose ``unit="h"`` lives separately in the JSX. */
+function fmtHoursOneDecimal(min: number): string {
+  if (!Number.isFinite(min) || min <= 0) return "0";
+  const hours = min / 60;
+  return hours.toFixed(1);
 }
 
 export function HomePage() {
@@ -88,6 +97,25 @@ export function HomePage() {
     staleTime: 60_000,
   });
   const teamMembers = teamQ.data ?? [];
+
+  // F-EMPLOYEE-012: weekly KPI source — replaces the previous "32h" /
+  // "4.3h" hardcoded values on the m-home dashboard.
+  const weeklyQ = useQuery({
+    queryKey: ["attendance", "stats", "weekly"],
+    queryFn: fetchWeeklyStats,
+    staleTime: 60_000,
+  });
+  const weeklyData = weeklyQ.data;
+  const weeklyTotalMin =
+    weeklyData != null
+      ? weeklyData.regular_minutes + weeklyData.overtime_minutes
+      : null;
+  const weeklyLabel =
+    weeklyTotalMin != null ? fmtHoursOneDecimal(weeklyTotalMin) : "—";
+  const overtimeLabel =
+    weeklyData != null
+      ? fmtHoursOneDecimal(weeklyData.overtime_minutes)
+      : "—";
 
   // F-EMPLOYEE-002: clock-in mutation — use server response clock_in_at
   const clockInMutation = useMutation({
@@ -245,15 +273,13 @@ export function HomePage() {
         {/* Quick stats — F-EMPLOYEE-012: real data from BE */}
         <div className="grid grid-cols-3 gap-2 mt-3.5">
           <Card padding={12}>
-            {/* weekly stats not yet available from a separate endpoint — show dash until W4c adds it */}
-            <KPIStat label={t("home.week_label")} value="—" unit="h" />
+            <KPIStat label={t("home.week_label")} value={weeklyLabel} unit="h" />
           </Card>
           <Card padding={12}>
             <KPIStat label={t("home.leave_balance")} value={remainingDays} unit={t("leave.days_unit")} />
           </Card>
           <Card padding={12}>
-            {/* overtime accumulation not yet available — show dash */}
-            <KPIStat label={t("home.overtime_label")} value="—" unit="h" />
+            <KPIStat label={t("home.overtime_label")} value={overtimeLabel} unit="h" />
           </Card>
         </div>
 

@@ -27,3 +27,13 @@ export type AttendanceToday = {
   is_clocked_in: boolean;
   kind?: ClockKind | null;
 };
+
+/** F-EMPLOYEE-012: weekly KPI source for the m-home dashboard. */
+export type WeeklyStats = {
+  week_start: string; // YYYY-MM-DD (Mon, company tz)
+  week_end: string;   // YYYY-MM-DD (Sun, company tz)
+  regular_minutes: number;
+  overtime_minutes: number;
+  break_minutes: number;
+  days_worked: number;
+};

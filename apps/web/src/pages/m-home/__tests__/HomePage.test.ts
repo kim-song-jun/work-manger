@@ -68,3 +68,37 @@ describe("F-EMPLOYEE-003 clockOut", () => {
     expect(result).toEqual({});
   });
 });
+
+describe("F-EMPLOYEE-012 fetchWeeklyStats integration", () => {
+  it("fetchWeeklyStats hits /v1/attendance/stats/weekly and unwraps payload", async () => {
+    const { fetchWeeklyStats } = await import("@entities/attendance");
+    const spy = mockFetch({
+      data: {
+        week_start: "2026-05-04",
+        week_end: "2026-05-10",
+        regular_minutes: 1920,
+        overtime_minutes: 258,
+        break_minutes: 240,
+        days_worked: 4,
+      },
+    });
+    setAccessToken("test-token");
+    const result = await fetchWeeklyStats();
+    expect(spy).toHaveBeenCalledWith(
+      expect.stringContaining("/v1/attendance/stats/weekly"),
+      expect.any(Object),
+    );
+    expect(result?.regular_minutes).toBe(1920);
+    expect(result?.overtime_minutes).toBe(258);
+    // Sanity: total ~ 36.3h, overtime ~ 4.3h
+    expect((result!.regular_minutes + result!.overtime_minutes) / 60).toBeCloseTo(36.3, 1);
+    expect(result!.overtime_minutes / 60).toBeCloseTo(4.3, 1);
+  });
+
+  it("fetchWeeklyStats returns null on 401 so home page renders dash", async () => {
+    const { fetchWeeklyStats } = await import("@entities/attendance");
+    mockFetch({ detail: "not authenticated" }, 401);
+    const result = await fetchWeeklyStats();
+    expect(result).toBeNull();
+  });
+});

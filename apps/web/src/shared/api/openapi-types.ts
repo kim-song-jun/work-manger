@@ -448,6 +448,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/attendance/stats/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Today's attendance stats (FE-flat shape)
+         * @description ``GET /v1/attendance/stats/today`` — flat KPI shape for m-home.
+         *
+         *     Mirrors the contract used by the FE MSW handler: ``work_minutes`` /
+         *     ``break_minutes`` flat fields plus an ``is_clocked_in`` boolean
+         *     derived from record status. Returns zeros / nulls when the user has
+         *     not yet clocked in today.
+         */
+        get: operations["attendance_stats_today_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/stats/weekly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Weekly attendance aggregate (current ISO week, company tz)
+         * @description ``GET /v1/attendance/stats/weekly`` — F-EMPLOYEE-012 KPI source.
+         *
+         *     Returns regular / overtime / break minutes and days worked for the
+         *     current ISO week (Mon..Sun in the company timezone). Empty weeks
+         *     return all zeros so the FE can render dashes safely.
+         */
+        get: operations["attendance_stats_weekly_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/attendance/today": {
         parameters: {
             query?: never;
@@ -711,6 +760,54 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["auth_signup_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Invoice history (OWNER only, paginated)
+         * @description ``GET /v1/billing/invoices`` — newest first, capped at 100 rows.
+         *
+         *     Pagination is intentionally simple (count-then-slice) for the
+         *     skeleton; iter14 swaps to cursor pagination once Stripe webhook
+         *     starts emitting more rows than fit in a single screen.
+         */
+        get: operations["billing_invoices_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Current company subscription (OWNER only)
+         * @description ``GET /v1/billing/subscription`` — F-OWNER-07 view-only.
+         *
+         *     Returns the latest subscription row for the OWNER's company. A 404
+         *     is returned (not an empty body) when nothing has been provisioned
+         *     yet so the FE can branch cleanly into a "Choose a plan" CTA.
+         */
+        get: operations["billing_subscription_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1442,12 +1539,53 @@ export interface components {
             readonly name: string;
             timezone?: string;
         };
+        CompanySubscription: {
+            /** Format: date-time */
+            canceled_at?: string | null;
+            /** Format: date-time */
+            current_period_end?: string | null;
+            /** Format: uuid */
+            readonly id: string;
+            readonly plan: components["schemas"]["SubscriptionPlan"];
+            /** Format: date-time */
+            started_at?: string;
+            status?: components["schemas"]["CompanySubscriptionStatusEnum"];
+        };
+        /**
+         * @description * `TRIAL` - Trial
+         *     * `ACTIVE` - Active
+         *     * `PAST_DUE` - Past due
+         *     * `CANCELED` - Canceled
+         * @enum {string}
+         */
+        CompanySubscriptionStatusEnum: "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELED";
         /**
          * @description * `approve` - approve
          *     * `reject` - reject
          * @enum {string}
          */
         DecisionEnum: "approve" | "reject";
+        Invoice: {
+            amount_krw: number;
+            /** @description Stripe invoice ID (iter14) */
+            external_id?: string;
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date-time */
+            issued_at?: string;
+            /** Format: date-time */
+            paid_at?: string | null;
+            /** Format: uri */
+            pdf_url?: string;
+            status?: components["schemas"]["InvoiceStatusEnum"];
+        };
+        /**
+         * @description * `DRAFT` - Draft
+         *     * `PAID` - Paid
+         *     * `VOID` - Void
+         * @enum {string}
+         */
+        InvoiceStatusEnum: "DRAFT" | "PAID" | "VOID";
         PatchedAdminDecisionRequest: {
             decision?: components["schemas"]["DecisionEnum"];
             /** @default  */
@@ -1461,6 +1599,35 @@ export interface components {
             /** Format: uri */
             logo_url?: string;
             timezone?: string;
+        };
+        SubscriptionPlan: {
+            features_jsonb?: unknown;
+            /** Format: uuid */
+            readonly id: string;
+            is_active?: boolean;
+            /** @description 0 = unlimited */
+            max_employees?: number;
+            name: string;
+            price_monthly_krw: number;
+        };
+        TodayStatsResponse: {
+            break_minutes: number;
+            /** Format: date-time */
+            clock_in_at: string | null;
+            /** Format: date-time */
+            clock_out_at: string | null;
+            is_clocked_in: boolean;
+            work_minutes: number;
+        };
+        WeeklyStatsResponse: {
+            break_minutes: number;
+            days_worked: number;
+            overtime_minutes: number;
+            regular_minutes: number;
+            /** Format: date */
+            week_end: string;
+            /** Format: date */
+            week_start: string;
         };
     };
     responses: never;
@@ -1985,6 +2152,44 @@ export interface operations {
             };
         };
     };
+    attendance_stats_today_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodayStatsResponse"];
+                };
+            };
+        };
+    };
+    attendance_stats_weekly_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyStatsResponse"];
+                };
+            };
+        };
+    };
     attendance_today_retrieve: {
         parameters: {
             query?: never;
@@ -2250,6 +2455,51 @@ export interface operations {
         responses: {
             /** @description No response body */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_invoices_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"][];
+                };
+            };
+        };
+    };
+    billing_subscription_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanySubscription"];
+                };
+            };
+            /** @description No subscription found for this company */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

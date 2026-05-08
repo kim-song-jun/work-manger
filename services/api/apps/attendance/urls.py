@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import overtime_views, views
+from . import overtime_views, stats_views, views
 
 urlpatterns = [
     # Attendance
@@ -12,6 +12,9 @@ urlpatterns = [
     path("attendance/records", views.records_list),
     path("attendance/records/<uuid:pk>", views.records_detail),
     path("attendance/manual-request", views.manual_request),
+    # Stats (F-EMPLOYEE-012)
+    path("attendance/stats/weekly", stats_views.weekly_stats),
+    path("attendance/stats/today", stats_views.today_stats),
     # Overtime
     path("overtime/requests", overtime_views.overtime_requests),
     path("overtime/requests/<uuid:pk>", overtime_views.overtime_detail),
