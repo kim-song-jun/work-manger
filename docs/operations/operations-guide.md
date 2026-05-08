@@ -301,7 +301,7 @@ Provider 코드는 `apps/notification/providers/` 에 모드별로 분리되어 
 - [ ] ⏳ **Windows code signing** — `electron-builder.yml` win.target NSIS 설정 완료. EV / OV 인증서 미확보, `CSC_LINK` / `CSC_KEY_PASSWORD` env 미설정. *Owner: TBD · Target: 2026-07-31*
 - [ ] 🟡 **모니터링 대시보드 / 알림 룰 모두 활성** — Terraform observability 모듈(`infra/terraform/modules/observability/main.tf`) 작성 완료(SNS topic + CloudWatch log group + metric filter). Sentry SDK 스캐폴딩 완료(BE: `services/api/work_manager/settings/base.py` SENTRY_DSN guard, FE: `apps/web/src/main.tsx` VITE_SENTRY_DSN guard) — stg+prod 에 DSN 주입 시 ✅. 실제 prod 환경 deploy + Grafana / PagerDuty 연동 미진행. *Owner: TBD · Target: 2026-06-15*
 - [ ] ⏳ **온콜 로테이션 확정** — PagerDuty 계정 미연동. 로테이션 정책 / 보상 협의 미시작. *Owner: TBD · Target: 2026-06-30*
-- [ ] ⏳ **사용자 매뉴얼 / 도움말 / FAQ 작성** — `docs/user-guide/` 미작성. 앱 내 헬프 센터 라우트 미추가. *Owner: TBD · Target: 2026-07-15*
+- [ ] 🟡 **사용자 매뉴얼 / 도움말 / FAQ 작성** — `docs/user-guide/` 작성 완료 (README + getting-started + employee/manager/admin/owner + faq). 앱 내 헬프 센터 라우트는 `/m/help` 가 매뉴얼로 링크 (Wave 5). 회사별 커스터마이즈 가이드 (회사 로고/콜백 URL) 별도 작성 필요. *Owner: TBD · Target: 2026-07-15*
 - [ ] ⏳ **백업 / 복원 리허설** — RDS 자동 백업 활성, PITR 활성(architecture §7.1). stg 복원 리허설 미실시 (`operations-guide.md` §6.3 의 "월 1회" 약속 시작 전). *Owner: TBD · Target: 2026-06-30*
 
 ---
