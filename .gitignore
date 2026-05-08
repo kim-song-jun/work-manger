@@ -69,6 +69,9 @@ yarn-error.log*
 .tmp/
 tmp/
 
+# Cygwin/MSYS crash dumps (gitleaks 의 du.exe 등이 가끔 남김)
+*.stackdump
+
 # Design handoff bundle (kept locally for reference, not versioned)
 _design/handoff.tar.gz
 _design/headers.txt
