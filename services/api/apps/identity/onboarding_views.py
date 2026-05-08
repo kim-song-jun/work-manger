@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import secrets
 import string
-from datetime import date, datetime, time
+from datetime import date
 
 from django.db import transaction
 from django.utils import timezone as django_tz
@@ -11,6 +11,7 @@ from rest_framework import permissions, serializers, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
+from apps.audit.services import record as audit_record
 from core.errors import Conflict, NotFound, Unprocessable
 from core.permissions import HasRole, IsActiveMember, active_membership
 
@@ -276,6 +277,14 @@ def company_codes(request):
         max_uses=s.validated_data.get("max_uses"),
         created_by=membership,
     )
+    # F-ADMIN-06: audit log for company code creation
+    audit_record(
+        request.user,
+        "identity.company_code.created",
+        company=membership.company,
+        request=request,
+        payload={"code": obj.code, "max_uses": obj.max_uses},
+    )
     return Response({"data": CompanyCodeSerializer(obj).data}, status=status.HTTP_201_CREATED)
 
 
@@ -289,6 +298,14 @@ def revoke_company_code(request, code_id: str):
     if obj.revoked_at is None:
         obj.revoked_at = django_tz.now()
         obj.save(update_fields=["revoked_at"])
+    # F-ADMIN-06: audit log for company code revocation
+    audit_record(
+        request.user,
+        "identity.company_code.revoked",
+        company=membership.company,
+        request=request,
+        payload={"code_id": str(code_id)},
+    )
     return Response({"data": {"revoked": True}})
 
 

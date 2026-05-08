@@ -15,9 +15,11 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from django.core.validators import URLValidator
 from django.db import transaction
 from django.http import HttpResponse
 from django.utils import timezone as django_tz
+from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -29,7 +31,7 @@ from apps.approval.views import _apply_decision, _broadcast_decided
 from apps.audit.services import record as audit_record
 from apps.identity.models import Company, Membership
 from apps.leave import services as leave_services
-from core.errors import Forbidden, NotFound, Unprocessable
+from core.errors import Conflict, Forbidden, NotFound, Unprocessable
 from core.permissions import HasRole, active_membership
 
 from .exporters.csv_writer import monthly_report_csv
@@ -136,6 +138,12 @@ def _admin_decide_one(task: ApprovalTask, decision_upper: str, reason: str) -> N
     _apply_decision(task, decision_upper, reason)
 
 
+@extend_schema(
+    summary="Admin override: decide single approval task",
+    request=AdminDecisionSerializer,
+    responses={200: None, 404: None, 409: None},
+    tags=["admin-approvals"],
+)
 @api_view(["PATCH"])
 @permission_classes([HasRole.at_least("ADMIN")])
 def decide_approval(request, task_id):
@@ -151,7 +159,8 @@ def decide_approval(request, task_id):
     s = AdminDecisionSerializer(data=request.data)
     s.is_valid(raise_exception=True)
     if task.status != ApprovalTask.Status.PENDING:
-        raise Unprocessable(code="ALREADY_DECIDED", message="이미 처리된 항목입니다.")
+        # F-ADMIN-03: docstring mandates 409 Conflict, not 422 Unprocessable
+        raise Conflict(code="ALREADY_DECIDED", message="이미 처리된 항목입니다.")
     decision_upper = s.validated_data["decision"].upper()
     reason = s.validated_data["reason"]
     with transaction.atomic():
@@ -160,6 +169,12 @@ def decide_approval(request, task_id):
     return Response({"data": {"id": str(task.id), "status": task.status}})
 
 
+@extend_schema(
+    summary="Admin bulk decide approval tasks",
+    request=BulkDecisionSerializer,
+    responses={200: None},
+    tags=["admin-approvals"],
+)
 @api_view(["POST"])
 @permission_classes([HasRole.at_least("ADMIN")])
 def bulk_decide_approvals(request):
@@ -202,6 +217,11 @@ def bulk_decide_approvals(request):
 
 
 # ─── Admin expiring leave aggregate ───────────────────────────
+@extend_schema(
+    summary="Aggregate expiring leave for all active company members",
+    responses={200: None},
+    tags=["admin-leave"],
+)
 @api_view(["GET"])
 @permission_classes([HasRole.at_least("ADMIN")])
 def admin_expiring_leave(request):
@@ -252,7 +272,13 @@ class CompanySettingsSerializer(serializers.Serializer):
         max_length=9,
         required=False,
     )
-    logo_url = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    # F-OWNER-04: enforce https-only URL; allow blank to clear logo
+    logo_url = serializers.URLField(
+        max_length=500,
+        required=False,
+        allow_blank=True,
+        validators=[URLValidator(schemes=["https"])],
+    )
     compliance_block_when_over = serializers.BooleanField(required=False)
     leave_promotion_enabled = serializers.BooleanField(required=False)
 
@@ -271,6 +297,11 @@ def _company_to_dict(c: Company) -> dict:
     }
 
 
+@extend_schema(
+    summary="Get company settings (ADMIN+)",
+    responses={200: CompanySettingsSerializer},
+    tags=["admin-settings"],
+)
 @api_view(["GET"])
 @permission_classes([HasRole.at_least("ADMIN")])
 def company_settings_get(request):
@@ -279,6 +310,12 @@ def company_settings_get(request):
     return Response({"data": _company_to_dict(me.company)})
 
 
+@extend_schema(
+    summary="Update company settings (OWNER only)",
+    request=CompanySettingsSerializer,
+    responses={200: CompanySettingsSerializer},
+    tags=["admin-settings"],
+)
 @api_view(["PATCH"])
 @permission_classes([HasRole.at_least("ADMIN")])
 def company_settings_update(request):
@@ -305,11 +342,23 @@ def company_settings_update(request):
     if update_fields:
         update_fields.append("updated_at")
         company.save(update_fields=update_fields)
+        changed_fields = [f for f in update_fields if f != "updated_at"]
+        # F-OWNER-09: dot-path convention — {domain}.{entity}.{verb}
         audit_record(
             request.user,
-            "identity.company.settings_updated",
+            "identity.company.settings.updated",
             company=company,
             request=request,
-            payload={"fields": [f for f in update_fields if f != "updated_at"]},
+            payload={"fields": changed_fields},
         )
+        # F-OWNER-01: broadcast policy change to all team members via WS
+        try:
+            from apps.realtime import broadcast as _ws_broadcast
+            _ws_broadcast.notify_team(
+                company,
+                "company.policy_changed",
+                {"fields": changed_fields},
+            )
+        except Exception:  # noqa: BLE001 — broadcast must not block the response
+            pass
     return Response({"data": _company_to_dict(company)})

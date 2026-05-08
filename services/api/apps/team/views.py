@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 
-from django.db.models import Q
 from django.utils import timezone as django_tz
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -12,7 +11,19 @@ from apps.attendance.models import AttendanceRecord
 from apps.identity.models import Membership
 from apps.leave.models import LeaveRequest
 from core.errors import NotFound, Unprocessable
-from core.permissions import IsActiveMember, active_membership
+from core.permissions import ROLE_RANK, IsActiveMember, active_membership
+
+
+def _manager_dept_id(membership):
+    """F-MANAGER-03: return department_id to filter by for MANAGER-role members.
+
+    ADMIN/OWNER/EMPLOYEE → None (no filter, see all).
+    MANAGER with a department → that department_id.
+    MANAGER without a department → None (allow all — best-effort).
+    """
+    if ROLE_RANK.get(membership.role, 0) == ROLE_RANK["MANAGER"]:
+        return membership.department_id  # may be None
+    return None
 
 
 def _status_for(record: AttendanceRecord | None, on_leave: bool) -> str:
@@ -29,12 +40,16 @@ def _status_for(record: AttendanceRecord | None, on_leave: bool) -> str:
     return "office"
 
 
-def _today_data(company_id, today: date | None = None):
+def _today_data(company_id, today: date | None = None, department_id=None):
+    """Return (today_date, items_list).
+
+    F-MANAGER-03: optional department_id narrows to one department.
+    """
     today = today or django_tz.localdate()
-    members = (
-        Membership.objects.filter(company_id=company_id, is_active=True)
-        .select_related("user", "department")
-    )
+    members_qs = Membership.objects.filter(company_id=company_id, is_active=True)
+    if department_id is not None:
+        members_qs = members_qs.filter(department_id=department_id)
+    members = members_qs.select_related("user", "department")
     records = {
         r.membership_id: r
         for r in AttendanceRecord.objects.filter(company_id=company_id, work_date=today)
@@ -69,7 +84,8 @@ def _today_data(company_id, today: date | None = None):
 @permission_classes([IsActiveMember])
 def status_grid(request):
     membership = active_membership(request.user)
-    today, items = _today_data(membership.company_id)
+    dept_id = _manager_dept_id(membership)
+    today, items = _today_data(membership.company_id, department_id=dept_id)
     return Response({"data": {"date": today.isoformat(), "items": items}, "meta": {"count": len(items)}})
 
 
@@ -77,7 +93,8 @@ def status_grid(request):
 @permission_classes([IsActiveMember])
 def status_grouped(request):
     membership = active_membership(request.user)
-    today, items = _today_data(membership.company_id)
+    dept_id = _manager_dept_id(membership)
+    today, items = _today_data(membership.company_id, department_id=dept_id)
     groups: dict[str, list] = {}
     for it in items:
         key = it["department"] or "미배정"
@@ -101,9 +118,14 @@ def status_timeline(request):
             raise NotFound(code="INVALID_DATE", message="date 파라미터는 YYYY-MM-DD 형식이어야 합니다.")
     else:
         day = django_tz.localdate()
-    records = AttendanceRecord.objects.filter(
+    # F-MANAGER-03: filter timeline events to manager's department
+    dept_id = _manager_dept_id(membership)
+    records_qs = AttendanceRecord.objects.filter(
         company_id=membership.company_id, work_date=day
-    ).select_related("membership__user").order_by("clock_in_at")
+    ).select_related("membership__user")
+    if dept_id is not None:
+        records_qs = records_qs.filter(membership__department_id=dept_id)
+    records = records_qs.order_by("clock_in_at")
     events = []
     for r in records:
         if r.clock_in_at:
@@ -136,7 +158,8 @@ def status_root(request):
     `django.http.HttpRequest```).
     """
     membership = active_membership(request.user)
-    today, items = _today_data(membership.company_id)
+    dept_id = _manager_dept_id(membership)
+    today, items = _today_data(membership.company_id, department_id=dept_id)
     return Response(
         {"data": {"date": today.isoformat(), "items": items}, "meta": {"count": len(items)}}
     )

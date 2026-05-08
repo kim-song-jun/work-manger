@@ -72,6 +72,9 @@ def list_audit(request):
             "id": str(r.id),
             "action": r.action,
             "actor_id": str(r.actor_id) if r.actor_id else None,
+            # F-ADMIN-01: add `at` alias + `actor_name` so FE AuditEntry type works
+            "at": r.created_at.isoformat(),
+            "actor_name": r.actor.name if r.actor_id and r.actor else None,
             "target_type": r.target_type or None,
             "target_id": str(r.target_id) if r.target_id else None,
             "ip": r.ip,

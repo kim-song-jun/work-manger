@@ -11,7 +11,7 @@ from decimal import Decimal
 from typing import Iterable
 
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Sum
 from django.utils import timezone as django_tz
 
 from apps.approval.models import ApprovalTask
@@ -229,7 +229,35 @@ def submit_request(
         reason=reason,
     )
 
-    approver = membership.manager or membership
+    # F-MANAGER-01/F-MANAGER-10: prevent self-approve — escalate to ADMIN/OWNER
+    approver = membership.manager if (
+        membership.manager_id and membership.manager and membership.manager.is_active
+        and membership.manager_id != membership.id
+    ) else None
+    if approver is None:
+        approver = (
+            membership.company.memberships.filter(
+                is_active=True,
+                role__in=[Membership.Role.ADMIN, Membership.Role.OWNER],
+            )
+            .exclude(id=membership.id)
+            .first()
+        )
+    if approver is None:
+        # Last resort: MANAGER in the same company (still not self)
+        approver = (
+            membership.company.memberships.filter(
+                is_active=True,
+                role=Membership.Role.MANAGER,
+            )
+            .exclude(id=membership.id)
+            .first()
+        )
+    if approver is None or approver.id == membership.id:
+        raise Unprocessable(
+            "NO_APPROVER",
+            "승인자를 찾을 수 없습니다. 관리자에게 문의하세요.",
+        )
     ApprovalTask.objects.create(
         company=membership.company,
         target_type=ApprovalTask.TargetType.LEAVE,

@@ -77,7 +77,8 @@ def test_admin_decide_approval_approve(client_auth):
     assert leave.status == LeaveRequest.Status.APPROVED
 
 
-def test_admin_decide_approval_already_decided_returns_422(client_auth):
+def test_admin_decide_approval_already_decided_returns_409(client_auth):
+    # F-ADMIN-03: ALREADY_DECIDED must return 409 Conflict (not 422 Unprocessable)
     client, admin = client_auth(role="ADMIN")
     task = _make_pending_task(admin)
     task.status = ApprovalTask.Status.APPROVED
@@ -87,7 +88,7 @@ def test_admin_decide_approval_already_decided_returns_422(client_auth):
         {"decision": "approve"},
         format="json",
     )
-    assert r.status_code == 422
+    assert r.status_code == 409
     assert r.json()["error"]["code"] == "ALREADY_DECIDED"
 
 

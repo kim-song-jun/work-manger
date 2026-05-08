@@ -74,3 +74,20 @@ def test_settings_update_invalid_color(client_auth):
         format="json",
     )
     assert r.status_code == 400
+
+
+# F-OWNER-10: audit log row verification
+def test_settings_update_creates_audit_log(client_auth):
+    """OWNER 설정 변경 시 audit log 행이 생성된다 (F-OWNER-10)."""
+    from apps.audit.models import AuditLog
+
+    client, m = client_auth(role="OWNER")
+    client.patch(
+        "/v1/admin/settings/update",
+        {"brand_color": "#AA0000"},
+        format="json",
+    )
+    assert AuditLog.objects.filter(
+        company=m.company,
+        action="identity.company.settings.updated",
+    ).exists()
