@@ -54,13 +54,35 @@ export async function fetchApprovals(
   }
 }
 
+/**
+ * Sentinel class so callers can distinguish "already decided" from generic
+ * errors and show the dedicated i18n key `admin.appr_already_decided`.
+ */
+export class AlreadyDecidedError extends Error {
+  constructor() {
+    super("ALREADY_DECIDED");
+    this.name = "AlreadyDecidedError";
+  }
+}
+
 /** PATCH /v1/admin/approvals/{id} — single approve/reject. */
 export async function decideApproval(
   id: string,
   decision: "approve" | "reject",
 ): Promise<void> {
-  await api(`/v1/admin/approvals/${id}`, {
-    method: "PATCH",
-    json: { decision },
-  });
+  try {
+    await api(`/v1/admin/approvals/${id}`, {
+      method: "PATCH",
+      json: { decision },
+    });
+  } catch (e) {
+    if (
+      e instanceof HttpError &&
+      (e.status === 409 || e.status === 422) &&
+      e.body?.error?.code === "ALREADY_DECIDED"
+    ) {
+      throw new AlreadyDecidedError();
+    }
+    throw e;
+  }
 }

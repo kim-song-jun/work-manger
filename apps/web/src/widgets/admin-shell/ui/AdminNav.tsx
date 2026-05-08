@@ -21,10 +21,10 @@ export function AdminNav() {
     { to: "/admin/audit", icon: <Icon.clock width={17} height={17} />, label: t("admin.nav_audit") },
     { to: "/admin/codes", icon: <Icon.lock width={17} height={17} />, label: t("admin.nav_codes") },
     { to: "/admin/compliance", icon: <Icon.lock width={17} height={17} />, label: t("admin.nav_compliance") },
-    { to: "/admin/settings", icon: <Icon.lock width={17} height={17} />, label: t("admin.nav_settings") },
+    { to: "/admin/settings", icon: <Icon.settings width={17} height={17} />, label: t("admin.nav_settings") },
   ];
   return (
-    <nav className="mt-2" aria-label={t("admin.nav_dashboard")}>
+    <nav className="mt-2" aria-label={t("admin.nav_aria_label")}>
       {items.map((it) => (
         <NavLink
           key={it.to}
