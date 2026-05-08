@@ -39,7 +39,7 @@ export function NoticePage() {
       }),
   });
 
-  const notices: Notice[] = q.data ?? [];
+  const notices: Notice[] = useMemo(() => q.data ?? [], [q.data]);
   const pinned = useMemo(() => notices.filter((n) => n.pinned), [notices]);
   const recent = useMemo(() => notices.filter((n) => !n.pinned), [notices]);
 

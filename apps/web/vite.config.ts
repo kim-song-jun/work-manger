@@ -37,4 +37,22 @@ export default defineConfig({
     },
   },
   preview: { host: "0.0.0.0", port: 4444, strictPort: true },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("/react/") || id.includes("/react-dom/") || id.includes("/scheduler/")) return "react-vendor";
+          if (id.includes("/@tanstack/")) return "query-vendor";
+          if (id.includes("/@sentry/")) return "sentry-vendor";
+          if (id.includes("/i18next") || id.includes("/react-i18next/")) return "i18n-vendor";
+          if (id.includes("/react-hook-form/") || id.includes("/@hookform/") || id.includes("/zod/")) return "forms-vendor";
+          if (id.includes("/react-router") || id.includes("/@remix-run/")) return "router-vendor";
+          return "vendor";
+        },
+      },
+    },
+  },
 });
+

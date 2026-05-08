@@ -60,11 +60,8 @@ export function InboxPage() {
   const [tab, setTab] = useState<Tab>("to-approve");
   const q = useQuery({ queryKey: ["inbox"], queryFn: () => fetchInbox() });
 
-  const items: InboxItem[] = q.data?.items ?? [];
+  const items: InboxItem[] = useMemo(() => q.data?.items ?? [], [q.data?.items]);
   const filtered = useMemo(() => {
-    // BE /v1/inbox returns approval tasks the caller is the *approver* of.
-    // The "to-approve" tab corresponds to PENDING tasks; decided tasks live
-    // in the "mine"/"system" tabs (decided + non-approval notifications).
     if (tab === "to-approve") return items.filter((i) => i.status === "PENDING");
     if (tab === "mine") return items.filter((i) => i.status === "APPROVED" || i.role === "mine");
     return items.filter((i) => i.status === "REJECTED" || i.role === "info");

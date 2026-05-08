@@ -84,8 +84,7 @@ export default [
       "no-console": ["warn", { allow: ["warn", "error", "info"] }],
       "prefer-const": "error",
       eqeqeq: ["error", "smart"],
-      // m-inbox / m-notice 의 `const items = data?.items || []` 패턴 — useMemo deps 회귀 위험은 인지하나 audit 범위 외. 별도 frontend 리팩터 task 로.
-      "react-hooks/exhaustive-deps": "off",
+      "react-hooks/exhaustive-deps": "warn",
       // newlines-between 은 side-effect import (`import "@shared/i18n"`) + path alias 조합에서 false positive 발생. 그룹 순서만 검사.
       "import/order": [
         "warn",
