@@ -97,6 +97,309 @@ iter11 종료 후 main HEAD `84d0aa0` 기준, Web (4444) / API (4455) Docker 스
 4. **reviewer** — diff 전수 review, security/perf/types/접근성.
 5. **planner** — acceptance criteria 전수 ✅ 검증 후 PR 생성.
 
+## Fix Plan (Wave 3 aggregate — 2026-05-08)
+
+> Wave 2 의 6 audit doc (qa-employee/manager/admin/owner + designer + main-live) 으로부터 수집된 71 finding 중 **67건** (P0+P1+P2 + 사용자 명시 F-MANAGER-13) 을 file-disjoint sub-wave 로 분해. P3 4건 (F-MANAGER-11/12/14/15) 은 backlog. F-OWNER-07 (빌링 모듈) 은 신규 도메인이라 본 task scope 밖 — backlog. F-DESIGN-013 (Switch component spec) 은 designer change_type=spec → designer wave 로 분리.
+>
+> **Already fixed (Wave 1+2 commit `dade2e3`)**:
+> - F-LIVE-004 ✅ — wm-api stale image (entrypoint.sh CRLF + .gitattributes + rebuild)
+> - F-LIVE-005 ✅ — wm-web Vite HMR 미반영 (docker restart)
+>
+> 잔여 fix 대상: **65건** (= 67 - 2 fixed). 6 sub-wave + design-spec wave 로 분해.
+
+### Wave 4a — Frontend Web 직원/매니저 페이지 fix (frontend-dev parallel)
+
+**Owner**: frontend-dev (TS hat)
+
+**Owns** (file-disjoint from W4b/W4c/W4d):
+- `apps/web/src/pages/m-home/index.tsx`
+- `apps/web/src/pages/m-leave/index.tsx`
+- `apps/web/src/pages/m-leave-success/index.tsx`
+- `apps/web/src/pages/m-leave-apply/index.tsx`
+- `apps/web/src/pages/m-inbox/index.tsx`
+- `apps/web/src/pages/m-inbox-quick/index.tsx`
+- `apps/web/src/pages/m-approval-detail/index.tsx`
+- `apps/web/src/pages/m-notifications/index.tsx`
+- `apps/web/src/pages/m-notice/index.tsx`
+- `apps/web/src/pages/m-help/index.tsx`
+- `apps/web/src/pages/m-compliance/index.tsx`
+- `apps/web/src/pages/m-team/slices/{GridSlice,GroupedSlice,TimelineSlice}.tsx` (F-MANAGER-13 수반 FE 수정)
+- `apps/web/src/pages/web-team-calendar/index.tsx` (manager 시각 — 본 wave)
+- `apps/web/src/pages/web-inbox/index.tsx` (manager 시각 — `role` legacy 필드 정리)
+- `apps/web/src/features/leave-apply/{ui/LeaveApplyForm.tsx,model/schema.ts}`
+- `apps/web/src/features/break/` (신규 — 휴게 start/end UI)
+- `apps/web/src/entities/team/api/{fetchTeamStatus.ts,fetchCalendarMatrix.ts,types.ts}` (F-MANAGER-13 BE 응답 shape 매핑)
+- 신규 vitest: 위 컴포넌트별 최소 1 케이스
+
+**Linked findings** (총 28건):
+- F-EMPLOYEE-01 ~ F-EMPLOYEE-12 (12)
+- F-MANAGER-04 (web-inbox isAdmin 명시화), F-MANAGER-05 (m-compliance 팀 탭 placeholder), F-MANAGER-06, F-MANAGER-07, F-MANAGER-08, F-MANAGER-09 (legacy `role` 필드 4종), F-MANAGER-13 (FE 측 BE shape 매핑)
+- F-LIVE-003 (login 자동 redirect), F-LIVE-006 (settings useQuery isError 분기 — 단 admin-settings 는 W4b 소관 → 본 wave 는 m-* 페이지의 동일 패턴 점검)
+- F-DESIGN-008 (m-help marginBottom:6), F-DESIGN-011 (m-help focus-visible), F-DESIGN-015 (m-help aria-expanded), F-DESIGN-016 (m-help hit-target), F-DESIGN-017 (m-help fontSize:11) — 5건 (m-help 만)
+
+**DoD**:
+- [ ] F-EMPLOYEE-001 — `/m/home` 마운트 시 `useQuery(["attendance","today"])` + clock_in_at 초기화 + vitest "clock-in 상태 refresh 후 유지"
+- [ ] F-EMPLOYEE-002 — `mutation.onSuccess` 에서 응답 `clock_in_at` 우선 사용
+- [ ] F-EMPLOYEE-003 — clock-out mutation (`POST /v1/attendance/clock-out`) 추가 + vitest "퇴근 시 BE 호출"
+- [ ] F-EMPLOYEE-004 — break start/end UI + features/break/ + vitest
+- [ ] F-EMPLOYEE-005 — leave balance 쿼리 키 `["leave", "balance"]` 통일 (3 파일 일치)
+- [ ] F-EMPLOYEE-006 — leave-apply → success state 전달
+- [ ] F-EMPLOYEE-007 — schema.ts 메시지 i18n 키
+- [ ] F-EMPLOYEE-008 — m-inbox role-based 기본 탭
+- [ ] F-EMPLOYEE-009 — markAllRead 단일 호출
+- [ ] F-EMPLOYEE-010 — m-notice "general" 카테고리 추가
+- [ ] F-EMPLOYEE-011 — m-help contact 버튼
+- [ ] F-EMPLOYEE-012 — m-home KPI BE 연결 (fetchToday/Weekly/TeamStatus)
+- [ ] F-MANAGER-04/05/06/07/08/09 — `role` legacy 필드 제거 + 주석 + 매니저 탭 hint
+- [ ] F-MANAGER-13 — entities/team/api shape 일치 (BE 와 동기, BE 측 고정은 W4c 에서)
+- [ ] F-LIVE-003 — login 진입 시 me.data 있으면 redirect
+- [ ] F-DESIGN-008/011/015/016/017 — m-help 5건 fix
+- [ ] vitest 신규 케이스 ≥ 8 (페이지/feature 별 1)
+
+**추정**: 8h
+**Dependency**: W4c (BE 측 F-MANAGER-13 status_grid 수정) 와 동기 — 단 entity layer 는 BE 응답 shape 정해진 후 fix 가능. 이 sub-wave 는 BE merge 직후 시작 권장.
+
+---
+
+### Wave 4b — Frontend Web Admin/Owner 페이지 fix (frontend-dev parallel)
+
+**Owner**: frontend-dev (TS hat)
+
+**Owns** (file-disjoint from W4a/W4c/W4d):
+- `apps/web/src/pages/admin-settings/index.tsx`
+- `apps/web/src/pages/admin-approvals/index.tsx`
+- `apps/web/src/pages/admin-expiring-leave/index.tsx`
+- `apps/web/src/entities/audit/api/fetchAudit.ts` (F-ADMIN-01 — BE 변환 fallback 시 FE 매핑)
+- `apps/web/src/entities/audit/model/types.ts`
+- `apps/web/src/entities/approval/model/types.ts` (F-ADMIN-09 — `outwork` 제거)
+- `apps/web/src/widgets/admin-shell/ui/AdminNav.tsx` (F-DESIGN-019 — Icon.lock → Icon.settings, F-DESIGN-014 — aria-label)
+- `apps/web/src/widgets/admin-shell/ui/AdminShell.tsx` (F-DESIGN-005 — borderRadius 7 → token)
+- 신규 vitest: 위 컴포넌트별 최소 1 케이스
+
+**Linked findings** (총 19건):
+- F-ADMIN-01 (FE 변환 fallback), F-ADMIN-03 (FE — ALREADY_DECIDED toast 분기), F-ADMIN-04 (bulk failed_ids UX), F-ADMIN-05 (EXPIRING_DAYS 30→60), F-ADMIN-08 (sticky bar 권한 hint), F-ADMIN-09 (outwork deadcode)
+- F-OWNER-05 (SOP 트리거 UI), F-OWNER-08 (admin/help SOP 링크 — admin-settings 하단 카드 또는 별도 섹션)
+- F-LIVE-006 (admin-settings useQuery isError 분기)
+- F-DESIGN-001 (`#5B6CFF` → var(--brand))
+- F-DESIGN-002 (`#fff` → var(--white) 4건)
+- F-DESIGN-003 (borderRadius 6 → var(--r-sm) 3건)
+- F-DESIGN-004 (borderRadius 8 → var(--r-sm))
+- F-DESIGN-005 (AdminShell borderRadius 7)
+- F-DESIGN-006 (paddingBottom 80 → token)
+- F-DESIGN-007 (gap 14 → var(--sp-3 or 4))
+- F-DESIGN-009 (button padding 10px → shared Button)
+- F-DESIGN-010 (sticky 버튼 focus-visible)
+- F-DESIGN-012 (TextField/ColorField/SelectField focus-visible)
+- F-DESIGN-014 (AdminNav aria-label 키)
+- F-DESIGN-018 (Field overflow protection)
+- F-DESIGN-019 (AdminNav Icon.lock → Icon.settings)
+
+**DoD**:
+- [ ] F-ADMIN-01 — fetchAudit.ts 응답 매핑 추가 (BE 변환과 ②중 방어; BE 가 W4c 에서 수정되면 본 fallback 은 단순화)
+- [ ] F-ADMIN-03 — decideApproval onError 의 ALREADY_DECIDED 코드 분기 + 전용 toast i18n key
+- [ ] F-ADMIN-04 — admin-approvals onSuccess 의 failed_ids 인라인 배너 + i18n
+- [ ] F-ADMIN-05 — `EXPIRING_DAYS = 60`
+- [ ] F-ADMIN-08 — ADMIN sticky bar 비활성 안내 + i18n
+- [ ] F-ADMIN-09 — `ApprovalKind` 에서 `"outwork"` 제거 + i18n `appr_kind_outwork` 제거
+- [ ] F-OWNER-05 — admin-settings 하단 "데이터 관리" 섹션 (export/삭제 mailto)
+- [ ] F-OWNER-08 — admin-settings 하단 또는 admin-help (신규) 에 SOP 링크 카드
+- [ ] F-LIVE-006 — useQuery isError 분기 (404/5xx → ErrorState)
+- [ ] F-DESIGN-001~012/014/018/019 — admin-settings/AdminNav/AdminShell design token 위반 14건 fix (shared Button/TextField 재사용 우선)
+- [ ] vitest 신규 ≥ 5
+
+**추정**: 10h (design token 위반 14건이 큰 비중)
+**Dependency**: 없음 — BE 와 독립 가능. F-ADMIN-01 은 BE (W4c) fix 후 fetchAudit fallback 단순화 가능.
+
+---
+
+### Wave 4c — Backend API fix (backend-dev parallel)
+
+**Owner**: backend-dev (Python hat)
+
+**Owns** (file-disjoint from W4a/W4b/W4d):
+- `services/api/apps/leave/services.py` — self-approve 차단 (F-MANAGER-01)
+- `services/api/apps/leave/views.py`, `repositories.py` — m-leave 캐시 키 (F-EMPLOYEE-005 BE 측은 변경 없음 — 단순 검증)
+- `services/api/apps/attendance/views.py` — `_pick_approver` self-approve 차단 (F-MANAGER-01/F-MANAGER-10)
+- `services/api/apps/approval/views.py` — `_ensure_approver` self-approve guard (F-MANAGER-01)
+- `services/api/apps/admin_api/views_bulk.py` — `@extend_schema` (F-ADMIN-02), `decide_approval` 409 (F-ADMIN-03), `company_settings_update` notify_team + URL validator + audit action 명 (F-OWNER-01/04/09)
+- `services/api/apps/admin_api/views.py` — `update_employee` audit log + 권한 escalation guard (F-OWNER-02/03)
+- `services/api/apps/team/views.py` — status_grid/grouped/timeline 응답 shape 재검토 + 매니저 부서 필터 (F-MANAGER-03, F-MANAGER-13 BE 측)
+- `services/api/apps/team/services.py` — 부서 필터 로직 (F-MANAGER-03)
+- `services/api/apps/compliance/views.py` — `team_compliance` 신규 endpoint (`/v1/compliance/team`) (F-MANAGER-02)
+- `services/api/apps/compliance/services.py` — team-scoped query (F-MANAGER-02)
+- `services/api/apps/audit/views.py` — 응답 시리얼라이저 `at` + `actor_name` 추가 (F-ADMIN-01)
+- `services/api/apps/audit/tasks.py` (신규) — `purge_old_audit_logs` Celery task (F-ADMIN-07/F-OWNER-06)
+- `services/api/apps/audit/migrations/0002_seed_audit_purge_beat.py` (신규) — PeriodicTask migration
+- `services/api/apps/audit/actions.py` (또는 services.py) — 액션 명 컨벤션 통일 (F-OWNER-09)
+- `services/api/apps/identity/onboarding_views.py` — company_codes / revoke audit log (F-ADMIN-06)
+- `services/api/apps/notification/views.py` — `read-all` endpoint 검증 (F-EMPLOYEE-09 BE 측 — 이미 존재 시 OK)
+- 신규 pytest: `services/api/tests/test_*.py` — 변경 endpoint 별 최소 1 케이스 (F-OWNER-10 등)
+
+**Linked findings** (총 17건):
+- F-MANAGER-01, F-MANAGER-02, F-MANAGER-03, F-MANAGER-10, F-MANAGER-13 (BE 측)
+- F-ADMIN-01 (BE 시리얼라이저), F-ADMIN-02 (`@extend_schema`), F-ADMIN-03 (Conflict 409), F-ADMIN-06 (audit log), F-ADMIN-07 (Celery beat)
+- F-OWNER-01 (notify_team), F-OWNER-02 (update_employee audit), F-OWNER-03 (역할 escalation guard), F-OWNER-04 (URLField validator), F-OWNER-06 (audit retention — F-ADMIN-07 과 합본 fix), F-OWNER-09 (action 명), F-OWNER-10 (audit pytest)
+
+**DoD**:
+- [ ] F-MANAGER-01/F-MANAGER-10 — `submit_request` / `_pick_approver` self-approve 폴백 시 상위 ADMIN/OWNER 에스컬레이션 + `_ensure_approver` 에 `requester != approver` 검사 + pytest "self-approve 차단"
+- [ ] F-MANAGER-02 — `/v1/compliance/team?week=` 신규 endpoint (HasRole MANAGER+, 부서 필터) + serializer + pytest
+- [ ] F-MANAGER-03 — team status 4 endpoint 에 매니저 부서 필터 적용 (`scope=team` 또는 자동) + pytest "MANAGER 가 다른 부서 멤버 못 봄"
+- [ ] F-MANAGER-13 — team status 응답을 FE 기대 flat 배열로 변경 OR FE shape 명세 (W4a 와 동기) — 결정: BE 응답을 명시 envelope 로 표준화하고 FE 가 매핑 (W4a) — pytest "응답 shape lock"
+- [ ] F-ADMIN-01 — audit/views.py serializer 에 `at`, `actor_name` 추가 + pytest "audit list `at`/`actor_name` not null"
+- [ ] F-ADMIN-02 — views_bulk.py 4개 함수 `@extend_schema` 추가 + `npm run types:gen` 후 git diff clean (W-final 검증)
+- [ ] F-ADMIN-03 — `Unprocessable` → `Conflict` (409) + i18n 추가 (FE 는 W4b)
+- [ ] F-ADMIN-06 — onboarding_views.py 에 `audit_record("identity.company_code.created"/"revoked", ...)` 호출 + pytest
+- [ ] F-ADMIN-07/F-OWNER-06 — `purge_old_audit_logs` task + PeriodicTask migration (매일 03:00 KST, retention 90 days, 하드코딩 대신 setting 변수) + pytest "100일 전 row 삭제됨"
+- [ ] F-OWNER-01 — `company_settings_update` 에서 `notify_team(company, "company.policy_changed", {fields})` 호출 + pytest "WS 이벤트 emit"
+- [ ] F-OWNER-02 — `update_employee` 에 `audit_record("identity.member.updated", payload={"old_role", "new_role", ...})` + pytest
+- [ ] F-OWNER-03 — `update_employee` 에 `ROLE_RANK[new_role] > ROLE_RANK[me.role] → Forbidden` + pytest "ADMIN 이 OWNER 부여 시 403"
+- [ ] F-OWNER-04 — `CompanySettingsSerializer.logo_url` URLField + URLValidator(schemes=["https"]) + pytest "javascript: scheme 거부"
+- [ ] F-OWNER-09 — audit action 명 dot-path 통일 (`identity.company.settings.updated` 등) + 기존 행 마이그레이션은 not required (무손실 / 미래 일관성)
+- [ ] F-OWNER-10 — `test_admin_settings.py` 에 audit log row 검증 케이스 추가
+- [ ] BE pytest 신규 추정 ≥ 12 케이스
+
+**추정**: 12h
+**Dependency**: 없음 — FE 와 독립. W4a (FE entities/team) 는 본 wave 의 status shape 결정 후 시작. F-MANAGER-13 의 shape 결정이 cross-wave 변수 — backend-dev 가 PR draft 단계에서 FE 와 협의 (또는 planner 결정).
+
+---
+
+### Wave 4d — App.tsx + 라우터/i18n + design tokens (frontend-dev sequential)
+
+**Owner**: frontend-dev (TS hat)
+
+**Owns** (cross-cutting, 다른 W4a/W4b 와 sequential):
+- `apps/web/src/app/App.tsx` — `<RouterProvider future={...}>` (F-LIVE-001), role-based home redirect (F-LIVE-008)
+- `apps/web/src/app/RoleBasedHomeRedirect.tsx` (신규) — me 기반 `/admin` vs `/m/home` 분기
+- `apps/web/src/shared/i18n/index.ts` — 누락/신규 키 추가:
+  - `admin.nav_aria_label` (F-DESIGN-014)
+  - F-ADMIN-03 ALREADY_DECIDED 전용 toast 키 (예: `admin.error_already_decided`)
+  - F-ADMIN-04 bulk failed 안내 키
+  - F-ADMIN-08 ADMIN 권한 hint 키
+  - F-OWNER-05 SOP 섹션 라벨
+  - F-EMPLOYEE-007 leave 날짜 invalid 메시지
+  - 기타 wave 4a/4b 에서 명시한 키
+- `apps/web/src/shared/lib/me.ts` (또는 useAuthStore) — me query staleTime 5min + refetchOnMount=false (F-LIVE-007, F-LIVE-002)
+- `apps/web/src/shared/ui/Switch.tsx` (신규 — F-DESIGN-013 designer spec 후 구현)
+
+**Linked findings** (총 5건 + i18n cross-cutting):
+- F-LIVE-001, F-LIVE-002, F-LIVE-007, F-LIVE-008
+- F-DESIGN-013 (designer spec 후) — Switch 컴포넌트 신규
+- (i18n 키는 W4a/W4b 에서 발생 → 본 wave 에서 일괄 추가)
+
+**DoD**:
+- [ ] F-LIVE-001 — RouterProvider future flags 적용 + console 경고 0
+- [ ] F-LIVE-002/F-LIVE-007 — me query staleTime + refetchOnMount=false → /v1/me 호출 ≤ 2회/페이지 진입
+- [ ] F-LIVE-008 — RoleBasedHomeRedirect 컴포넌트 + vitest "ADMIN→/admin, EMPLOYEE→/m/home"
+- [ ] F-DESIGN-013 — Switch component spec (`docs/design/design-system.md` 추가 1 섹션 — doc-writer W4e 와 동기) + Switch.tsx 구현 + AdminSettingsPage ToggleField → Switch 적용 (W4b 에서 호출)
+- [ ] i18n 누락 키 일괄 추가 (ko/en) + i18n 키 sort 검증
+
+**추정**: 4h
+**Dependency**: W4a, W4b 가 i18n 키를 정의 → W4d 가 마지막에 합쳐서 commit. App.tsx 는 W4a 의 login redirect 와 충돌 가능 → W4a 완료 후 W4d 시작 권장 (sequential).
+
+---
+
+### Wave 4e — Docs (doc-writer parallel)
+
+**Owner**: doc-writer
+
+**Owns**:
+- `docs/operations/local-3platform.md` — 부분 fixed (Wave 1) — 추가: WSA EOL 대안 docker-android 가이드 (이미 일부 작성)
+- `docs/operations/operations-guide.md` §11.1 — audit log 보존 Celery beat 추가, 신규 BE 라우트 smoke 추가
+- `docs/qa/e2e-ui-ux-audit.md` — Acceptance Gate 보강 ("wm-api 라이브 라우트 smoke" + "보고서 거짓 검증 방지" 룰)
+- `CLAUDE.md` §개발 원칙 — "BE 코드 변경 후 `docker compose build api` + `make health` 후 PR 머지" 추가 (F-LIVE-004 docs)
+- `docs/manuals/owner.md` — SOP 링크 + 데이터 export/삭제 절차 (F-OWNER-08)
+- `docs/manuals/admin.md` — admin/help SOP 링크 (F-OWNER-08)
+- `docs/design/design-system.md` — Switch component spec 추가 (F-DESIGN-013, W4d 와 동기)
+
+**Linked findings** (총 4건 + 운영 룰 보강):
+- F-OWNER-05 (SOP 가이드 명시)
+- F-OWNER-08 (manuals 링크)
+- F-LIVE-004 docs (BE rebuild 룰)
+- F-DESIGN-013 (Switch spec — W4d 의존)
+
+**DoD**:
+- [ ] `docs/operations/local-3platform.md` — docker-android 사이드로드 절차 + ADB connect 5555 + flutter install
+- [ ] `docs/operations/operations-guide.md` §11.1 — "BE rebuild after code change" + audit retention 90 days
+- [ ] `docs/qa/e2e-ui-ux-audit.md` — Acceptance Gate 에 "neighbor live route smoke" 추가 (`/v1/admin/settings 401` 등)
+- [ ] `CLAUDE.md` — §개발 원칙 8번 추가 (BE rebuild rule)
+- [ ] `docs/manuals/{owner,admin}.md` — SOP 링크 카드
+- [ ] `docs/design/design-system.md` — Switch spec (3-state, focus, hit-target, tokens)
+
+**추정**: 3h
+**Dependency**: W4d (Switch 구현) 와 동기 — docs/design 의 spec 은 designer 가 먼저 → W4d 에서 구현. doc-writer 는 W4d 와 swap-style 협업.
+
+---
+
+### Wave 4f — Mobile Flutter / Electron (frontend-dev sequential — backlog 우선)
+
+**Owner**: frontend-dev (Dart/Electron hat)
+
+**Owns**:
+- `apps/mobile/lib/...` — geofence native 등록 (iter11 backlog 잔여 — 본 task 직접 finding 없음)
+- `apps/mobile/android/app/src/main/...` — Glance widget polish (iter11 backlog)
+- `apps/desktop/src/main/...` — 트레이/자동 출근 회귀 검증 (Wave 1 에서 직접 검증 미완)
+
+**Linked findings** (0건 — 본 task 의 qa-* 는 mobile/desktop coverage gap 으로 finding 없음):
+- (없음 — coverage gap 으로 명시되었으므로 본 wave 는 backlog 유지)
+
+**DoD**:
+- [ ] (skip — 본 task scope 외, iter13 으로 이관)
+- [ ] 단 Wave 1 의 desktop boot 검증은 Wave-final 에서 별도 수동 점검
+
+**추정**: 0h (본 task 에서 skip — backlog)
+**Dependency**: 없음
+
+---
+
+### Wave-final — gates (sequential)
+
+1. **tester** (Haiku) — `make test-be` + `make test-fe` + `make test-e2e` ALL PASS, neighbor live route smoke 추가
+2. **qa-employee/manager/admin/owner** (parallel) — Wave 2 시나리오 재실행, 각자 finding 모두 cleared 확인
+3. **designer** — design smoke (`apps/e2e/scripts/design-smoke.mjs`) + tokens 위반 0
+4. **reviewer** — diff 전수 review (security/perf/types/접근성/SOLID)
+5. **planner final** — Acceptance ✅ + PR 생성 + 사용자 승인 + main 머지
+
+---
+
+### File-disjoint 검증
+
+| Wave | Owns prefix | Conflict ? |
+|---|---|---|
+| W4a | `apps/web/src/pages/m-*`, `pages/web-team-calendar`, `pages/web-inbox`, `features/leave-apply`, `features/break`, `entities/team` | — |
+| W4b | `apps/web/src/pages/admin-*`, `entities/audit`, `entities/approval`, `widgets/admin-shell` | W4a 와 disjoint |
+| W4c | `services/api/apps/*` | FE 와 disjoint |
+| W4d | `apps/web/src/app/App.tsx`, `shared/i18n`, `shared/lib/me`, `shared/ui/Switch` | W4a/W4b 와 file-disjoint (App.tsx, i18n 은 cross-cutting → sequential merge) |
+| W4e | `docs/*`, `CLAUDE.md` | code 와 disjoint |
+| W4f | `apps/mobile/*`, `apps/desktop/*` | skip |
+
+→ **충돌 없음**. W4d 는 `shared/i18n/index.ts` 에 W4a/W4b 가 정의한 키를 합쳐서 추가 → sequential merge 안전.
+
+---
+
+### 추정 시간 합계
+
+| Wave | 추정 |
+|---|---|
+| W4a | 8h |
+| W4b | 10h |
+| W4c | 12h |
+| W4d | 4h |
+| W4e | 3h |
+| W4f | 0h (skip) |
+| Wave-final (gates × 7) | 5h |
+| **합계** | **42h** |
+
+> 1 세션 (8h) 으로는 단독 완수 불가 — 다중 세션 또는 병렬 sub-agent dispatch 가 필수. 사용자 결정 (P0+P1+P2 all fix) 그대로 진행.
+
+---
+
+### 결정 필요 (planner OPEN)
+
+- [2026-05-08] planner: 보상휴가(COMP) 휴가 타입 신규 추가 여부 | A) 추가 (BE LeaveType enum + FE i18n + LeaveApplyForm 옵션 + spec) / B) backlog (현재 spec 에 명시 없으면 미반영) | RESOLVED: B backlog (qa-employee coverage gap 에서 spec 요구 여부 미확정 — iter13 신규 task 로 분리)
+- [2026-05-08] planner: F-MANAGER-13 응답 shape 결정 | A) BE 가 flat 배열 (`[{id, name, status, ...}]`) 로 변경 / B) BE envelope `{ date, items|groups|events }` 유지 + FE 가 매핑 | RESOLVED: B 유지 (BE 가 더 풍부한 컨텍스트 제공, FE 매핑 비용 < BE breaking change) — W4a 가 `entities/team/api/*.ts` 에서 매핑, W4c 는 응답 shape 동결 pytest 추가
+- [2026-05-08] planner: F-OWNER-07 빌링 모듈 | A) 본 task scope 포함 / B) 별도 task (v1.x roadmap) | RESOLVED: B backlog (신규 도메인 = 단일 PR scope 초과)
+- [2026-05-08] planner: F-DESIGN-013 Switch component | A) 본 task scope (W4d) / B) 별도 designer-led task | RESOLVED: A — designer spec (W4e doc) + dev 구현 (W4d) 동시 진행
+
 ## Test Scenarios
 
 tester gate 가 사용할 시나리오 (코드 자동화):
@@ -120,9 +423,17 @@ tester gate 가 사용할 시나리오 (코드 자동화):
 - [ ] Wave 2: qa-admin finding doc 작성
 - [ ] Wave 2: qa-owner finding doc 작성
 - [ ] Wave 2: designer finding doc 작성
-- [ ] Wave 3: planner aggregate Fix Plan append 됨
+- [x] Wave 3: planner aggregate Fix Plan append 됨 (2026-05-08)
+- [x] F-LIVE-004 wm-api stale image — fixed in `dade2e3`
+- [x] F-LIVE-005 wm-web Vite HMR — fixed in `dade2e3`
+- [ ] Wave 4a 완료 — m-* pages + manager FE (28 findings)
+- [ ] Wave 4b 완료 — admin-* pages + design tokens (19 findings)
+- [ ] Wave 4c 완료 — BE API + audit + Celery beat (17 findings)
+- [ ] Wave 4d 완료 — App.tsx + i18n + Switch (5 findings)
+- [ ] Wave 4e 완료 — docs (4 findings)
+- [ ] Wave 4f — skip (mobile/desktop backlog → iter13)
 - [ ] qa-employee finding 모두 fixed (P0/P1/P2)
-- [ ] qa-manager finding 모두 fixed (P0/P1/P2)
+- [ ] qa-manager finding 모두 fixed (P0/P1/P2 + 사용자 명시 F-MANAGER-13)
 - [ ] qa-admin finding 모두 fixed (P0/P1/P2)
 - [ ] qa-owner finding 모두 fixed (P0/P1/P2)
 - [ ] designer finding 모두 fixed (P0/P1/P2)
@@ -181,10 +492,15 @@ tester gate 가 사용할 시나리오 (코드 자동화):
 > 인터럽트 시 resume cursor. wave 진행 상태를 짧게 기록.
 
 - Wave 0 (planner task doc) — ✅ 2026-05-08
-- Wave 1 (env boot) — ⏳
-- Wave 2 (audit ×5) — ⏳
-- Wave 3 (aggregate) — ⏳
-- Wave 4..N (fix) — ⏳
+- Wave 1 (env boot) — ✅ 2026-05-08 (commit `dade2e3`: wm-api rebuild + wm-web restart + .gitattributes)
+- Wave 2 (audit ×6) — ✅ 2026-05-08 (5 finding doc + livetest doc, 71 findings)
+- Wave 3 (aggregate) — ✅ 2026-05-08 (Fix Plan: 65 잔여 → W4a/b/c/d/e/f sub-wave 분해, 추정 42h)
+- Wave 4a (FE m-*+manager) — ⏳ 28 findings
+- Wave 4b (FE admin-*) — ⏳ 19 findings
+- Wave 4c (BE) — ⏳ 17 findings
+- Wave 4d (App.tsx + i18n) — ⏳ 5 findings
+- Wave 4e (docs) — ⏳ 4 findings
+- Wave 4f (mobile/desktop) — skipped (iter13 backlog)
 - Wave-final (gates) — ⏳
 
 ## Constraints (인프라 충돌 주의)
