@@ -211,6 +211,124 @@ done
 
 ---
 
+## 6. Installable artifacts — 로컬 설치 가능한 빌드
+
+> **대상**: 사용자/QA — dev mode 가 아닌 **installer 형태** 로 설치하여 테스트하는 절차.
+> dev mode 는 위 §1-3 참조. 이 섹션은 배포 직전 상태의 로컬 설치를 위함.
+
+### 6.1 Web (정적 파일)
+
+```bash
+# 빌드 (apps/web/dist/ 에 정적 자산 생성)
+cd apps/web
+npm install
+npm run build
+
+# 로컬 정적 서버 — Python 내장
+cd dist
+python -m http.server 4444
+# → http://localhost:4444 접속
+```
+
+또는 docker `web` 컨테이너 (`make up` 의 wm-web) 가 이미 vite preview / dev server 로 서빙 중이면 그대로 사용.
+
+**주의**: 빌드된 정적 파일은 환경변수 (`VITE_API_URL` 등) 를 빌드 시점에 인라인하므로,
+다른 API 주소로 배포할 거면 환경변수 설정 후 재빌드 필요.
+
+### 6.2 Desktop — Windows Setup.exe (NSIS, unsigned)
+
+코드 사이닝이 없는 로컬 테스트용 unsigned 빌드:
+
+```bash
+cd apps/desktop
+npm install   # 첫 1회만
+npm run build:win -- --config electron-builder.unsigned.yml
+# → apps/desktop/release/Work Manager-Setup-0.1.0.exe (~79MB)
+```
+
+`electron-builder.unsigned.yml` 은 `signtoolOptions: null` 로 sign 단계를 비활성화한 로컬 전용 config.
+정식 배포 (Setup.exe 코드사이닝) 는 `electron-builder.yml` + EV 인증서 + `WM_WIN_SIGN_MODE=cloud` 사용.
+
+**설치**:
+1. `Work Manager-Setup-0.1.0.exe` 더블클릭
+2. Windows SmartScreen 경고 → "추가 정보" → "실행" (unsigned 이라 발생하는 정상 경고)
+3. 설치 경로 선택 → 완료
+4. 시작 메뉴에서 "Work Manager" 실행
+
+**제거**:
+- 제어판 → 프로그램 추가/제거 → "Work Manager" 제거
+- 또는 `apps/desktop/release/__uninstaller-nsis-@work-managerdesktop.exe` 직접 실행
+
+### 6.3 Desktop — macOS / Linux
+
+| 플랫폼 | 명령 | 산출 |
+|---|---|---|
+| macOS (signed + notarized) | `npm run build:mac` | `release/Work Manager-{ver}-{arm64,x64}.dmg` |
+| macOS (local unsigned) | `WM_WIN_SIGN_MODE=skip npm run build:mac -- --config electron-builder.unsigned.yml` | `.dmg` (Gatekeeper 경고) |
+| Linux | `npm run build:linux` | `release/Work Manager-{ver}.AppImage` |
+
+### 6.4 Mobile — Android APK (debug)
+
+```bash
+# Docker 빌드 (호스트에 Android SDK 불필요)
+make package-mobile
+# → apps/mobile/build/app/outputs/flutter-apk/app-debug.apk (~196MB)
+```
+
+또는 호스트에 Flutter 가 설치된 경우:
+
+```bash
+cd apps/mobile
+flutter pub get
+flutter build apk --debug
+```
+
+**설치 — 실 단말 (USB)**:
+
+```bash
+# 단말 USB 연결 + 개발자 모드 + USB 디버깅 활성화
+adb devices                                                # 단말 인식 확인
+adb install apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+adb shell am start -n com.molcube.workmanager/.MainActivity
+```
+
+**설치 — docker-android 에뮬레이터 (Windows 권장)**:
+- 위 §3.3 docker-android 절차 (port 15555 ADB) → APK 설치 단계만 실행.
+
+**API 연결**: 실 단말은 호스트 IP (`ipconfig | findstr IPv4` → `192.168.x.x`) 사용. 단말이
+`http://192.168.x.x:4455` 도달 가능해야 함 (Wi-Fi 같은 네트워크).
+
+### 6.5 Release APK / Play Store 빌드
+
+debug APK 는 `assembleDebug` 로 코드 사이닝 키 없이 빌드된다. release 는 별도 절차:
+
+```bash
+# Play Store / 외부 배포용 — 코드 사이닝 키 필요
+cd apps/mobile
+flutter build apk --release   # apps/mobile/android/app/build.gradle 의 signingConfigs 필요
+flutter build appbundle       # AAB (Play Store 권장)
+```
+
+`apps/mobile/android/key.properties` (gitignore) + `apps/mobile/android/app/upload-keystore.jks` 가
+필요. 자세한 절차는 [Flutter Android deployment](https://docs.flutter.dev/deployment/android) 참조.
+
+### 6.6 빠른 검증 — 3 platform 동시 헬스 체크
+
+```bash
+# 풀스택 기동 확인
+curl -s http://localhost:4455/v1/health | grep '"status":"ok"' && echo "API OK"
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:4444   # → 200 (Web)
+
+# Desktop — Setup 실행 시 시작 시 API 연결 확인
+# tray.ts 의 auto clock-in 이 동작하면 BE 연결 OK
+ls -lh "apps/desktop/release/Work Manager-Setup-0.1.0.exe"
+
+# Mobile APK 설치 후
+adb logcat -s flutter | grep -i "api"
+```
+
+---
+
 ## 참고
 
 - [operations-guide.md §11.1](operations-guide.md) — v1.0 출시 체크리스트

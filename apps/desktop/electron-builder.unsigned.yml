@@ -1,0 +1,48 @@
+appId: com.molcube.workmanager
+productName: Work Manager
+copyright: Copyright (c) 2026 Molcube
+asar: true
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - assets/**/*
+  - package.json
+  - "!**/*.map"
+  - "!**/__tests__/**"
+extraResources:
+  - from: build/entitlements.mac.plist
+    to: build/entitlements.mac.plist
+
+mac:
+  category: public.app-category.business
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: false
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+
+win:
+  signtoolOptions: null
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+
+linux:
+  category: Office
+  target:
+    - AppImage
