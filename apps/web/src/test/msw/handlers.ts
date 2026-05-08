@@ -57,10 +57,32 @@ const leaveHandlers = [
     ok({ remaining: 12.5, used: 2.5, accrued: 15, expiring: 1.5 }),
   ),
   http.get("*/v1/leave/policy", () => ok({ accrual: "monthly", carryover_days: 5 })),
-  http.get("*/v1/leave/requests", () => ok([])),
-  http.post("*/v1/leave/requests", () =>
-    ok({ id: "lr-new", status: "PENDING" }),
+  http.get("*/v1/leave/requests", () =>
+    ok([
+      // iter13 T3: include a sample COMP row so list views render the
+      // 보상휴가 chip in mocked / Storybook environments.
+      {
+        id: "lr-comp-1",
+        start_date: "2026-05-20",
+        end_date: "2026-05-20",
+        kind: "FULL",
+        leave_type: "COMP",
+        days: 1,
+        status: "PENDING",
+        reason: "지난주 야근 보상",
+      },
+    ]),
   ),
+  http.post("*/v1/leave/requests", async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as {
+      leave_type?: string;
+    };
+    return ok({
+      id: "lr-new",
+      status: "PENDING",
+      leave_type: body.leave_type ?? "ANNUAL",
+    });
+  }),
 ];
 
 // --- entities/overtime ------------------------------------------------------
@@ -189,6 +211,28 @@ const attendanceHandlers = [
       worked_minutes: 36,
       is_clocked_in: true,
       kind: "OFFICE",
+    }),
+  ),
+  // F-EMPLOYEE-012: weekly KPI source. Default fixture mirrors the
+  // BE response for a mid-week demo state so the home page renders
+  // deterministic KPI values during component tests.
+  http.get("*/v1/attendance/stats/weekly", () =>
+    ok({
+      week_start: "2026-05-04",
+      week_end: "2026-05-10",
+      regular_minutes: 1920, // 32h regular
+      overtime_minutes: 258, // 4.3h overtime
+      break_minutes: 240,
+      days_worked: 4,
+    }),
+  ),
+  http.get("*/v1/attendance/stats/today", () =>
+    ok({
+      clock_in_at: "2026-05-08T09:05:00Z",
+      clock_out_at: null,
+      work_minutes: 36,
+      break_minutes: 0,
+      is_clocked_in: true,
     }),
   ),
   http.post("*/v1/attendance/clock-in", () =>

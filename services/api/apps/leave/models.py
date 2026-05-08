@@ -55,6 +55,21 @@ class LeaveRequest(models.Model):
         AM_HALF = "AM_HALF", "AM half"
         PM_HALF = "PM_HALF", "PM half"
 
+    class LeaveType(models.TextChoices):
+        """Logical category of leave (iter13 T3).
+
+        ``ANNUAL`` is the legal default (근로기준법 §60). ``COMP`` (보상휴가)
+        is granted 1:1 for approved overtime — operationally still
+        deducts from the remaining-days balance like ANNUAL until a
+        dedicated comp-time bucket lands. ``SICK`` and ``PERSONAL``
+        are reserved for upcoming policy work.
+        """
+
+        ANNUAL = "ANNUAL", "Annual leave"
+        COMP = "COMP", "Compensation leave"
+        SICK = "SICK", "Sick leave"
+        PERSONAL = "PERSONAL", "Personal leave"
+
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pending"
         APPROVED = "APPROVED", "Approved"
@@ -69,6 +84,11 @@ class LeaveRequest(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     kind = models.CharField(max_length=16, choices=Kind.choices, default=Kind.FULL)
+    leave_type = models.CharField(
+        max_length=16,
+        choices=LeaveType.choices,
+        default=LeaveType.ANNUAL,
+    )
     days = models.DecimalField(max_digits=5, decimal_places=2)
     reason = models.TextField(blank=True, default="")
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)

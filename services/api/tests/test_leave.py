@@ -188,6 +188,76 @@ def test_submit_request_happy_path(auth_client, membership, company, manager_mem
     assert appr.approver_id == manager_membership.id
 
 
+def test_submit_request_comp_type(auth_client, membership, company, manager_membership):
+    """iter13 T3 — COMP (보상휴가) submission round-trips through serializer.
+
+    Why: COMP currently shares the ANNUAL balance bucket, but the BE must
+    persist ``leave_type`` so reporting / FE filters can distinguish the
+    category. A future task will add a dedicated comp-time bucket.
+    """
+    membership.manager = manager_membership
+    membership.save(update_fields=["manager"])
+    _seed_grant(company, membership)
+
+    resp = auth_client.post(
+        "/v1/leave/requests",
+        {
+            "start_date": "2026-05-04",
+            "end_date": "2026-05-04",
+            "kind": "FULL",
+            "leave_type": "COMP",
+            "reason": "지난주 야근 보상",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201, resp.content
+    body = resp.json()["data"]
+    assert body["leave_type"] == "COMP"
+    leave = LeaveRequest.objects.get(id=body["id"])
+    assert leave.leave_type == LeaveRequest.LeaveType.COMP
+
+
+def test_submit_request_rejects_invalid_leave_type(auth_client, membership, company):
+    """Why: an unknown ``leave_type`` (e.g. typo) must surface a 400, not silently
+    coerce to ANNUAL — we'd lose the user's intent and skew reports."""
+    _seed_grant(company, membership)
+
+    resp = auth_client.post(
+        "/v1/leave/requests",
+        {
+            "start_date": "2026-05-04",
+            "end_date": "2026-05-04",
+            "kind": "FULL",
+            "leave_type": "BOGUS",
+        },
+        format="json",
+    )
+    assert resp.status_code == 400, resp.content
+
+
+def test_submit_request_defaults_to_annual_when_type_omitted(
+    auth_client, membership, company, manager_membership
+):
+    """Why: the legacy FE (and existing client integrations) submit without
+    ``leave_type``. Default behaviour MUST stay ANNUAL so we don't break them."""
+    membership.manager = manager_membership
+    membership.save(update_fields=["manager"])
+    _seed_grant(company, membership)
+
+    resp = auth_client.post(
+        "/v1/leave/requests",
+        {
+            "start_date": "2026-05-04",
+            "end_date": "2026-05-04",
+            "kind": "FULL",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201, resp.content
+    body = resp.json()["data"]
+    assert body["leave_type"] == "ANNUAL"
+
+
 def test_submit_request_insufficient_balance(auth_client, membership, company):
     _seed_grant(company, membership, days="1")
 

@@ -77,6 +77,9 @@ def requests_collection(request):
             start_date=ser.validated_data["start_date"],
             end_date=ser.validated_data["end_date"],
             kind=ser.validated_data["kind"],
+            leave_type=ser.validated_data.get(
+                "leave_type", LeaveRequest.LeaveType.ANNUAL
+            ),
             reason=ser.validated_data.get("reason", ""),
         )
         return Response(

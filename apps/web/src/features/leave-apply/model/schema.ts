@@ -13,6 +13,8 @@ export const leaveApplySchema = z
     start_date: z.string().regex(dateRe, "leave_apply.invalid_dates"),
     end_date: z.string().regex(dateRe, "leave_apply.invalid_dates"),
     kind: z.enum(["FULL", "AM_HALF", "PM_HALF"]),
+    // iter13 T3: COMP / ANNUAL etc. — optional so legacy callers default to ANNUAL on BE
+    leave_type: z.enum(["ANNUAL", "COMP", "SICK", "PERSONAL"]).optional(),
     reason: z.string().max(500).optional(),
   })
   .refine((v) => v.end_date >= v.start_date, {

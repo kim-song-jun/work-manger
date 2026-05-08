@@ -32,6 +32,12 @@ vi.mock("@entities/leave", () => ({
     status: "PENDING" as const,
   })),
   leaveDays: () => 1,
+  // iter13 T3: mirror the real entity export so the form's SegmentedControl
+  // for ANNUAL / COMP renders. Keep in sync with src/entities/leave/model/types.ts.
+  LEAVE_TYPE_OPTIONS: [
+    { value: "ANNUAL", i18nKey: "leave.type.annual" },
+    { value: "COMP", i18nKey: "leave.type.comp" },
+  ],
 }));
 
 import * as leaveApi from "@entities/leave";
@@ -71,6 +77,24 @@ describe("m-leave-apply page", () => {
     await userEvent.click(submit);
     await waitFor(() => expect(applyLeave).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByText("SUCCESS")).toBeInTheDocument());
+  });
+
+  it("submits with selected leave_type (COMP)", async () => {
+    // iter13 T3 — when the user picks 보상휴가, the mutation body must
+    // carry leave_type=COMP. Otherwise BE silently records as ANNUAL
+    // and reports under-count comp-time usage.
+    applyLeave.mockClear();
+    renderPage();
+
+    const compOpt = await screen.findByRole("tab", { name: /보상휴가|Compensation/i });
+    await userEvent.click(compOpt);
+
+    const submit = screen.getByRole("button", { name: /신청하기|Submit/i });
+    await userEvent.click(submit);
+
+    await waitFor(() => expect(applyLeave).toHaveBeenCalledTimes(1));
+    const body = applyLeave.mock.calls[0][0] as { leave_type?: string };
+    expect(body.leave_type).toBe("COMP");
   });
 
   it("syncs calendar picks into RHF and submits picked dates", async () => {

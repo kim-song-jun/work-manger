@@ -191,11 +191,15 @@ def submit_request(
     end_date: date,
     kind: str,
     reason: str = "",
+    leave_type: str = LeaveRequest.LeaveType.ANNUAL,
 ) -> LeaveRequest:
     from core.errors import Unprocessable  # local to avoid app-loading order issues
 
     if kind not in LeaveRequest.Kind.values:
         raise Unprocessable("INVALID_KIND", "유효하지 않은 휴가 종류입니다.")
+
+    if leave_type not in LeaveRequest.LeaveType.values:
+        raise Unprocessable("INVALID_LEAVE_TYPE", "유효하지 않은 휴가 유형입니다.")
 
     try:
         days = _days_for_request(start_date, end_date, kind)
@@ -208,6 +212,8 @@ def submit_request(
             "선택한 기간에 영업일이 없습니다.",
         )
 
+    # iter13 T3: COMP/SICK/PERSONAL share the ANNUAL balance bucket for now
+    # — comp-time accrual will get a dedicated bucket in a follow-up task.
     balance = compute_balance(membership, as_of=start_date)
     if balance["remaining"] < days:
         raise Unprocessable(
@@ -225,6 +231,7 @@ def submit_request(
         start_date=start_date,
         end_date=end_date,
         kind=kind,
+        leave_type=leave_type,
         days=days,
         reason=reason,
     )

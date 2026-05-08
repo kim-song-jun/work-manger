@@ -12,8 +12,8 @@ import {
   TextField,
   useToast,
 } from "@shared/ui";
-import { applyLeave, fetchBalance, leaveDays } from "@entities/leave";
-import type { LeaveKind } from "@entities/leave";
+import { applyLeave, fetchBalance, leaveDays, LEAVE_TYPE_OPTIONS } from "@entities/leave";
+import type { LeaveKind, LeaveType } from "@entities/leave";
 
 import { leaveApplySchema, type LeaveApplyValues } from "../model/schema";
 
@@ -48,6 +48,7 @@ export function LeaveApplyForm({ onDone, defaultDate, defaultEndDate }: Props) {
       start_date: today,
       end_date: defaultEndDate ?? today,
       kind: "FULL",
+      leave_type: "ANNUAL",
       reason: "",
     },
   });
@@ -78,6 +79,7 @@ export function LeaveApplyForm({ onDone, defaultDate, defaultEndDate }: Props) {
         start_date: v.start_date,
         end_date: v.end_date,
         kind: v.kind as LeaveKind,
+        leave_type: v.leave_type as LeaveType | undefined,
         reason: v.reason,
       }),
     onSuccess: (_data, vars) => {
@@ -100,6 +102,23 @@ export function LeaveApplyForm({ onDone, defaultDate, defaultEndDate }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} aria-label={t("leave_apply.title")}>
+      <FormField label={t("mobile.leave_apply.type")} required>
+        <Controller
+          control={control}
+          name="leave_type"
+          render={({ field }) => (
+            <SegmentedControl
+              value={field.value ?? "ANNUAL"}
+              onChange={(v) => field.onChange(v as LeaveType)}
+              options={LEAVE_TYPE_OPTIONS.map((opt) => ({
+                value: opt.value,
+                label: t(opt.i18nKey),
+              }))}
+            />
+          )}
+        />
+      </FormField>
+
       <FormField label={t("mobile.leave_apply.kind")} required>
         <Controller
           control={control}

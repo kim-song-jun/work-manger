@@ -38,6 +38,7 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
             "kind",
+            "leave_type",
             "days",
             "reason",
             "status",
@@ -59,6 +60,10 @@ class LeaveRequestCreateSerializer(serializers.Serializer):
     start_date = serializers.DateField()
     end_date = serializers.DateField()
     kind = serializers.ChoiceField(choices=LeaveRequest.Kind.choices, default=LeaveRequest.Kind.FULL)
+    leave_type = serializers.ChoiceField(
+        choices=LeaveRequest.LeaveType.choices,
+        default=LeaveRequest.LeaveType.ANNUAL,
+    )
     reason = serializers.CharField(required=False, allow_blank=True, default="")
 
     def validate(self, attrs):

@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import random
 import string
-import uuid
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
@@ -29,6 +28,7 @@ from django.utils import timezone as django_tz
 
 from apps.approval.models import ApprovalTask
 from apps.attendance.models import AttendanceRecord, OvertimeRequest, WorkSchedule
+from apps.billing.models import CompanySubscription, SubscriptionPlan
 from apps.identity.models import (
     Company,
     CompanyJoinCode,
@@ -38,7 +38,6 @@ from apps.identity.models import (
     User,
 )
 from apps.leave.models import LeaveBalance, LeavePolicy, LeaveRequest
-
 
 DEMO_COMPANY_CODE = "ACMEDM"
 DEMO_COMPANY_NAME = "Acme"
@@ -91,6 +90,7 @@ class Command(BaseCommand):
             self._create_leave_balances(company, active)
             self._create_leave_requests(company, employees, managers)
             self._create_overtime_requests(company, employees, managers)
+            self._create_billing(company)
 
         self.stdout.write(self.style.SUCCESS(
             f"Seeded company '{company.name}' (code {company.code}) — "
@@ -308,6 +308,26 @@ class Command(BaseCommand):
                 decided_by=emp.manager or managers[0],
                 decided_at=django_tz.now(),
             )
+        # iter13 T3: 1 PENDING COMP (보상휴가) — gives reviewers a sample row
+        # to exercise the leave_type field and the FE UI option.
+        comp_emp = employees[8]
+        comp_start = today + timedelta(days=14)
+        comp_leave = LeaveRequest.objects.create(
+            company=company, membership=comp_emp,
+            start_date=comp_start, end_date=comp_start,
+            kind=LeaveRequest.Kind.FULL, days=Decimal("1"),
+            leave_type=LeaveRequest.LeaveType.COMP,
+            reason="지난주 야근 보상휴가",
+            status=LeaveRequest.Status.PENDING,
+        )
+        ApprovalTask.objects.create(
+            company=company,
+            target_type=ApprovalTask.TargetType.LEAVE,
+            target_id=comp_leave.id,
+            requester=comp_emp,
+            approver=comp_emp.manager or managers[0],
+            status=ApprovalTask.Status.PENDING,
+        )
 
     def _create_overtime_requests(self, company, employees, managers) -> None:
         today = django_tz.localdate()
@@ -327,3 +347,34 @@ class Command(BaseCommand):
                 approver=emp.manager or managers[0],
                 status=ApprovalTask.Status.PENDING,
             )
+
+    def _create_billing(self, company) -> None:
+        """Seed a Standard plan + a TRIAL CompanySubscription (iter13 T6).
+
+        ``SubscriptionPlan`` rows are global (not per-company), so we
+        upsert via ``get_or_create`` — re-running the seed must not
+        duplicate the catalog. The trial period default is 14 days
+        (Stripe webhook in iter14 will replace this with real periods).
+        """
+        plan, _created = SubscriptionPlan.objects.get_or_create(
+            name="Standard",
+            defaults={
+                "price_monthly_krw": 50000,
+                "max_employees": 50,
+                "features_jsonb": {
+                    "attendance": True,
+                    "leave": True,
+                    "compliance_52h": True,
+                    "audit_log": True,
+                },
+                "is_active": True,
+            },
+        )
+        now = django_tz.now()
+        CompanySubscription.objects.create(
+            company=company,
+            plan=plan,
+            status=CompanySubscription.Status.TRIAL,
+            started_at=now,
+            current_period_end=now + timedelta(days=14),
+        )

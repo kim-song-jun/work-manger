@@ -78,6 +78,12 @@ const ko = {
     apply: "연차 신청",
     none_yet: "아직 연차 정보가 없어요",
     days_unit: "일",
+    type: {
+      annual: "연차",
+      comp: "보상휴가",
+      sick: "병가",
+      personal: "개인 사유",
+    },
   },
   my: {
     title: "마이",
@@ -827,6 +833,12 @@ const en: typeof ko = {
     apply: "Request leave",
     none_yet: "No leave info yet",
     days_unit: "d",
+    type: {
+      annual: "Annual",
+      comp: "Compensation leave",
+      sick: "Sick",
+      personal: "Personal",
+    },
   },
   my: {
     title: "Me",
