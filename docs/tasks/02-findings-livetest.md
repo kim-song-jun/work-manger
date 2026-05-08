@@ -96,3 +96,19 @@ task_n: 2
 - Expected: ADMIN/OWNER 는 /admin 또는 /web 에 자동 진입 (역할 기반 default route)
 - Actual: 모든 사용자 /m/home 강제 진입. ADMIN 은 사이드 진입점 없이 URL 직접 입력해야 /admin 도달
 - Suggested fix scope: `apps/web/src/app/App.tsx:108` `<Route path="/" element={<Navigate to="/m/home" replace />} />` 를 me 기반 분기로 (e.g. `<RoleBasedHomeRedirect />` 컴포넌트) — ADMIN/OWNER 는 /admin, EMPLOYEE/MANAGER 는 /m/home
+
+### F-LIVE-009: /admin/codes 레이아웃 좁은 viewport 에서 깨짐 (P1)
+- Severity: P1 (UX, 모바일/태블릿 admin 사용 시)
+- Where: `apps/web/src/pages/admin-codes/index.tsx` 또는 `apps/web/src/widgets/admin-shell/`
+- Repro: 1) /admin/codes 진입 (viewport ≤ 1024px) 2) 코드 발급 form + table 영역
+- Expected: 컬럼 헤더 wrap 가독성 유지, 발급 버튼 form 옆 정렬, 가로 스크롤 없음
+- Actual: 헤더 "최대 사용 횟수 (선택)" 가 7줄 stacking, "발급" 버튼이 세로로 stretch, 가로 스크롤 발생
+- Suggested fix scope: `apps/web/src/pages/admin-codes/index.tsx` form layout grid → flex-wrap with min-width, table responsive (overflow-x-auto 명시 vs viewport overflow)
+
+### F-LIVE-010: /admin/audit 빈 상태 + seed_demo 가 audit entry 미생성 (P2)
+- Severity: P2 (테스트 데이터 부재)
+- Where: `services/api/apps/identity/management/commands/seed_demo.py`
+- Repro: 1) `make seed` 후 admin@acme.demo 로 /admin/audit 진입 2) "감사 항목이 없어요"
+- Expected: seed_demo 가 sample audit entries (e.g. company.settings.update, employee.role.change, code.issued) 몇 건 생성 — F-ADMIN-01 fix 검증을 위해서라도 데이터 필요
+- Actual: 빈 상태 — F-ADMIN-01 (audit BE 가 created_at + actor_id, FE 는 at + actor_name 기대) 의 mapping 이슈가 표면화되지 않음
+- Suggested fix scope: seed_demo.py 에 audit_record 호출 5-10건 추가 (모든 action 타입 커버)
