@@ -469,8 +469,6 @@ const ko = {
     expiring_col_remaining: "잔여",
     expiring_col_expiring: "소멸 예정",
     expiring_empty: "소멸 위험이 없어요",
-    expiring_todo:
-      "TODO: aggregate /v1/admin/leave/expiring 엔드포인트가 추가되면 직원별 호출을 단일 쿼리로 교체합니다.",
     audit_title: "감사 로그",
     audit_filter_action: "액션",
     audit_filter_actor: "수행자",
@@ -1169,8 +1167,6 @@ const en: typeof ko = {
     expiring_col_remaining: "Remaining",
     expiring_col_expiring: "Expiring",
     expiring_empty: "No expiry risk",
-    expiring_todo:
-      "TODO: replace per-employee fan-out with /v1/admin/leave/expiring once available.",
     audit_title: "Audit log",
     audit_filter_action: "Action",
     audit_filter_actor: "Actor",

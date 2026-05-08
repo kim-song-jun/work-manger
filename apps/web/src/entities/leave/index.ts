@@ -11,3 +11,5 @@ export { fetchBalance } from "./api/fetchBalance";
 export { fetchTeamCalendar } from "./api/fetchTeamCalendar";
 export type { TeamCalendarQuery } from "./api/fetchTeamCalendar";
 export { applyLeave, leaveDays } from "./api/applyLeave";
+export { fetchExpiringLeave } from "./api/fetchExpiringLeave";
+export type { ExpiringLeaveRow } from "./api/fetchExpiringLeave";

@@ -1,4 +1,4 @@
-import { decideApproval } from "@entities/approval";
+import { api } from "@shared/api";
 
 export type BatchOutcome = {
   total: number;
@@ -7,30 +7,28 @@ export type BatchOutcome = {
   failedIds: string[];
 };
 
-/**
- * Calls per-id approve/reject in parallel using Promise.allSettled.
- *
- * TODO: replace with a single bulk endpoint once backend exposes
- * POST /v1/admin/approvals/bulk.
- */
+type Envelope<T> = { data: T };
+type BackendBulkResult = {
+  total: number;
+  succeeded: number;
+  failed: number;
+  failed_ids: string[];
+};
+
+/** POST /v1/admin/approvals/bulk — single round-trip batch decide. */
 export async function batchDecide(
   ids: string[],
   decision: "approve" | "reject",
 ): Promise<BatchOutcome> {
   if (!ids.length) return { total: 0, succeeded: 0, failed: 0, failedIds: [] };
-  const results = await Promise.allSettled(
-    ids.map((id) => decideApproval(id, decision)),
-  );
-  const failedIds: string[] = [];
-  let succeeded = 0;
-  results.forEach((r, i) => {
-    if (r.status === "fulfilled") succeeded += 1;
-    else failedIds.push(ids[i]);
+  const r = await api<Envelope<BackendBulkResult>>("/v1/admin/approvals/bulk", {
+    method: "POST",
+    json: { ids, decision },
   });
   return {
-    total: ids.length,
-    succeeded,
-    failed: failedIds.length,
-    failedIds,
+    total: r.data.total,
+    succeeded: r.data.succeeded,
+    failed: r.data.failed,
+    failedIds: r.data.failed_ids ?? [],
   };
 }

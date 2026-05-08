@@ -10,6 +10,9 @@ urlpatterns = [
     path("admin/employees/<uuid:membership_id>/update", views.update_employee),
     path("admin/employees/<uuid:membership_id>/deactivate", views.deactivate_employee),
     path("admin/approvals", views.admin_approvals),
+    path("admin/approvals/bulk", views_bulk.bulk_decide_approvals),
+    path("admin/approvals/<uuid:task_id>", views_bulk.decide_approval),
+    path("admin/leave/expiring", views_bulk.admin_expiring_leave),
     path("admin/reports/monthly", views.monthly_report),
     path("admin/reports/export", views_bulk.export_report),
 ]

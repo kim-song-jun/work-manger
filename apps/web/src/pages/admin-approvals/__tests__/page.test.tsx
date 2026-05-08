@@ -107,11 +107,11 @@ describe("pages/admin-approvals · AdminApprovalsPage", () => {
     });
   });
 
-  it("bulk approve issues a PATCH per selected row", async () => {
+  it("bulk approve issues a single POST /admin/approvals/bulk", async () => {
     const fetchSpy = vi.spyOn(window, "fetch").mockImplementation((input, init) => {
       const url = String(input);
       const method = (init?.method ?? "GET").toUpperCase();
-      if (method === "GET" && url.includes("/v1/admin/approvals")) {
+      if (method === "GET" && url.includes("/v1/admin/approvals") && !url.endsWith("/bulk")) {
         return Promise.resolve(
           makeResponse({
             ok: true,
@@ -141,8 +141,16 @@ describe("pages/admin-approvals · AdminApprovalsPage", () => {
           }),
         );
       }
-      if (method === "PATCH" && url.match(/\/v1\/admin\/approvals\/(a1|a2)$/)) {
-        return Promise.resolve(makeResponse({ ok: true, status: 200, body: { data: { ok: true } } }));
+      if (method === "POST" && url.endsWith("/v1/admin/approvals/bulk")) {
+        return Promise.resolve(
+          makeResponse({
+            ok: true,
+            status: 200,
+            body: {
+              data: { total: 2, succeeded: 2, failed: 0, failed_ids: [] },
+            },
+          }),
+        );
       }
       return Promise.reject(new Error(`unmocked: ${method} ${url}`));
     });
@@ -156,10 +164,15 @@ describe("pages/admin-approvals · AdminApprovalsPage", () => {
     await userEvent.click(screen.getByRole("button", { name: /일괄 승인|Approve selected/ }));
 
     await waitFor(() => {
-      const patchCalls = fetchSpy.mock.calls.filter(
-        ([url, init]) => (init?.method ?? "GET").toUpperCase() === "PATCH" && String(url).includes("/v1/admin/approvals/"),
+      const bulkCalls = fetchSpy.mock.calls.filter(
+        ([url, init]) =>
+          (init?.method ?? "GET").toUpperCase() === "POST" &&
+          String(url).endsWith("/v1/admin/approvals/bulk"),
       );
-      expect(patchCalls).toHaveLength(2);
+      expect(bulkCalls).toHaveLength(1);
+      const body = JSON.parse(String((bulkCalls[0][1] as RequestInit).body));
+      expect(body.ids).toEqual(expect.arrayContaining(["a1", "a2"]));
+      expect(body.decision).toBe("approve");
     });
   });
 });
