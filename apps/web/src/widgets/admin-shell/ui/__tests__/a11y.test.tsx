@@ -69,4 +69,24 @@ describe("widgets/admin-shell · a11y smoke", () => {
     const nav = document.querySelector("nav");
     expect(nav).not.toBeNull();
   });
+
+  // F-DESIGN-014: AdminNav aria-label must not be the dashboard item label
+  it("AdminNav aria-label is not the dashboard item label (F-DESIGN-014)", () => {
+    useAuthStore.setState({
+      accessToken: "tok",
+      me: {
+        id: "u1",
+        email: "a@x.com",
+        name: "Admin",
+        locale: "ko",
+        is_email_verified: true,
+        memberships: [{ id: "m1", role: "ADMIN", company: { id: "c1", name: "Co" } }],
+      },
+    });
+    renderShell();
+    const nav = document.querySelector("nav");
+    // aria-label should be "관리자 메뉴" (admin.nav_aria_label), not "대시보드"
+    expect(nav?.getAttribute("aria-label")).not.toBe("대시보드");
+    expect(nav?.getAttribute("aria-label")).toBeTruthy();
+  });
 });

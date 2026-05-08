@@ -32,7 +32,7 @@ export function AdminShell() {
             style={{
               width: 28,
               height: 28,
-              borderRadius: 7,
+              borderRadius: "var(--r-sm)",
               background: "var(--grey-900)",
               color: "var(--white)",
               display: "flex",
