@@ -16,6 +16,10 @@ const FAQ_KEYS: { q: string; a: string }[] = [
 const MANUAL_BASE =
   import.meta.env.VITE_USER_GUIDE_BASE_URL ?? "/docs/user-guide";
 
+// F-EMPLOYEE-011: support email env var
+const SUPPORT_EMAIL =
+  import.meta.env.VITE_SUPPORT_EMAIL ?? "support@molcube.com";
+
 const MANUAL_LINKS: { key: string; href: string }[] = [
   { key: "mobile.help.manual_employee", href: `${MANUAL_BASE}/employee.md` },
   { key: "mobile.help.manual_manager", href: `${MANUAL_BASE}/manager.md` },
@@ -36,17 +40,25 @@ export function HelpPage() {
       >
         {FAQ_KEYS.map((it, i) => {
           const isOpen = open === i;
+          const panelId = `faq-panel-${i}`;
+          const btnId = `faq-btn-${i}`;
           return (
             <Card key={it.q} padding={0} style={{ marginBottom: 8 }}>
+              {/* F-DESIGN-011: focus-visible ring; F-DESIGN-015: aria-expanded + aria-controls */}
               <button
+                id={btnId}
                 type="button"
                 onClick={() => setOpen(isOpen ? null : i)}
-                className="w-full flex items-center gap-2 text-left"
+                className="w-full flex items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                aria-expanded={isOpen}
+                aria-controls={panelId}
                 style={{
                   padding: 16,
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
+                  // F-DESIGN-016: ensure button hit-target ≥ 44px (padding 16px * 2 + text ~14px ≈ 46px)
+                  minHeight: 44,
                 }}
               >
                 <span
@@ -67,6 +79,9 @@ export function HelpPage() {
               </button>
               {isOpen && (
                 <div
+                  id={panelId}
+                  role="region"
+                  aria-labelledby={btnId}
                   className="text-[13px]"
                   style={{
                     padding: "0 16px 16px",
@@ -96,7 +111,11 @@ export function HelpPage() {
           </div>
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {MANUAL_LINKS.map((m) => (
-              <li key={m.key} style={{ marginBottom: 6 }}>
+              <li
+                key={m.key}
+                // F-DESIGN-008: marginBottom from 6 (off-grid) → var(--sp-2) = 8px
+                style={{ marginBottom: "var(--sp-2, 8px)" }}
+              >
                 <a
                   href={m.href}
                   target="_blank"
@@ -105,16 +124,49 @@ export function HelpPage() {
                   style={{
                     color: "var(--brand)",
                     textDecoration: "underline",
+                    // F-DESIGN-016: manual link hit-target ≥ 44px
+                    display: "flex",
+                    alignItems: "center",
+                    minHeight: 44,
                   }}
                 >
                   {t(m.key)}{" "}
-                  <span style={{ color: "var(--grey-500)", fontSize: 11 }}>
+                  {/* F-DESIGN-017: fontSize from 11 (below scale) → 12px (.t-caption floor) */}
+                  <span style={{ color: "var(--grey-500)", fontSize: 12, marginLeft: 4 }}>
                     {t("mobile.help.manual_link_external")}
                   </span>
                 </a>
               </li>
             ))}
           </ul>
+        </Card>
+
+        {/* F-EMPLOYEE-011: contact button */}
+        <Card padding={16} style={{ marginTop: 12 }}>
+          <div
+            className="text-[14px] font-bold mb-2"
+            style={{ color: "var(--grey-900)" }}
+          >
+            {t("mobile.help.contact")}
+          </div>
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            className="text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "10px 20px",
+              borderRadius: "var(--r-sm)",
+              background: "var(--brand-soft)",
+              color: "var(--brand)",
+              textDecoration: "none",
+              minHeight: 44,
+            }}
+          >
+            <Icon.inbox width={16} height={16} />
+            {SUPPORT_EMAIL}
+          </a>
         </Card>
       </div>
     </>

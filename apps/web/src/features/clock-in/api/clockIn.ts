@@ -16,6 +16,28 @@ function isOverHoursLimit(e: unknown): boolean {
 }
 
 /**
+ * POST /v1/attendance/clock-out
+ *
+ * Returns the finalized AttendanceRecord on success so callers can use the
+ * server-authoritative clock_out_at timestamp.
+ */
+export async function clockOut(): Promise<{ clock_out_at?: string | null }> {
+  try {
+    const r = await api<{ data: { clock_out_at?: string | null } }>(
+      "/v1/attendance/clock-out",
+      { method: "POST" },
+    );
+    return r.data ?? {};
+  } catch (e) {
+    if (e instanceof HttpError && e.status === 404) {
+      // endpoint stub — treat as success
+      return {};
+    }
+    throw e;
+  }
+}
+
+/**
  * POST /v1/attendance/clock-in
  *
  * Treats backend 404 as success while the endpoint is being stubbed.
@@ -23,13 +45,17 @@ function isOverHoursLimit(e: unknown): boolean {
  * to the block screen via window.location so any caller surfaces the
  * intended UX without re-implementing the routing.
  */
-export async function clockIn(body: ClockInBody): Promise<void> {
+export async function clockIn(body: ClockInBody): Promise<{ clock_in_at?: string | null }> {
   try {
-    await api("/v1/attendance/clock-in", { method: "POST", json: body });
+    const r = await api<{ data: { clock_in_at?: string | null } }>(
+      "/v1/attendance/clock-in",
+      { method: "POST", json: body },
+    );
+    return r.data ?? {};
   } catch (e) {
     if (e instanceof HttpError && e.status === 404) {
       // backend not ready yet — treat as success for the UI
-      return;
+      return {};
     }
     if (isOverHoursLimit(e)) {
       if (typeof window !== "undefined" && window.location) {

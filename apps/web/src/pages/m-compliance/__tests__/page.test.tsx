@@ -19,6 +19,20 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@shared/i18n";
 import { setAccessToken } from "@shared/api";
 
+// F-MANAGER-05: mock useMe to avoid extra fetch calls in test (useMe added to page)
+vi.mock("@entities/user", () => ({
+  useMe: vi.fn(() => ({
+    data: {
+      id: "u-1",
+      email: "emp@test.com",
+      name: "직원",
+      locale: "ko",
+      is_email_verified: true,
+      memberships: [{ id: "m-1", role: "EMPLOYEE", company: { id: "c-1", name: "Test" } }],
+    },
+  })),
+}));
+
 import { ComplianceMobilePage } from "../index";
 
 function makeResponse(body: unknown, init: { ok?: boolean; status?: number } = {}): Response {

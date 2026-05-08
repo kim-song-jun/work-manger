@@ -9,8 +9,9 @@ const dateRe = /^\d{4}-\d{2}-\d{2}$/;
  */
 export const leaveApplySchema = z
   .object({
-    start_date: z.string().regex(dateRe, "YYYY-MM-DD"),
-    end_date: z.string().regex(dateRe, "YYYY-MM-DD"),
+    // F-EMPLOYEE-007: use i18n key instead of raw format hint so UI renders translated error
+    start_date: z.string().regex(dateRe, "leave_apply.invalid_dates"),
+    end_date: z.string().regex(dateRe, "leave_apply.invalid_dates"),
     kind: z.enum(["FULL", "AM_HALF", "PM_HALF"]),
     reason: z.string().max(500).optional(),
   })

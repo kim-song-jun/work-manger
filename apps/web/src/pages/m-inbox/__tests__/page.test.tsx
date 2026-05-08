@@ -20,6 +20,20 @@ import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "@shared/ui";
 import "@shared/i18n";
 
+// F-EMPLOYEE-008: useMe returns MANAGER role so default tab is "to-approve"
+vi.mock("@entities/user", () => ({
+  useMe: vi.fn(() => ({
+    data: {
+      id: "u-manager",
+      email: "manager@test.com",
+      name: "관리자",
+      locale: "ko",
+      is_email_verified: true,
+      memberships: [{ id: "m-1", role: "MANAGER", company: { id: "c-1", name: "Test" } }],
+    },
+  })),
+}));
+
 vi.mock("@entities/inbox", () => ({
   fetchInbox: vi.fn(async () => ({
     items: [

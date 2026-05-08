@@ -118,11 +118,38 @@ const inboxHandlers = [
 // --- entities/team ----------------------------------------------------------
 const teamHandlers = [
   http.get("*/v1/team/status/grid", () =>
+    // F-MANAGER-13: BE returns {data: {date, items}} not {data: TeamMember[]}
     ok({
-      members: [
-        { id: "u-1", name: "이수현", status: "OFFICE" },
-        { id: "u-2", name: "박서연", status: "WFH" },
-        { id: "u-3", name: "김민준", status: "LEAVE" },
+      date: "2026-05-08",
+      items: [
+        { id: "u-1", name: "이수현", status: "office" },
+        { id: "u-2", name: "박서연", status: "wfh" },
+        { id: "u-3", name: "김민준", status: "leave" },
+      ],
+    }),
+  ),
+  http.get("*/v1/team/status/grouped", () =>
+    ok({
+      date: "2026-05-08",
+      groups: [
+        {
+          team: "디자인",
+          members: [
+            { id: "u-1", name: "이수현", status: "office" },
+          ],
+        },
+      ],
+    }),
+  ),
+  http.get("*/v1/team/status/timeline", () =>
+    ok({
+      date: "2026-05-08",
+      now_minute: 600,
+      rows: [
+        {
+          member: { id: "u-1", name: "이수현", status: "office" },
+          blocks: [{ start_minute: 540, end_minute: 720, kind: "office" }],
+        },
       ],
     }),
   ),
@@ -138,7 +165,7 @@ const notificationHandlers = [
       data: [
         {
           id: "n-1",
-          kind: "LEAVE_APPROVED",
+          kind: "leave",
           title: "연차가 승인되었습니다",
           body: "5월 2일 연차",
           created_at: "2026-04-22T12:00:00Z",
@@ -149,6 +176,29 @@ const notificationHandlers = [
     }),
   ),
   http.post("*/v1/notifications/:id/read", () => ok({ ok: true })),
+  // F-EMPLOYEE-009: bulk read-all endpoint
+  http.post("*/v1/notifications/read-all", () => ok({ ok: true })),
+];
+
+// --- entities/attendance ----------------------------------------------------
+const attendanceHandlers = [
+  http.get("*/v1/attendance/today", () =>
+    ok({
+      clock_in_at: "2026-05-08T09:05:00Z",
+      clock_out_at: null,
+      worked_minutes: 36,
+      is_clocked_in: true,
+      kind: "OFFICE",
+    }),
+  ),
+  http.post("*/v1/attendance/clock-in", () =>
+    ok({ clock_in_at: "2026-05-08T09:05:00Z" }),
+  ),
+  http.post("*/v1/attendance/clock-out", () =>
+    ok({ clock_out_at: "2026-05-08T18:01:00Z" }),
+  ),
+  http.post("*/v1/attendance/break/start", () => ok({ ok: true })),
+  http.post("*/v1/attendance/break/end", () => ok({ ok: true })),
 ];
 
 // --- admin ------------------------------------------------------------------
@@ -175,5 +225,6 @@ export const handlers = [
   ...inboxHandlers,
   ...teamHandlers,
   ...notificationHandlers,
+  ...attendanceHandlers,
   ...adminHandlers,
 ];

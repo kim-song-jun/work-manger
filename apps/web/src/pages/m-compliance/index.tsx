@@ -3,13 +3,17 @@
  *
  * - Color-coded progress bar (success / warn / danger) per status (OK/WARN/OVER).
  * - Lists current vs threshold and remaining hours.
+ * - MANAGER: shows personal + team placeholder tab (F-MANAGER-05).
+ *   Team tab is fully available after W4c adds /v1/compliance/team endpoint.
  */
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { Card, KPIStat, PageHeader, Skeleton } from "@shared/ui";
 import { fetchMyCompliance } from "@entities/compliance";
 import type { ComplianceStatus } from "@entities/compliance";
+import { useMe } from "@entities/user";
 
 function statusColor(status: ComplianceStatus | undefined): string {
   if (status === "OVER") return "var(--danger)";
@@ -25,6 +29,12 @@ function statusLabel(status: ComplianceStatus | undefined, t: (k: string) => str
 
 export function ComplianceMobilePage() {
   const { t } = useTranslation();
+  const me = useMe();
+  const isManager = useMemo(() => {
+    const role = me.data?.memberships?.[0]?.role;
+    return role === "MANAGER" || role === "ADMIN" || role === "OWNER";
+  }, [me.data]);
+
   const q = useQuery({
     queryKey: ["compliance-me"],
     queryFn: () => fetchMyCompliance(),
@@ -139,6 +149,18 @@ export function ComplianceMobilePage() {
         {!q.isLoading && !data && (
           <Card padding={18}>
             <div style={{ color: "var(--grey-600)" }}>{t("compliance.empty")}</div>
+          </Card>
+        )}
+
+        {/* F-MANAGER-05: team tab placeholder for MANAGER role */}
+        {isManager && (
+          <Card padding={16} style={{ marginTop: 12, borderStyle: "dashed", borderColor: "var(--grey-200)", borderWidth: 1 }}>
+            <div className="text-[13px] font-semibold" style={{ color: "var(--grey-700)" }}>
+              {t("compliance.team_tab_coming", { defaultValue: "팀 현황 (준비 중)" })}
+            </div>
+            <div className="text-[12px] mt-1" style={{ color: "var(--grey-500)" }}>
+              {t("compliance.team_tab_hint", { defaultValue: "팀원의 52h 초과 여부는 팀 현황 탭에서 확인할 수 있습니다. 구현 예정입니다." })}
+            </div>
           </Card>
         )}
       </div>

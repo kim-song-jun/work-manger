@@ -55,6 +55,8 @@ export function NoticePage() {
           onChange={(v) => setCategory(v as CategoryFilter)}
           options={[
             { value: "all", label: t("notice.cat_all") },
+            // F-EMPLOYEE-010: "general" category was missing — BE returns general notices
+            { value: "general", label: t("notice.cat_general") },
             { value: "policy", label: t("notice.cat_policy") },
             { value: "event", label: t("notice.cat_event") },
             { value: "it", label: t("notice.cat_it") },
@@ -84,6 +86,15 @@ export function NoticePage() {
             <Skeleton height={14} width="60%" />
             <div className="mt-2">
               <Skeleton height={14} width="40%" />
+            </div>
+          </Card>
+        )}
+
+        {/* F-LIVE-006: error state */}
+        {!q.isLoading && q.isError && (
+          <Card padding={20} style={{ marginTop: 12 }}>
+            <div className="text-[14px] text-center" style={{ color: "var(--danger)" }}>
+              {t("common.error_load_failed", { defaultValue: "공지사항을 불러오지 못했습니다." })}
             </div>
           </Card>
         )}

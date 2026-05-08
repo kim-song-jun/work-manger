@@ -68,7 +68,13 @@ export function LeaveApplyPage() {
           <LeaveApplyForm
             defaultDate={start ?? undefined}
             defaultEndDate={end ?? undefined}
-            onDone={() => nav("/m/leave/success", { replace: true })}
+            // F-EMPLOYEE-006: pass start/end/kind state to success page via location state
+            onDone={(kind) =>
+              nav("/m/leave/success", {
+                replace: true,
+                state: { start, end, kind },
+              })
+            }
           />
         </Card>
       </div>

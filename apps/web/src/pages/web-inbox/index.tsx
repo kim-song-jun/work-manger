@@ -39,8 +39,11 @@ export function WebInboxPage() {
   const qc = useQueryClient();
   const me = useMe();
 
+  // F-MANAGER-04: MANAGER is intentionally excluded from company-scope — BE /v1/admin/approvals
+  // requires ADMIN+. This flag controls "전사" scope button visibility; MANAGER omission is correct.
   const isAdmin = useMemo(() => {
     const role = me.data?.memberships?.[0]?.role;
+    // MANAGER role is NOT included: they cannot access company-scope approvals (BE 403)
     return role === "ADMIN" || role === "OWNER";
   }, [me.data]);
 
@@ -352,7 +355,8 @@ function DetailPane({
   rejectPending: boolean;
 }) {
   const { t } = useTranslation();
-  const canDecide = (it.role === "approve" || it.status === "PENDING") && it.status === "PENDING";
+  // F-MANAGER-09: `it.role` not returned by BE (legacy field) — simplify to status check only
+  const canDecide = it.status === "PENDING";
   const reqName = it.requester?.name ?? it.requester_name ?? "—";
   const reqTeam = it.requester?.team ?? "";
   const title = it.title ?? it.target_type ?? "";

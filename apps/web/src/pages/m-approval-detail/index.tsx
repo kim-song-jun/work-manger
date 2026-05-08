@@ -61,7 +61,8 @@ export function ApprovalDetailPage() {
                   {item.reason}
                 </div>
               )}
-              {(item.role === "approve" || item.status === "PENDING") && (
+              {/* F-MANAGER-08: `item.role` not returned by BE; use status check only */}
+              {item.status === "PENDING" && (
                 <InboxQuickActions itemId={item.id} size="md" />
               )}
             </Card>
