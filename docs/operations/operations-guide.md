@@ -291,8 +291,8 @@ Provider 코드는 `apps/notification/providers/` 에 모드별로 분리되어 
 > 상태 표기: ✅ 완료 · 🟡 부분 완료 · ⏳ 미시작 · 🔴 차단 (blocked)
 > 마지막 업데이트: 2026-05-04
 
-- [ ] ⏳ **부하 테스트** (목표 DAU × 3 트래픽) — Locust/k6 스크립트 미작성. 권장: `tools/load/locustfile.py` 스켈레톤 추가 → 09:00 출근 피크 시뮬. *Owner: TBD · Target: 2026-06-15*
-- [ ] ⏳ **카오스 테스트** (DB failover, Redis down, Celery down) — chaos lib 미도입. 권장: `docker compose pause db` / `pause redis` / Celery worker SIGSTOP 시나리오 스크립트화. *Owner: TBD · Target: 2026-06-30*
+- [ ] 🟡 **부하 테스트** (목표 DAU × 3 트래픽) — `tools/load/locustfile.py` 09:00 출근 피크 시뮬 스켈레톤 작성됨 (1000 users / 50 spawn-rate / 5min). 실제 stg 환경에서 측정 + SLA(95p < 800ms) 검증 미실시. *Owner: TBD · Target: 2026-06-15*
+- [ ] 🟡 **카오스 테스트** (DB failover, Redis down, Celery down) — `tools/chaos/scripts/{db_pause,redis_down,celery_pause,ntfy_down}.sh` + `run_all.sh` 4 시나리오 스크립트화 완료. stg 에서 부하 + 카오스 동시 실행 + 회복 검증 미실시. *Owner: TBD · Target: 2026-06-30*
 - [ ] 🟡 **보안 점검** (OWASP Top 10, 의존성 audit) — audit log(`apps/audit/`) + 로그인 lockout + 2FA(TOTP) 구현 완료. 외부 펜테스트(pen-test) 미실시. *Owner: TBD · Target: 2026-07-15*
 - [ ] ⏳ **개인정보처리방침 / 이용약관 / 통신판매업 신고** (해당 시) — 법무 검토 미시작. *Owner: TBD · Target: 2026-06-30*
 - [ ] ⏳ **한국 개인정보보호법 / GDPR 검토** — DPO 지정 + SOP-data-export-request / SOP-data-deletion-request 작성 완료. 법무 최종 검토 + 외부 컴플라이언스 감사 미수행. *Owner: TBD · Target: 2026-07-15*
