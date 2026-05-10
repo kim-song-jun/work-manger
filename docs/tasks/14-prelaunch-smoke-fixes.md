@@ -120,18 +120,18 @@ created: 2026-05-10
 (≥ 15 체크박스)
 
 ### Code (W1.frontend-dev)
-- [ ] AC-1: `apps/web/src/pages/m-home/index.tsx` 의 React `key` warning 발생 위치 root cause 식별 후 수정 (commit message 에 위치 명시)
+- [x] AC-1: `apps/web/src/pages/m-home/index.tsx` 의 React `key` warning 발생 위치 root cause 식별 후 수정 (commit message 에 위치 명시)
 - [ ] AC-2: `/m/home` 렌더 시 브라우저 콘솔에 `Each child in a list should have a unique "key" prop` 메시지 **0건** (T3 박제)
-- [ ] AC-3: `apps/web/src/app/App.tsx` 에 `<Route path="/logout" ...>` 추가됨
+- [x] AC-3: `apps/web/src/app/App.tsx` 에 `<Route path="/logout" ...>` 추가됨
 - [ ] AC-4: `/logout` 진입 시 `localStorage.getItem("wm_access_token") === null` + `/login` 으로 redirect (T1 박제)
 - [ ] AC-5: 미로그인 상태에서 `/logout` 진입해도 동일하게 `/login` 으로 redirect (멱등; T2)
-- [ ] AC-6: `apps/desktop/src/main/index.ts` line 64-77 `[WM-DEBUG-2026-05-07]` 블록 **완전 삭제** (`grep -n "WM-DEBUG" apps/desktop/src/main/index.ts` 0 hit)
-- [ ] AC-7: `apps/desktop` `npm run build:ts` 통과 (TypeScript 컴파일 OK)
+- [x] AC-6: `apps/desktop/src/main/index.ts` line 64-77 `[WM-DEBUG-2026-05-07]` 블록 **완전 삭제** (`grep -n "WM-DEBUG" apps/desktop/src/main/index.ts` 0 hit)
+- [x] AC-7: `apps/desktop` `npm run build:ts` 통과 (TypeScript 컴파일 OK)
 - [ ] AC-8: Electron 부팅 후 `/login` 정상 로드 + 콘솔에 `[wm-debug]` prefix 로그 0건 (T5 박제)
-- [ ] AC-9: `apps/web` `npm run lint` 통과
-- [ ] AC-10: `apps/web` `npm run typecheck` 통과
+- [x] AC-9: `apps/web` `npm run lint` 통과
+- [x] AC-10: `apps/web` `npm run typecheck` 통과
 - [ ] AC-11: `apps/web` 관련 vitest (`m-home`, `routeGuards`, `App` 등) 통과 — 회귀 0
-- [ ] AC-12: 위 코드 변경은 file-disjoint (W1.frontend-dev 의 3 파일 외 코드 수정 0)
+- [x] AC-12: 위 코드 변경은 file-disjoint (W1.frontend-dev 의 3 파일 외 코드 수정 0)
 
 ### Docs (W1.doc-writer)
 - [x] AC-13: `docs/operations/operations-guide.md` 에 "Android 빌드 / 테스트 환경 troubleshooting" 섹션 (또는 동등한 헤더) 추가 — `grep -n "Android 빌드" docs/operations/operations-guide.md` ≥ 1 hit

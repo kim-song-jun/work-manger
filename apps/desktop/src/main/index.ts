@@ -61,21 +61,6 @@ function createWindow(): void {
     return { action: "deny" };
   });
 
-  // [WM-DEBUG-2026-05-07] temporary diagnostic — remove after GAP-G fix
-  if (process.env.WM_DEBUG === "1") {
-    mainWindow.webContents.on("did-fail-load", (_e, errorCode, errorDescription, validatedURL) => {
-      console.error("[wm-debug] did-fail-load", { errorCode, errorDescription, validatedURL });
-    });
-    mainWindow.webContents.on("console-message", (_e, level, message, line, sourceId) => {
-      const lvl = ["log", "warn", "error", "info"][level] ?? String(level);
-      console.log(`[wm-debug renderer ${lvl}] ${message} (${sourceId}:${line})`);
-    });
-    mainWindow.webContents.on("render-process-gone", (_e, details) => {
-      console.error("[wm-debug] render-process-gone", details);
-    });
-    void mainWindow.webContents.openDevTools({ mode: "detach" });
-  }
-
   void mainWindow.loadURL(WEB_URL);
 }
 
