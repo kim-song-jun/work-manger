@@ -332,6 +332,172 @@ curl http://localhost:4455/v1/health
 
 ---
 
+## 13. Android 빌드 / 테스트 환경 troubleshooting (Windows host)
+
+> **배경**: 2026-05-10 prelaunch smoke 에서 JDK 미설치(GAP-NEW-3) 와 emulator 자기 종료(GAP-16 회귀) 두 환경 블로커가 발견됨. 본 섹션은 동일 문제를 다시 만난 개발자가 빠르게 해결할 수 있도록 진단 → 설치 → 대안 선택 흐름을 안내한다.
+
+---
+
+### 13.1 JDK 17 셋업 (Flutter 3.27+ requirement)
+
+**증상**
+
+```
+ERROR: JAVA_HOME is set to an invalid directory: C:\Program Files\Java\jdk-1.8
+```
+
+`flutter build apk` 또는 `flutter doctor` 실행 시 발생. Flutter 3.27 + AGP 8.x 는 JDK 17 이상을 요구한다.
+
+**진단**
+
+```powershell
+# PowerShell
+$env:JAVA_HOME
+java -version
+
+# cmd
+echo %JAVA_HOME%
+```
+
+현재 값이 존재하지 않는 경로를 가리키거나 JDK 8/11 이면 교체가 필요하다.
+
+**권장 JDK: Eclipse Temurin 17 (LTS)**
+
+대안: Microsoft Build of OpenJDK 17. Oracle JDK 도 가능하나 상업적 사용 시 라이선스 주의.
+
+**설치 방법 (Windows)**
+
+| 방법 | 명령 / URL |
+|---|---|
+| winget (권장, 가장 간단) | `winget install EclipseAdoptium.Temurin.17.JDK` |
+| 수동 MSI | https://adoptium.net/temurin/releases/?version=17 |
+
+**환경변수 설정**
+
+1. `JAVA_HOME` = `C:\Program Files\Eclipse Adoptium\jdk-17.0.x.x-hotspot` (실제 설치 경로 확인)
+2. `PATH` 에 `%JAVA_HOME%\bin` 추가
+3. 새 PowerShell/cmd 세션에서 검증:
+
+```powershell
+java -version
+# 기대 출력: openjdk version "17..."
+```
+
+**Flutter 전용 JDK 고정 (시스템 JDK 변경 회피)**
+
+```bash
+# Eclipse Temurin 설치 경로 지정
+flutter config --jdk-dir "C:\Program Files\Eclipse Adoptium\jdk-17.0.x.x-hotspot"
+
+# 또는 Android Studio 번들 JDK 활용 (Android Studio 설치된 경우)
+flutter config --jdk-dir "C:\Program Files\Android\Android Studio\jbr"
+```
+
+**최종 검증**
+
+```bash
+cd apps/mobile && flutter build apk --debug
+# 기대: Built build/app/outputs/flutter-apk/app-debug.apk
+```
+
+---
+
+### 13.2 Android 에뮬레이터 / 실 단말 — 옵션 비교
+
+| 옵션 | 신뢰도 | 셋업 난이도 | 비용 | Windows 호환성 | 권장도 |
+|---|---|---|---|---|---|
+| **(A) 실 단말 USB-debugging** | 🟢 높음 | 🟢 낮음 (USB 케이블만) | 0 (보유 단말) | ✅ 안정 | **🥇 1순위 (primary)** |
+| **(B) 네이티브 AVD (Android Studio Emulator)** | 🟡 중간 (Win11 에서 freeze 잦음) | 🟡 중간 (HAXM/WHPX 필요) | 0 | ⚠️ Win11 + Hyper-V 충돌 사례 다수 (GAP-16 회귀) | 🥈 2순위 (개발기 1대 셋업되면 OK) |
+| **(C) Docker redroid (`redroid/redroid:11.0.0-latest`)** | 🟡 research | 🔴 높음 (Linux 컨테이너 + KVM 호스트 노출 필요) | 0 | 🔴 Windows: WSL2 + KVM 노출이 복잡, 공식 미지원 — **research 단계** | ⚪ 3순위 (Linux CI 환경에서만 추천) |
+
+#### (A) 실 단말 USB-debugging (1순위 — primary)
+
+```bash
+# 1. 단말에서 개발자 옵션 + USB 디버깅 활성화
+# 2. USB 연결 후 확인
+adb devices
+# 기대: <serial>  device
+
+# 3. 앱 설치 / 실행
+flutter run -d <serial>
+# 또는
+flutter install && # 직접 단말에서 실행
+```
+
+단말 화면에 "이 컴퓨터를 신뢰합니까?" 프롬프트가 뜨면 승인.
+
+#### (B) 네이티브 AVD — GAP-16 회복 절차
+
+**진단**
+
+```bash
+# 부팅 로그 캡처 (Hyper-V/VBS/HAXM 충돌 메시지 식별)
+emulator -avd <avd_name> -verbose 2>&1 | tee emu.log
+```
+
+**Hyper-V 충돌 의심 시** (Docker Desktop WSL2 와 공존 불가일 때만)
+
+```powershell
+# 관리자 PowerShell — Hyper-V 비활성 (Docker 안 쓰는 경우에만)
+bcdedit /set hypervisorlaunchtype off
+# 재부팅 필요
+```
+
+**WHPX 활성화** (Hyper-V 유지하면서 HAXM 대신)
+
+```powershell
+Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform
+```
+
+**Cold boot + software GPU**
+
+```bash
+emulator -avd <avd_name> -no-snapshot -no-boot-anim -gpu swiftshader_indirect -wipe-data
+```
+
+**그래도 실패 시 AVD 재생성**
+
+```bash
+avdmanager delete avd -n <name>
+# 이후 Android Studio AVD Manager 에서 다른 API level system image 로 재생성
+```
+
+#### (C) Docker redroid — Windows 한계 솔직 기술
+
+**Linux 호스트에서의 절차** (참고용)
+
+```bash
+docker run -d --privileged --name redroid \
+  -v /dev/binder:/dev/binder \
+  -p 5555:5555 \
+  redroid/redroid:11.0.0-latest
+
+adb connect localhost:5555
+```
+
+**Windows 호스트의 한계**:
+Docker Desktop 은 WSL2 위에서 동작한다. `--privileged` + `/dev/binder` 마운트가 WSL2 distro 내부에서만 가능하며 Docker Desktop 의 자동 wrap 으로는 불가하다. 별도 Linux VM (Hyper-V/VirtualBox) + 그 안에서 docker 실행 + KVM passthrough 가 필요하며, 사실상 "Linux 가상머신 안에서 redroid 실행 + Windows 호스트 ADB 가 가상머신 IP 로 connect" 형태가 된다.
+
+**직전 시도 기록 (2026-05-08)**: noVNC 기반 docker-android (`budtmo/docker-android`) 컨테이너 기동 후 emulator 부팅 단계에서 FATAL 발생. KVM 미노출이 원인 추정. 스크린샷: `docs/qa/screenshots/iter13-test/16-android-novnc-emulator-FATAL.png`.
+
+> **결론**: Windows 환경에서는 **research 단계**로 간주. production 결정 전 PoC 권장. 우선 옵션 (A) 실 단말 사용.
+
+**CI 환경 (GitHub Actions Linux runner)** 에서는 redroid 실행 가능 → App Store 심사용 자동화 회귀 테스트로 활용 검토 가능.
+
+---
+
+### 13.3 빠른 진단 체크리스트
+
+```powershell
+1. flutter doctor -v               # JDK / Android SDK / device 한 번에 확인
+2. $env:JAVA_HOME                  # JDK 17 경로인지 확인 (PowerShell)
+3. adb devices                     # device 목록 + state (offline/device/unauthorized)
+4. emulator -list-avds             # AVD 존재 여부
+5. flutter devices                 # Flutter 가 인식하는 device
+```
+
+---
+
 ## 12. 운영 SOP 색인
 
 | SOP | 문서 | Owner |

@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, Navigate, useNavigate } from "react-router-dom";
+import { setAccessToken } from "@shared/api";
+import { useAuthStore } from "@shared/lib/store/useAuthStore";
 
 import { LoginPage } from "@pages/login";
 import { SignupPage } from "@pages/signup";
@@ -62,6 +64,19 @@ import { WebTeamCalendarPage } from "@pages/web-team-calendar";
 
 import { RequireMember, RequireOwner } from "./routeGuards";
 import { RoleBasedHomeRedirect } from "./RoleBasedHomeRedirect";
+
+/** Handles /logout: clears client auth state and redirects to /login.
+ *  Idempotent — safe to navigate here when already logged out. */
+function LogoutPage() {
+  const nav = useNavigate();
+  const reset = useAuthStore((s) => s.reset);
+  useEffect(() => {
+    setAccessToken(null);
+    reset();
+    nav("/login", { replace: true });
+  }, [nav, reset]);
+  return null;
+}
 
 export function App() {
   const { i18n, t } = useTranslation();
@@ -197,6 +212,7 @@ export function App() {
         <Route path="billing" element={<OwnerBillingPage />} />
       </Route>
 
+      <Route path="/logout" element={<LogoutPage />} />
       <Route path="/__health" element={<HealthPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
