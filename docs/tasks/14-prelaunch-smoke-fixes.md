@@ -134,14 +134,14 @@ created: 2026-05-10
 - [ ] AC-12: 위 코드 변경은 file-disjoint (W1.frontend-dev 의 3 파일 외 코드 수정 0)
 
 ### Docs (W1.doc-writer)
-- [ ] AC-13: `docs/operations/operations-guide.md` 에 "Android 빌드 / 테스트 환경 troubleshooting" 섹션 (또는 동등한 헤더) 추가 — `grep -n "Android 빌드" docs/operations/operations-guide.md` ≥ 1 hit
-- [ ] AC-14: 위 섹션에 JDK 17 설치 절차 + `JAVA_HOME` 설정 + `flutter config --jdk-dir` 명시 — `grep -n "JDK 17\|JAVA_HOME\|flutter config" docs/operations/operations-guide.md` 신규 hit
-- [ ] AC-15: 위 섹션에 emulator 대안 비교 (≥ 3 옵션: native AVD / real device USB / Docker redroid 또는 cloud) + 권장 1순위 명시 (real device USB-debugging primary)
-- [ ] AC-16: docker-based android 의 Windows 한계 (WSL2 + KVM 노출 복잡성) 솔직 기술 + redroid 를 "research 단계" 로 라벨링
-- [ ] AC-17: 문서 외 파일 변경 0 (W1.doc-writer 의 1 파일 외 수정 0)
+- [x] AC-13: `docs/operations/operations-guide.md` 에 "Android 빌드 / 테스트 환경 troubleshooting" 섹션 (또는 동등한 헤더) 추가 — `grep -n "Android 빌드" docs/operations/operations-guide.md` ≥ 1 hit
+- [x] AC-14: 위 섹션에 JDK 17 설치 절차 + `JAVA_HOME` 설정 + `flutter config --jdk-dir` 명시 — `grep -n "JDK 17\|JAVA_HOME\|flutter config" docs/operations/operations-guide.md` 신규 hit
+- [x] AC-15: 위 섹션에 emulator 대안 비교 (≥ 3 옵션: native AVD / real device USB / Docker redroid 또는 cloud) + 권장 1순위 명시 (real device USB-debugging primary)
+- [x] AC-16: docker-based android 의 Windows 한계 (WSL2 + KVM 노출 복잡성) 솔직 기술 + redroid 를 "research 단계" 로 라벨링
+- [x] AC-17: 문서 외 파일 변경 0 (W1.doc-writer 의 1 파일 외 수정 0)
 
 ### Process / 머지
-- [ ] AC-18: 모든 builder commit 이 `--no-verify` / `--amend` / force push 사용 안 함
+- [x] AC-18: 모든 builder commit 이 `--no-verify` / `--amend` / force push 사용 안 함
 - [ ] AC-19: PR 또는 main 직접 머지 후 `git log --oneline -5` 가 본 task의 commit 들 포함
 - [ ] AC-20: tester (또는 self-test) 가 T1~T7 모두 통과 보고 + 최소 1 박제 (콘솔 clean screenshot 또는 `/logout → /login` flow)
 
