@@ -8,6 +8,7 @@
 
 ## 최근 완료
 
+- **[14-prelaunch-smoke-fixes.md](14-prelaunch-smoke-fixes.md)** (2026-05-10) — 출시 직전 풀 스모크 GAP fix: `/logout` SPA route 추가 + WM_DEBUG 임시 진단 코드 제거 + operations-guide §13 Android troubleshooting (JDK 17 + emulator 3옵션 비교). HomePage React `key` warning 은 phantom 으로 판명 (이미 `key={p.id}` 보유). **PR #2 머지** (`3cab1a3`). 5 commits, 5 gates ✅ (tester + qa×4 + designer + reviewer + planner). 20/20 acceptance, runtime 4건 (AC-2/4/5/8) 은 post-merge smoke 위임. ✅
 - **[SESSION 2026-05-08 iter13](SESSION-2026-05-08-iter13-backlog-clear.md)** — iter12 backlog 6항목 + 3-platform 빌드/설치 환경 일체 (T1 OpenAPI regen + T2 weekly stats BE+FE + T3 COMP LeaveType + T4 E2E Playwright 4 페르소나 + T5 mobile geofence native + Glance + T6 billing 스켈레톤). 5개 agent 병렬 dispatch + main 직접 commit. **8 commits push** (bb1d9f4 → 8d34519). 3-platform installable artifacts 재빌드 (web/Electron Setup.exe/APK). ✅
 - **[SESSION 2026-05-08 iter12](SESSION-2026-05-08-iter12-live-test.md)** — 3-platform 라이브 테스트 audit (5 sub-agent + main browser MCP) → 73 findings → 65 fix (P0×8 + P1×37 + P2×20). Wave 1 환경 fix (wm-api stale + CRLF + `.gitattributes`) + Wave 4a/4b/4c/4d/4e parallel fix. **PR #1 머지** (`7028389`). FE vitest 282/282, BE pytest 276/276. ✅
 - **[02-iter12-live-test-fix.md](02-iter12-live-test-fix.md)** — iter12 task doc + Fix Plan + Acceptance ✅
