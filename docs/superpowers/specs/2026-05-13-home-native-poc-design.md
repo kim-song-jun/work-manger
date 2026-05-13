@@ -32,7 +32,7 @@ PoC 결과로 ADR-007 Phase A 확장 Go/No-Go 를 결정한다.
 | 시작 시점 | **PoC 1 페이지 먼저** (2026-05~07 PoC, GA 후 Phase A) | 지금부터 사전작업 (일정 압축) / ADR-007 일정 준수 / iOS 차단 해소 먼저 |
 | PoC 페이지 | **Home (/m/home)** | Inbox / LeaveApply / Settings |
 | 성공 기준 | **종합 KPI (perf + UX + maint)** 6~8주 | WebView 동등만 / 기술 PoC만 / ADR-007 KPI 그대로 |
-| 실행 방식 | **안 A — 페이지별 토글** (`settings.use_native_home`) | flavor 빌드 분리 / WebView polish |
+| 실행 방식 | **안 A — 페이지별 토글** (`use_native_home`) | flavor 빌드 분리 / WebView polish |
 
 ## 3. 범위 (Scope)
 
@@ -45,7 +45,8 @@ PoC 결과로 ADR-007 Phase A 확장 Go/No-Go 를 결정한다.
 - `apps/mobile/lib/l10n/app_*.arb` — i18next ko/en → ARB 자동 변환
 - `apps/mobile/lib/realtime/ws_client.dart` — Channels WS 구독 (Dart)
 - `scripts/codegen/flutter-tokens.cjs` + `scripts/codegen/flutter-api.cjs` — codegen 도구
-- `services/api/apps/identity/` — `User.settings.use_native_home: bool` 컬럼 + PATCH endpoint
+- `services/api/apps/identity/models.py` — `User.use_native_home: BooleanField(default=False)` 단일 컬럼 추가 (PoC 범위 한정, YAGNI — JSON `settings` 또는 별도 `UserSettings` OneToOne 은 다음 setting 추가 시점에 도입)
+- `services/api/apps/identity/views.py` + `urls.py` — 신규 `GET /v1/me/settings` + `PATCH /v1/me/settings` endpoint (현재 `me/settings` endpoint 부재 확인됨)
 - `services/api/apps/identity/management/commands/set_user_setting.py` — 운영자가 `--user-id` 또는 `--bulk` 로 토글 일괄 조작 (PoC rollout / rollback 용)
 - 베타 5인 라이브 테스트 + KPI 측정 + Go/No-Go 보고서
 
@@ -213,7 +214,7 @@ PoC 결과로 ADR-007 Phase A 확장 Go/No-Go 를 결정한다.
 
 | Week | 내용 | 산출물 |
 |---|---|---|
-| W1 (05-13~19) | BE `User.settings.use_native_home` + PATCH + 마이그레이션 + serializer + 테스트. scripts/codegen 3종 골격 | BE PR + codegen 스크립트 PR |
+| W1 (05-13~19) | BE `User.use_native_home` + PATCH + 마이그레이션 + serializer + 테스트. scripts/codegen 3종 골격 | BE PR + codegen 스크립트 PR |
 | W2 (05-20~26) | B-NAT-01 tokens.g.dart 생성 + ThemeData 적용 + drift CI gate | tokens.g.dart, wm_theme.dart, CI gate PR |
 | W3 (05-27~06-02) | B-NAT-02 OpenAPI Dart client + Dio interceptor (JWT refresh) | api/openapi/*, dio_client.dart PR |
 | W4 (06-03~09) | WMHomeScreen 골격 + HomeHero + HomeKpiTile + i18n ARB 생성 | screens/home/* PR (1차) |
