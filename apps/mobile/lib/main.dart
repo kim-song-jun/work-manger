@@ -13,6 +13,7 @@ import 'realtime/ws_client.dart';
 import 'screens/home/state/home_controller.dart';
 import 'screens/home/wm_home_screen.dart';
 import 'theme/wm_theme.dart';
+import 'web_shell.dart';
 
 /// Mobile shell entry point.
 ///
@@ -61,11 +62,24 @@ class _BootState extends State<_Boot> {
   bool? _useNativeHome;
   Dio? _dio;
   WsClient? _ws;
+  HomeController? _homeController;
+
+  /// Used to push WebView routes from the native home screen (Plan-D Task 2).
+  final _navKey = GlobalKey<NavigatorState>();
+
+  /// API base URL — stored during _resolve so callbacks can reference it.
+  String _baseUrl = 'http://localhost:4455';
 
   @override
   void initState() {
     super.initState();
     _resolve();
+  }
+
+  @override
+  void dispose() {
+    _homeController?.dispose();
+    super.dispose();
   }
 
   Future<void> _resolve() async {
@@ -75,6 +89,7 @@ class _BootState extends State<_Boot> {
       'WEBVIEW_URL',
       defaultValue: 'http://localhost:4455',
     );
+    _baseUrl = baseUrl;
 
     // If user is not logged in yet, skip the settings call and go straight to
     // WebView (login flow stays in WebView — see ADR-001).
@@ -99,6 +114,7 @@ class _BootState extends State<_Boot> {
         accessTokenProvider: () => JwtStore().readAccess(),
       );
       unawaited(_ws!.connect());
+      _homeController = HomeController(dio: _dio!, wsClient: _ws!);
     }
 
     if (mounted) setState(() {});
@@ -119,21 +135,20 @@ class _BootState extends State<_Boot> {
 
     // Native home branch
     if (_useNativeHome!) {
-      final controller = HomeController(dio: _dio!, wsClient: _ws!);
+      final controller = _homeController!;
       return MaterialApp(
         debugShowCheckedModeBanner: false,
+        navigatorKey: _navKey,
         theme: WMTheme.light(),
         home: WMHomeScreen(
           controller: controller,
-          // PoC: clock-in wired in Plan-D
-          onClockIn: () {
-            // TODO Plan-D: POST /v1/attendance/clock-in
-            debugPrint('[main] onClockIn — wired in Plan-D');
-          },
-          // PoC: WebView navigation wired in Plan-D
+          onClockIn: () => controller.clockIn(),
           onOpenWebView: (path) {
-            // TODO Plan-D: push WebView route for $path
-            debugPrint('[main] onOpenWebView($path) — wired in Plan-D');
+            _navKey.currentState?.push(
+              MaterialPageRoute<void>(
+                builder: (_) => WebViewHost(url: '$_baseUrl$path'),
+              ),
+            );
           },
         ),
       );

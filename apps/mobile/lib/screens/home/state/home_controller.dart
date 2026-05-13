@@ -91,6 +91,24 @@ class HomeController extends ChangeNotifier {
     }
   }
 
+  /// POST /v1/attendance/clock-in with optimistic state update.
+  ///
+  /// Immediately marks status as WORKING so the UI feels instant, then
+  /// calls [load] to reconcile actual server state (today_minutes, etc.).
+  Future<void> clockIn() async {
+    // Optimistic update
+    state = state.copyWith(status: 'WORKING');
+    notifyListeners();
+    try {
+      await dio.post<void>('/v1/attendance/clock-in');
+    } on DioException catch (e) {
+      error = e.message ?? 'clock-in failed';
+      notifyListeners();
+    }
+    // Reconcile with server regardless of error so state stays fresh
+    await load();
+  }
+
   void _onWsEvent(Map<String, dynamic> e) {
     if (e['event'] != 'clock-in.updated') return;
     final newStatus = e['status'] as String?;
