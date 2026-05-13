@@ -95,13 +95,14 @@
   transform: scale(0.985);
 }
 
-/* 팀 카운트 row — 출근 / 재택 / 휴가 마커 */
+/* 팀 카운트 row — 출근 / 재택 / 휴가 마커
+ * B-CODE-09 a11y: 텍스트는 항상 AA-pass grey-700, status dot 만 컬러. */
 .wm-home-team-counts {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 12px;
   font-size: 12px;
-  color: var(--grey-600);
+  color: var(--grey-700);
   margin-top: 2px;
 }
 .wm-home-team-counts > span {
@@ -109,19 +110,19 @@
   align-items: center;
   gap: 4px;
   font-variant-numeric: tabular-nums;
+  color: var(--grey-700);
 }
 .wm-home-team-counts > span::before {
   content: "";
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: currentColor;
-  opacity: 0.85;
+  opacity: 0.95;
 }
-.wm-home-team-counts > span.is-office { color: var(--success); }
-.wm-home-team-counts > span.is-wfh    { color: var(--brand); }
-.wm-home-team-counts > span.is-leave  { color: var(--warn); }
-.wm-home-team-counts > span.is-break  { color: var(--caution); }
+.wm-home-team-counts > span.is-office::before { background: var(--success); }
+.wm-home-team-counts > span.is-wfh::before    { background: var(--brand); }
+.wm-home-team-counts > span.is-leave::before  { background: var(--warn); }
+.wm-home-team-counts > span.is-break::before  { background: var(--caution); }
 
 /* Subtle entry animation — stagger via inline style */
 .wm-home-anim {

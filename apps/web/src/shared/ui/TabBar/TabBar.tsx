@@ -39,7 +39,7 @@ export function TabBar({ badges = {} }: Props) {
             aria-label={t(tab.labelKey)}
             className="flex flex-1 flex-col items-center justify-center gap-[3px] relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-sm"
             style={({ isActive }) => ({
-              color: isActive ? "var(--brand)" : "var(--grey-400)",
+              color: isActive ? "var(--brand)" : "var(--grey-600)",
               fontSize: 11,
               fontWeight: 500,
               textDecoration: "none",
@@ -52,7 +52,7 @@ export function TabBar({ badges = {} }: Props) {
                 <span
                   aria-current={isActive ? "page" : undefined}
                   style={{
-                    color: isActive ? "var(--grey-900)" : "var(--grey-400)",
+                    color: isActive ? "var(--grey-900)" : "var(--grey-600)",
                     fontWeight: isActive ? 600 : 500,
                   }}
                 >

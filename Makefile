@@ -64,6 +64,14 @@ package-all: package-desktop package-mobile
 fe-shell:
 	docker compose exec web sh
 
+# B-NAT-01 (ADR-007): CSS tokens → Flutter Dart codegen.
+gen-tokens:
+	node apps/mobile/tools/gen_tokens.mjs
+
+# B-NAT-02 (ADR-007): OpenAPI schema → Dart models codegen.
+gen-openapi-dart:
+	bash apps/mobile/tools/gen_openapi_dart.sh
+
 # pre-commit 훅 설치 (개발자 1회용).
 precommit-install:
 	pre-commit install

@@ -93,7 +93,7 @@ export function LoginForm() {
           <Link
             to="/forgot"
             className="inline-flex min-h-8 items-center font-semibold"
-            style={{ color: "var(--brand)" }}
+            style={{ color: "var(--brand-text)" }}
           >
             {t("auth.help")}
           </Link>
@@ -103,7 +103,7 @@ export function LoginForm() {
           <Link
             to="/signup"
             className="inline-flex min-h-8 items-center align-middle font-semibold"
-            style={{ color: "var(--brand)" }}
+            style={{ color: "var(--brand-text)" }}
           >
             {t("auth.signup")}
           </Link>

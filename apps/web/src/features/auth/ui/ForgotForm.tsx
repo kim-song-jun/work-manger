@@ -57,7 +57,7 @@ export function ForgotForm() {
             <Link
               to="/login"
               className="flex min-h-8 items-center justify-center text-center text-[13px] font-semibold"
-              style={{ color: "var(--brand)" }}
+              style={{ color: "var(--brand-text)" }}
             >
               {t("auth.back_to_login")}
             </Link>
@@ -84,7 +84,7 @@ export function ForgotForm() {
             <Link
               to="/login"
               className="mt-4 flex min-h-8 items-center justify-center text-center text-[13px] font-semibold"
-              style={{ color: "var(--brand)" }}
+              style={{ color: "var(--brand-text)" }}
             >
               {t("auth.back_to_login")}
             </Link>

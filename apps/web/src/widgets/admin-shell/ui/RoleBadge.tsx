@@ -2,11 +2,16 @@ import { useTranslation } from "react-i18next";
 
 import { useAuthStore } from "@shared/lib/store/useAuthStore";
 
+/**
+ * B-CODE-09 a11y: bg + white-text 가 모두 WCAG AA pass (≥4.5:1) 되도록 darker
+ * variant 사용. ADMIN → brand-hover (5.0:1) / MANAGER → darker info (5.2:1) /
+ * OWNER → purple (4.9:1, borderline acceptable) / EMPLOYEE → grey-600 (7.0:1).
+ */
 const COLOR: Record<string, string> = {
   OWNER: "var(--purple)",
-  ADMIN: "var(--brand)",
-  MANAGER: "var(--info)",
-  EMPLOYEE: "var(--grey-500)",
+  ADMIN: "var(--brand-hover)",
+  MANAGER: "#0E7575", // darker --info (was #18A5A5 → 2.9:1 FAIL)
+  EMPLOYEE: "var(--grey-600)",
 };
 
 export function RoleBadge() {

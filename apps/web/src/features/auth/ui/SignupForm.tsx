@@ -75,7 +75,7 @@ export function SignupForm() {
           <Link
             to="/login"
             className="inline-flex min-h-8 items-center align-middle font-semibold"
-            style={{ color: "var(--brand)" }}
+            style={{ color: "var(--brand-text)" }}
           >
             {t("auth.login")}
           </Link>

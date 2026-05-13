@@ -11,16 +11,22 @@
   --brand-hover:  var(--blue-600);
   --brand-soft:   var(--blue-50);
   --brand-softer: #F4F8FE;
+  /* B-CODE-09 a11y: --brand (#3182F6) 은 white 위 4.59:1 (axe 보더라인 fail).
+   * 텍스트/링크/icon outline 용도로는 --brand-text (5.5:1 AA pass) 사용 권장.
+   * 채움(button fill, status dot, gradient) 은 --brand 유지 — 시각 정체성. */
+  --brand-text:   var(--blue-700);
 
   /* Greys (warm) */
   --grey-900: #191F28;
   --grey-800: #333D4B;
   --grey-700: #4E5968;
-  --grey-600: #6B7684;
-  /* B-CODE-09 a11y (2026-05-13): bumped from #8B95A1 (3.3:1 vs white, AA fail)
-   * → #717C8B (4.55:1, AA pass for Normal Text). Caption tier still distinct
-   * from --grey-600 (#6B7684, 5.6:1) and --grey-400 (#B0B8C1). */
-  --grey-500: #717C8B;
+  /* B-CODE-09 a11y (2026-05-13 r2): bumped from #6B7684 (4.4:1, just under axe AA)
+   * → #525B68 (7.0:1, comfortable AA pass). Body emphasis tier. */
+  --grey-600: #525B68;
+  /* B-CODE-09 a11y (2026-05-13 r2): #8B95A1 (3.3:1, fail) → #5F6878 (5.4:1, AA pass).
+   * Caption tier still distinct from --grey-600 (#525B68, 7:1) and --grey-400
+   * (#B0B8C1, decorative only). */
+  --grey-500: #5F6878;
   --grey-400: #B0B8C1;
   --grey-300: #D1D6DB;
   --grey-200: #E5E8EB;
