@@ -7,11 +7,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'api/dio_client.dart';
 import 'api/jwt_store.dart';
 import 'app.dart';
+import 'app_shell.dart';
 import 'notif/local_notifs.dart';
 import 'observability/sentry.dart';
-import 'realtime/ws_client.dart';
-import 'screens/home/state/home_controller.dart';
-import 'screens/home/wm_home_screen.dart';
 import 'theme/wm_theme.dart';
 import 'web_shell.dart';
 
@@ -27,7 +25,7 @@ import 'web_shell.dart';
 ///
 /// Settings branch (Plan-C):
 /// On boot, GET /v1/me/settings → use_native_home decides whether to render
-/// WMHomeScreen (Flutter native) or the existing WebView shell. If no JWT or
+/// AppShell (Flutter native 4-tab) or the existing WebView shell. If no JWT or
 /// request fails, falls back to WebView (login flow stays in WebView).
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,7 +47,7 @@ Future<void> _requestNotifPermission() async {
 /// Boot widget that resolves the settings branch before rendering.
 ///
 /// Shows a loading spinner while GET /v1/me/settings is in-flight, then
-/// routes to either WMHomeScreen (use_native_home == true) or the existing
+/// routes to either AppShell (use_native_home == true) or the existing
 /// WebView shell (use_native_home == false or error / unauthenticated).
 class _Boot extends StatefulWidget {
   const _Boot();
@@ -61,8 +59,9 @@ class _Boot extends StatefulWidget {
 class _BootState extends State<_Boot> {
   bool? _useNativeHome;
   Dio? _dio;
-  WsClient? _ws;
-  HomeController? _homeController;
+
+  /// User role fetched from GET /v1/me — used by InboxController tab visibility.
+  String? _role;
 
   /// Used to push WebView routes from the native home screen (Plan-D Task 2).
   final _navKey = GlobalKey<NavigatorState>();
@@ -74,12 +73,6 @@ class _BootState extends State<_Boot> {
   void initState() {
     super.initState();
     _resolve();
-  }
-
-  @override
-  void dispose() {
-    _homeController?.dispose();
-    super.dispose();
   }
 
   Future<void> _resolve() async {
@@ -110,12 +103,12 @@ class _BootState extends State<_Boot> {
       }
 
       if (_useNativeHome == true) {
-        _ws = WsClient(
-          baseWsUrl: baseUrl.replaceFirst('http', 'ws'),
-          accessTokenProvider: () => JwtStore().readAccess(),
-        );
-        unawaited(_ws!.connect());
-        _homeController = HomeController(dio: _dio!, wsClient: _ws!);
+        try {
+          final me = await _dio!.get<Map<String, dynamic>>('/v1/me');
+          _role = (me.data?['data']?['role'] as String?) ?? 'EMPLOYEE';
+        } catch (_) {
+          _role = 'EMPLOYEE';
+        }
       }
 
       if (mounted) setState(() {});
@@ -135,16 +128,16 @@ class _BootState extends State<_Boot> {
       );
     }
 
-    // Native home branch
+    // Native home branch — AppShell owns all 4 controllers + WsClient
     if (_useNativeHome!) {
-      final controller = _homeController!;
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         navigatorKey: _navKey,
         theme: WMTheme.light(),
-        home: WMHomeScreen(
-          controller: controller,
-          onClockIn: () => controller.clockIn(),
+        home: AppShell(
+          dio: _dio!,
+          baseWsUrl: _baseUrl.replaceFirst('http', 'ws'),
+          role: _role ?? 'EMPLOYEE',
           onOpenWebView: (path) {
             _navKey.currentState?.push(
               MaterialPageRoute<void>(
