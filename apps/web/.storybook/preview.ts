@@ -4,7 +4,9 @@ import { initialize, mswLoader } from "msw-storybook-addon";
 import "../src/shared/styles/tokens.css";
 import "../src/shared/styles/index.css";
 import "../src/shared/i18n";
-import { handlers } from "../src/test/msw/handlers";
+// B-CODE-07: import handlers from the per-entity shared registry directly.
+// The legacy `src/test/msw/handlers.ts` re-exports the same list for vitest.
+import { handlers } from "../src/shared/msw/handlers";
 
 // Boots the MSW worker for the Storybook iframe. Default handlers come from the
 // shared registry used by Vitest, so a story renders the same data shape as a
