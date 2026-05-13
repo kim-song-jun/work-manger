@@ -48,6 +48,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     locked_until = models.DateTimeField(null=True, blank=True)
     totp_secret = models.CharField(max_length=64, blank=True, default="")
     totp_enabled = models.BooleanField(default=False)
+    # PoC §6.1 — Flutter native Home toggle (default false, opt-in beta).
+    # See docs/superpowers/specs/2026-05-13-home-native-poc-design.md
+    use_native_home = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=django_tz.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
