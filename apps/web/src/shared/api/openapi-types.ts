@@ -1,5 +1,5 @@
 // AUTO-GENERATED — do not edit by hand. Source: docs/api/api-spec.md + drf-spectacular
-// Generated from http://api:4455/v1/schema/?format=json
+// Generated from http://localhost:4455/v1/schema/?format=json
 // Run `npm run types:gen` to refresh.
 export interface paths {
     "/v1/admin/approvals": {
@@ -1026,6 +1026,32 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/me/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET — returns the authenticated user's settings.
+         *     PATCH — partial update (currently only `use_native_home`).
+         *     See docs/superpowers/specs/2026-05-13-home-native-poc-design.md §6.
+         */
+        get: operations["me_settings_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description GET — returns the authenticated user's settings.
+         *     PATCH — partial update (currently only `use_native_home`).
+         *     See docs/superpowers/specs/2026-05-13-home-native-poc-design.md §6.
+         */
+        patch: operations["me_settings_partial_update"];
         trace?: never;
     };
     "/v1/notices": {
@@ -2750,6 +2776,42 @@ export interface operations {
         };
     };
     me_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_settings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_settings_partial_update: {
         parameters: {
             query?: never;
             header?: never;
