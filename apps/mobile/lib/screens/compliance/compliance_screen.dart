@@ -89,8 +89,11 @@ class _ComplianceScreenState extends State<ComplianceScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded,
-              color: WMTokens.warn, size: 20),
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: WMTokens.warn,
+            size: 20,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -160,9 +163,9 @@ class _ComplianceScreenState extends State<ComplianceScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Text(
+              const Text(
                 '한도: 52시간',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   color: WMTokens.grey500,
                 ),

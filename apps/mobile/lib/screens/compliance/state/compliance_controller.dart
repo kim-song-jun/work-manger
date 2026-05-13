@@ -23,7 +23,7 @@ class ComplianceData {
   String get usedLabel {
     final h = usedMinutes ~/ 60;
     final m = usedMinutes % 60;
-    return '${h}시간 ${m}분';
+    return '$h시간 $m분';
   }
 
   String get limitLabel => '52시간 0분';
