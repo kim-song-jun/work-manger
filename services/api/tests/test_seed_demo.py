@@ -51,7 +51,8 @@ def test_seed_demo_creates_expected_rows():
     assert counts["departments"] == 4
     assert counts["memberships"] == 29  # 1 OWNER + 1 ADMIN + 2 MGRs + 25 employees
     assert counts["schedules"] == 29
-    assert counts["leave_requests"] == 5 + 3
+    # iter13 T3: 5 PENDING (ANNUAL) + 3 APPROVED + 1 PENDING (COMP) = 9
+    assert counts["leave_requests"] == 5 + 3 + 1
     assert counts["overtime_requests"] == 3
     assert counts["attendance_rows"] > 0  # depends on weekday distribution + RNG
 

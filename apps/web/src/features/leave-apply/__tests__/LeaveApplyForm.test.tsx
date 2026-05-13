@@ -24,16 +24,23 @@ import { ToastProvider } from "@shared/ui";
 import { LeaveApplyForm } from "../ui/LeaveApplyForm";
 import "@shared/i18n";
 
+type ApplyLeaveBody = { start_date: string; end_date: string; kind: string; leave_type?: string; reason?: string };
+const applyLeaveMock = vi.fn<(body: ApplyLeaveBody) => Promise<null>>(async () => null);
+
 vi.mock("@entities/leave", async () => {
   return {
     fetchBalance: async () => ({ remaining: 10, used: 0, accrued: 10, expiring: 0 }),
-    applyLeave: vi.fn(async () => null),
+    applyLeave: (body: ApplyLeaveBody) => applyLeaveMock(body),
     leaveDays: ({ kind, start_date, end_date }: { kind: string; start_date: string; end_date: string }) => {
       if (kind !== "FULL") return 0.5;
       const a = new Date(start_date).getTime();
       const b = new Date(end_date).getTime();
       return Math.floor((b - a) / 86400000) + 1;
     },
+    LEAVE_TYPE_OPTIONS: [
+      { value: "ANNUAL", i18nKey: "leave.type.annual" },
+      { value: "COMP", i18nKey: "leave.type.comp" },
+    ] as const,
   };
 });
 
@@ -72,5 +79,31 @@ describe("LeaveApplyForm", () => {
     const am = screen.getByRole("tab", { name: /오전 반차|AM half/i });
     await userEvent.click(am);
     expect(am).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("F-EMPLOYEE-007 iter13 T3 — defaults leave_type to ANNUAL and exposes COMP option", async () => {
+    // Why: T3 introduced leave_type (ANNUAL / COMP). UI must show both options
+    //      and default to ANNUAL so the existing flow remains intact.
+    renderWithProviders(<LeaveApplyForm />);
+    const annualTab = await screen.findByRole("tab", { name: /연차|annual/i });
+    const compTab = await screen.findByRole("tab", { name: /보상|comp/i });
+    expect(annualTab).toHaveAttribute("aria-selected", "true");
+    expect(compTab).toHaveAttribute("aria-selected", "false");
+  });
+
+  it("F-EMPLOYEE-007 iter13 T3 — submits with leave_type=COMP when selected", async () => {
+    // Why: BE serializer accepts an optional leave_type; the submitted body
+    //      must carry the user's choice instead of silently defaulting away.
+    applyLeaveMock.mockClear();
+    renderWithProviders(<LeaveApplyForm />);
+    const compTab = await screen.findByRole("tab", { name: /보상|comp/i });
+    await userEvent.click(compTab);
+    const submit = screen.getByRole("button", { name: /신청하기|submit/i });
+    await userEvent.click(submit);
+    await waitFor(() => {
+      expect(applyLeaveMock).toHaveBeenCalled();
+    });
+    const lastCall = applyLeaveMock.mock.calls.at(-1);
+    expect(lastCall?.[0]?.leave_type).toBe("COMP");
   });
 });
