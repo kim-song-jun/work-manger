@@ -277,6 +277,21 @@ PoC 종료 Go/No-Go 회의:
 - 데이터 수집 위치: Sentry 대시보드 `home.boot` / `home.load` / `home.clock-in` transactions
 - 베타 14일 종료 후 spec §11 결정 분기 표 적용
 
+### B-NAT-06 · Phase A 잔여 + Phase B/C/D 핵심 페이지 native ✅ 완료 (2026-05-14, Plan-F + Plan-G)
+
+* Plan-F (W4-5 잔여): Inbox / LeaveApply / LeaveBalance / Settings + AppShell 4-tab
+* Plan-G (Phase B/C/D): Team / Notice / Compliance / Trip / Help / Notifications / My + 어드민 4 페이지 + 오너 billing + role-based shell
+
+잔여 (WebView fallback 유지):
+* m-customize, m-overtime, m-weekly-report, m-record-detail, m-loc-picker, m-error-gps, m-empty-noti, m-leave-expiry, m-inbox-quick, m-leave-success, m-compliance-block, m-profile-full, m-approval-detail
+* admin-audit, admin-reports, admin-compliance, admin-codes, admin-employee-detail, admin-expiring-leave
+
+이유: detail/log/edit-form 페이지로 사용 빈도 낮음. 사용성 검증 후 Plan-H 에서 처리.
+
+후속:
+* Plan-H: 잔여 19 페이지 native (트래픽 측정 결과 따라 우선순위)
+* Plan-J: WebView 셸 제거 (모든 페이지 native 후)
+
 ---
 
 ## 운영 작업 (코드 외)
