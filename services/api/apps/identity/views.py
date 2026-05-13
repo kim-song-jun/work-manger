@@ -20,6 +20,7 @@ from .models import User
 from .serializers import (
     SignupSerializer,
     UserMeSerializer,
+    MeSettingsSerializer,
     issue_tokens,
 )
 
@@ -158,6 +159,24 @@ def logout(request):
 @api_view(["GET"])
 def me(request):
     return Response({"data": UserMeSerializer(request.user).data})
+
+
+@api_view(["GET", "PATCH"])
+def me_settings(request):
+    """GET — returns the authenticated user's settings.
+    PATCH — partial update (currently only `use_native_home`).
+    See docs/superpowers/specs/2026-05-13-home-native-poc-design.md §6.
+    """
+    user = request.user
+    if request.method == "GET":
+        return Response({"data": {"use_native_home": user.use_native_home}})
+    # PATCH
+    s = MeSettingsSerializer(data=request.data, partial=True)
+    s.is_valid(raise_exception=True)
+    if "use_native_home" in s.validated_data:
+        user.use_native_home = s.validated_data["use_native_home"]
+        user.save(update_fields=["use_native_home", "updated_at"])
+    return Response({"data": {"use_native_home": user.use_native_home}})
 
 
 # ───────────────────────── Password change ─────────────────────────

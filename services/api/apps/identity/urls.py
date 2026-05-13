@@ -18,6 +18,7 @@ urlpatterns = [
     path("auth/password/forgot", views.password_forgot),
     path("auth/password/reset", views.password_reset),
     path("me", views.me),
+    path("me/settings", views.me_settings),
     # onboarding
     path("onboarding/join-company", onb.join_company),
     path("onboarding/profile", onb.profile),

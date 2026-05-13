@@ -79,3 +79,7 @@ class UserMeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("id", "email", "name", "locale", "is_email_verified", "memberships")
+
+
+class MeSettingsSerializer(serializers.Serializer):
+    use_native_home = serializers.BooleanField()
