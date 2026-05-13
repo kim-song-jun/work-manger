@@ -5,6 +5,13 @@ import 'package:flutter/material.dart';
 
 import 'api/jwt_store.dart';
 import 'realtime/ws_client.dart';
+import 'screens/admin_approvals/admin_approvals_screen.dart';
+import 'screens/admin_dashboard/admin_dashboard_screen.dart';
+import 'screens/admin_dashboard/state/admin_dashboard_controller.dart';
+import 'screens/admin_employees/admin_employees_screen.dart';
+import 'screens/admin_employees/state/admin_employees_controller.dart';
+import 'screens/admin_settings/admin_settings_screen.dart';
+import 'screens/admin_settings/state/admin_settings_controller.dart';
 import 'screens/compliance/compliance_screen.dart';
 import 'screens/compliance/state/compliance_controller.dart';
 import 'screens/help/help_screen.dart';
@@ -22,6 +29,8 @@ import 'screens/notice/notice_screen.dart';
 import 'screens/notice/state/notice_controller.dart';
 import 'screens/notifications/notifications_screen.dart';
 import 'screens/notifications/state/notifications_controller.dart';
+import 'screens/owner_billing/owner_billing_screen.dart';
+import 'screens/owner_billing/state/owner_billing_controller.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/settings/state/settings_controller.dart';
 import 'screens/team/state/team_controller.dart';
@@ -68,13 +77,22 @@ class _AppShellState extends State<AppShell> {
   late final LeaveBalanceController _balance;
   late final SettingsController _settings;
 
-  // More-tab screens
+  // More-tab screens (employee / OWNER)
   late final TeamController _team;
   late final NoticeController _notice;
   late final ComplianceController _compliance;
   late final TripController _trip;
   late final NotificationsController _notifications;
   late final MyController _my;
+
+  // ADMIN-only controllers (null for non-admin)
+  AdminDashboardController? _adminDash;
+  InboxController? _adminInbox;
+  AdminEmployeesController? _adminEmps;
+  AdminSettingsController? _adminSettings;
+
+  // OWNER-only controllers (null for non-owner)
+  OwnerBillingController? _ownerBilling;
 
   @override
   void initState() {
@@ -94,6 +112,17 @@ class _AppShellState extends State<AppShell> {
     _trip = TripController(dio: widget.dio);
     _notifications = NotificationsController(dio: widget.dio);
     _my = MyController(dio: widget.dio);
+
+    if (widget.role == 'ADMIN') {
+      _adminDash = AdminDashboardController(dio: widget.dio);
+      _adminInbox = InboxController(dio: widget.dio, role: 'ADMIN');
+      _adminEmps = AdminEmployeesController(dio: widget.dio);
+      _adminSettings = AdminSettingsController(dio: widget.dio);
+    }
+
+    if (widget.role == 'OWNER') {
+      _ownerBilling = OwnerBillingController(dio: widget.dio);
+    }
   }
 
   @override
@@ -108,6 +137,11 @@ class _AppShellState extends State<AppShell> {
     _trip.dispose();
     _notifications.dispose();
     _my.dispose();
+    _adminDash?.dispose();
+    _adminInbox?.dispose();
+    _adminEmps?.dispose();
+    _adminSettings?.dispose();
+    _ownerBilling?.dispose();
     _ws.dispose();
     super.dispose();
   }
@@ -130,7 +164,7 @@ class _AppShellState extends State<AppShell> {
   }
 
   List<({IconData icon, String label, VoidCallback onTap})> _moreTiles() {
-    return [
+    final tiles = <({IconData icon, String label, VoidCallback onTap})>[
       (
         icon: Icons.group_outlined,
         label: '팀',
@@ -212,10 +246,37 @@ class _AppShellState extends State<AppShell> {
         ),
       ),
     ];
+
+    // OWNER: append Billing tile
+    if (widget.role == 'OWNER' && _ownerBilling != null) {
+      tiles.add((
+        icon: Icons.credit_card_outlined,
+        label: '결제',
+        onTap: () => Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => OwnerBillingScreen(
+              controller: _ownerBilling!,
+              onOpenWebView: widget.onOpenWebView,
+            ),
+          ),
+        ),
+      ),);
+    }
+
+    return tiles;
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.role == 'ADMIN') return _adminShell();
+    return _employeeShell();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Employee / MANAGER / OWNER shell — 5 tabs (홈/받은함/휴가/설정/더보기)
+  // ---------------------------------------------------------------------------
+
+  Widget _employeeShell() {
     final pages = <Widget>[
       WMHomeScreen(
         controller: _home,
@@ -263,6 +324,110 @@ class _AppShellState extends State<AppShell> {
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
+            label: '설정',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.apps_outlined),
+            selectedIcon: Icon(Icons.apps),
+            label: '더보기',
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // ADMIN shell — 5 tabs: 대시보드 / 결재 / 직원 / 설정 / 더보기
+  // ---------------------------------------------------------------------------
+
+  Widget _adminShell() {
+    final adminMoreTiles = <({IconData icon, String label, VoidCallback onTap})>[
+      (
+        icon: Icons.help_outline,
+        label: '도움말',
+        onTap: () => Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => HelpScreen(onOpenWebView: widget.onOpenWebView),
+          ),
+        ),
+      ),
+      (
+        icon: Icons.notifications_outlined,
+        label: '알림',
+        onTap: () => Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => NotificationsScreen(controller: _notifications),
+          ),
+        ),
+      ),
+      (
+        icon: Icons.person_outlined,
+        label: '내 정보',
+        onTap: () => Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => MyScreen(
+              controller: _my,
+              onOpenWebView: widget.onOpenWebView,
+              onLogout: () async {
+                await JwtStore().clear();
+                if (mounted) {
+                  await Navigator.of(context).pushAndRemoveUntil<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const _LoggedOutSplash(),
+                    ),
+                    (_) => false,
+                  );
+                }
+              },
+            ),
+          ),
+        ),
+      ),
+    ];
+
+    final pages = <Widget>[
+      AdminDashboardScreen(controller: _adminDash!),
+      AdminApprovalsScreen(
+        controller: _adminInbox!,
+        onOpenItem: (item) =>
+            widget.onOpenWebView('/admin/approval-detail?id=${item.id}'),
+      ),
+      AdminEmployeesScreen(
+        controller: _adminEmps!,
+        onOpenWebView: widget.onOpenWebView,
+      ),
+      AdminSettingsScreen(
+        controller: _adminSettings!,
+        onOpenWebView: widget.onOpenWebView,
+      ),
+      _MoreScreen(tiles: adminMoreTiles),
+    ];
+
+    return Scaffold(
+      body: IndexedStack(index: _tab, children: pages),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (i) => setState(() => _tab = i),
+        backgroundColor: WMTokens.white,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: '대시보드',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.pending_actions_outlined),
+            selectedIcon: Icon(Icons.pending_actions),
+            label: '결재',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people),
+            label: '직원',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.business_outlined),
+            selectedIcon: Icon(Icons.business),
             label: '설정',
           ),
           NavigationDestination(
