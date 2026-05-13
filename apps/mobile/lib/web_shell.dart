@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
@@ -13,6 +11,75 @@ const String _kWebviewUrl = String.fromEnvironment(
   'WEBVIEW_URL',
   defaultValue: 'http://10.0.2.2:4444',
 );
+
+/// Parameterised WebView host — opens [url] in a full-screen InAppWebView.
+///
+/// Used by Plan-D Task 2 to push any SPA path from the native home screen.
+/// The existing [WebShellScreen] keeps using the compile-time [_kWebviewUrl];
+/// this widget is a thin layer that accepts a runtime URL.
+class WebViewHost extends StatefulWidget {
+  const WebViewHost({super.key, required this.url});
+
+  final String url;
+
+  @override
+  State<WebViewHost> createState() => _WebViewHostState();
+}
+
+class _WebViewHostState extends State<WebViewHost> {
+  InAppWebViewController? _controller;
+  PullToRefreshController? _pullToRefresh;
+  bool _firstLoadComplete = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pullToRefresh = PullToRefreshController(
+      settings: PullToRefreshSettings(color: const Color(0xFF1F6FEB)),
+      onRefresh: () async => _controller?.reload(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: BackButton(onPressed: () => Navigator.of(context).pop()),
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            InAppWebView(
+              initialUrlRequest: URLRequest(url: WebUri(widget.url)),
+              initialSettings: InAppWebViewSettings(
+                javaScriptEnabled: true,
+                useShouldOverrideUrlLoading: false,
+                mediaPlaybackRequiresUserGesture: false,
+                allowsInlineMediaPlayback: true,
+                supportZoom: false,
+                transparentBackground: true,
+              ),
+              pullToRefreshController: _pullToRefresh,
+              onWebViewCreated: (controller) => _controller = controller,
+              onLoadStop: (controller, url) async {
+                _pullToRefresh?.endRefreshing();
+                if (!_firstLoadComplete && mounted) {
+                  setState(() => _firstLoadComplete = true);
+                }
+              },
+              onReceivedError: (controller, request, error) {
+                _pullToRefresh?.endRefreshing();
+              },
+            ),
+            if (!_firstLoadComplete) const _SplashOverlay(),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// Full-screen WebView host with splash overlay + pull-to-refresh.
 class WebShellScreen extends StatefulWidget {
@@ -90,12 +157,12 @@ class _SplashOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
+    return const ColoredBox(
       color: Colors.white,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             SizedBox(
               width: 48,
               height: 48,
