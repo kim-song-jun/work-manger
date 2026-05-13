@@ -1,28 +1,31 @@
 # 로드맵 (Roadmap)
 
-> **현재 단계**: Phase 0 — 기획 / 문서화 (2026-05)
+> **현재 단계**: Phase 4 — v1.0 출시 준비 (2026-05-13 기준)
+> **다음 마일스톤**: v1.0 GA — 2026-08-17 목표
+> **현황 추적**: [`tasks/index.md`](tasks/index.md), [`specs/implementation-status.md`](specs/implementation-status.md), [`tasks/backlog.md`](tasks/backlog.md)
 
-각 단계는 **종료 기준 (Exit Criteria)** 를 충족해야 다음 단계로 진행한다.
+각 단계는 **종료 기준 (Exit Criteria)** 을 충족해야 다음 단계로 진행한다.
+
+> ⚠️ Phase 0~3 의 종료 기준은 iter1~iter14 (2026-05-04 ~ 2026-05-10) 진행 동안 충족되었다. 본 문서는 마일스톤 정의 + 현재 단계 진척만 정상으로 유지하며, 세부 진척은 위의 SDD 문서 3종에서 추적한다.
 
 ---
 
-## Phase 0 · 기획 / 문서화 (현재)
+## Phase 0 · 기획 / 문서화 ✅ 완료 (2026-05-04 종료)
 
-**기간**: 2주
 **산출물**:
-- 본 `docs/` 일체
+- 본 `docs/` 일체 (v0.1 머지 완료)
 - 디자인 핸드오프 검토 완료
 - 기술 스택 / 인프라 비용 추정
-- ADR-001 ~ 005 작성
+- ADR-001 ~ 006 작성 ([adr/README.md](adr/README.md))
 
 **종료 기준**:
-- [ ] 모든 docs/ 문서 v0.1 머지
-- [ ] 운영팀 / 디자인팀 / 개발팀 검토 완료
-- [ ] 1차 비용 추정 승인
+- [x] 모든 docs/ 문서 v0.1 머지
+- [x] 운영팀 / 디자인팀 / 개발팀 검토 완료
+- [x] 1차 비용 추정 승인
 
 ---
 
-## Phase 1 · 골격 / 디자인 시스템 (2주)
+## Phase 1 · 골격 / 디자인 시스템 ✅ 완료
 
 **목표**: "빈 화면" 까지 도달.
 
@@ -35,13 +38,13 @@
 - 도커 / Terraform 으로 dev 환경 구성
 
 **종료 기준**:
-- [ ] 로그인 화면이 dev 도메인에서 렌더
-- [ ] CI 가 main 푸시 시 dev 배포
-- [ ] Storybook (또는 컴포넌트 도큐 페이지) 으로 atoms 확인 가능
+- [x] 로그인 화면이 dev 도메인에서 렌더
+- [x] CI 가 main 푸시 시 dev 배포
+- [x] Storybook 으로 atoms 확인 가능 (`apps/web/.storybook/`, 68 stories)
 
 ---
 
-## Phase 2 · MVP 핵심 (6주)
+## Phase 2 · MVP 핵심 ✅ 완료
 
 **목표**: 1개 회사가 실제로 출근 / 연차 / 승인을 처리할 수 있다.
 
@@ -56,13 +59,13 @@
 | W6 | Notifications (푸시 + 이메일 + 인박스) |
 
 **종료 기준**:
-- [ ] [`screen-catalog.md`](specs/screen-catalog.md) 의 MVP 화면 100% 구현
-- [ ] 부하 테스트 통과 (목표 DAU × 3)
-- [ ] Stg 에서 1주 실사용 베타
+- [x] [`screen-catalog.md`](specs/screen-catalog.md) 의 MVP 화면 100% 구현 (54 라우트, orphan 0)
+- [ ] 부하 테스트 통과 (목표 DAU × 3) — scripts 준비됨, stg 실측은 P1 backlog (B-OPS-07)
+- [ ] Stg 에서 1주 실사용 베타 — Phase 4 일부
 
 ---
 
-## Phase 3 · 모바일 셸 + 데스크탑 셸 (3주)
+## Phase 3 · 모바일 셸 + 데스크탑 셸 ✅ 코드 완료 (운영 잔여)
 
 - Flutter WebView 셸 (Android / iOS)
   - GPS / Geofencing / 푸시 / 권한
@@ -72,12 +75,12 @@
   - 코드 사인 / Notarization
 
 **종료 기준**:
-- [ ] App Store / Play Store 심사 통과
-- [ ] Electron auto-update 동작 검증
+- [ ] App Store / Play Store 심사 통과 — P0 backlog (B-OPS-03), iOS 네이티브 잔여(B-CODE-02) 필요
+- [x] Electron auto-update 동작 검증 (`apps/desktop/src/main/__tests__/updater.test.ts`, S3 prod publish 검증은 P0)
 
 ---
 
-## Phase 4 · v1.0 출시
+## Phase 4 · v1.0 출시 (현재) — 2026-05-13 ~ 2026-08-17
 
 **목표**: 일반 공개
 
@@ -88,7 +91,19 @@
 - 첫 유료 회사 온보딩
 
 **종료 기준**:
-- [ ] [`operations-guide.md`](operations/operations-guide.md) §11 출시 체크리스트 100%
+- [ ] [`operations-guide.md`](operations/operations-guide.md) §11.1 출시 체크리스트 100%
+- [ ] [`architecture/infra-verification.md`](architecture/infra-verification.md) §9.1 P0 항목 모두 ✅
+- [ ] [`qa/feature-verification.md`](qa/feature-verification.md) §6 Release Gate 통과
+- [ ] [`qa/ui-ux-verification.md`](qa/ui-ux-verification.md) §9 Release Gate 통과
+
+**P0 차단 항목** (자세한 acceptance: [`tasks/backlog.md`](tasks/backlog.md)):
+- B-OPS-01 Win EV 코드사이닝
+- B-OPS-02 macOS Notarization
+- B-OPS-03 App Store / Play Store 등록 + 첫 제출
+- B-OPS-04 외부 펜테스트
+- B-OPS-05 prod 시크릿 + 모니터링 주입
+- B-OPS-06 백업 / 복원 리허설
+- B-OPS-08 법무 검토 + GDPR 감사
 
 ---
 

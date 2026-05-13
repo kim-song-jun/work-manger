@@ -25,7 +25,7 @@ make test
 | Backend | Django 5 + DRF + Channels | PostgreSQL, Celery + Beat, Redis, daphne/uvicorn, drf-spectacular |
 | Mobile | Flutter (WebView shell) | flutter_inappwebview, geolocator, workmanager, web_socket_channel (ntfy) |
 | Desktop | Electron 33 | electron-builder, electron-updater (S3 publish), tray + auto clock-in |
-| Infra | Docker + Nginx + AWS | Terraform 11개 모듈 (RDS/ElastiCache/S3/WAF/ACM/PD/observability) |
+| Infra | Docker + Nginx + AWS | Terraform 12개 모듈 (network/rds/elasticache/s3-cdn/ecs/acm/alb/waf/route53/secrets/observability/desktop-updates) |
 | 인증 | JWT (SimpleJWT) + OAuth2 (Google · Kakao) + 2FA TOTP (pyotp) | refresh + lockout |
 | 푸시 | Web Push (VAPID via pywebpush) / APNs HTTP/2 (httpx) / ntfy (self-hosted) | ADR-006 |
 
@@ -57,7 +57,7 @@ work-manager/
 ├── services/
 │   └── api/             Django 5 + DRF + Channels
 │       └── apps/        admin_api · approval · attendance · audit · compliance · identity · leave · notice · notification · oauth · realtime · team · trip
-├── infra/terraform/     11개 모듈 + envs/{dev,stg,prod}
+├── infra/terraform/     12개 모듈 + envs/{dev,stg,prod}
 ├── docs/                roadmap · specs · architecture · operations · adr · qa · manuals · guidelines · design
 ├── _design/             디자인 핸드오프 자료
 ├── docker-compose.yml          개발 풀스택
@@ -145,10 +145,12 @@ CI 는 `make test-be` / `make test-fe` / `make test-e2e` 와 동등한 잡을 Gi
 
 ### Architecture & Specs
 - [Architecture](docs/architecture/architecture.md) — §10 Infra · §11 Observability · §13 Capacity
+- [Infra Verification (SDD)](docs/architecture/infra-verification.md) — Terraform + CI + 관측 + DR + Release Readiness Gate
 - [Data Model](docs/architecture/data-model.md)
 - [Domain Model](docs/specs/domain-model.md)
 - [Feature Spec](docs/specs/feature-spec.md)
 - [Screen Catalog](docs/specs/screen-catalog.md)
+- [Implementation Status (SDD)](docs/specs/implementation-status.md) — 도메인 × 플랫폼 × 인프라 완성도 매트릭스
 - [Design System](docs/design/design-system.md)
 
 ### API
@@ -175,7 +177,9 @@ CI 는 `make test-be` / `make test-fe` / `make test-e2e` 와 동등한 잡을 Gi
 - [Local 3-Platform Guide](docs/operations/local-3platform.md) — Web/Desktop/Mobile 로컬 검증 + docker-android (WSA EOL 대안)
 
 ### QA & Manuals
-- [E2E + UI/UX Audit](docs/qa/e2e-ui-ux-audit.md)
+- [E2E + UI/UX Audit](docs/qa/e2e-ui-ux-audit.md) — release gate (canonical)
+- [Feature Verification (SDD)](docs/qa/feature-verification.md) — 페르소나 × 도메인 검증 매트릭스
+- [UI/UX Verification (SDD)](docs/qa/ui-ux-verification.md) — 디자인 시스템 + a11y + 페르소나 동선
 - [Admin Company Codes Manual](docs/manuals/admin-company-codes.md)
 - [Admin Manual](docs/manuals/admin.md)
 - [Owner Manual](docs/manuals/owner.md)
@@ -218,6 +222,8 @@ CI 는 `make test-be` / `make test-fe` / `make test-e2e` 와 동등한 잡을 Gi
 
 ### Ledger
 - `docs/tasks/index.md` — task doc 인덱스
+- `docs/tasks/backlog.md` — 작업 backlog SDD (P0/P1/P2/P3 분류)
 - `docs/tasks/{N}-{slug}.md` — task 별 체크박스 + ambiguity log
 - `docs/tasks/{N}-findings.md` — gate reject finding append-only
 - `docs/tasks/{N}-fixes.md` — dev fix append-only (finding 과 1:1)
+- `docs/tasks/archive/` — 종료된 iteration 의 SESSION/findings 보고서

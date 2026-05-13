@@ -1,6 +1,8 @@
 # 데이터 모델 (Data Model)
 
 > PostgreSQL 16 기준. 도메인 정의는 [`../specs/domain-model.md`](../specs/domain-model.md), 본 문서는 물리 스키마.
+>
+> **현황 (2026-05-13)**: Phase 1~3 모델 구현 완료. 실제 구현된 모델 정의는 `services/api/apps/*/models.py` 가 SSOT. 본 문서는 설계 의도 + 변경 이력 추적 목적. 상세 구현 매핑은 [`../specs/implementation-status.md §1`](../specs/implementation-status.md) 참조.
 
 ---
 

@@ -18,13 +18,23 @@
 | 런북 | [`operations/runbook.md`](operations/runbook.md) | 장애 시나리오별 복구 절차 (R-001 ~ R-011) |
 | 운영 SOP | [`operations/sop/`](operations/sop/) | 온보딩 / 데이터 처리 / 보안 사고 / 평판 / 스토어 긴급 업데이트 |
 | 로컬 3-플랫폼 가이드 | [`operations/local-3platform.md`](operations/local-3platform.md) | Web / Desktop / Mobile 로컬 검증 (docker-android WSA EOL 대안 포함) |
-| 의사결정 기록 (ADR) | [`adr/README.md`](adr/README.md) | ADR-001 ~ ADR-005 (React SPA / Flutter WebView / Django / Postgres / 디자인 토큰) |
+| 의사결정 기록 (ADR) | [`adr/README.md`](adr/README.md) | ADR-001 ~ ADR-006 (React SPA / Flutter WebView / Django / Postgres / 디자인 토큰 / Self-hosted push) |
 | 디자인 시스템 | [`design/design-system.md`](design/design-system.md) | 토큰 / 타이포 / 컴포넌트 / 모션 |
 | E2E / UI 감사 | [`qa/e2e-ui-ux-audit.md`](qa/e2e-ui-ux-audit.md) | Docker E2E 시나리오 매트릭스 / UI·UX 비교 / 검증 게이트 |
 | 관리자 매뉴얼 | [`manuals/admin.md`](manuals/admin.md) | ADMIN 역할 기능 가이드 + SOP 링크 |
 | OWNER 매뉴얼 | [`manuals/owner.md`](manuals/owner.md) | 회사 정보 변경 · 데이터 export/삭제 SOP |
 | 가입 코드 매뉴얼 | [`manuals/admin-company-codes.md`](manuals/admin-company-codes.md) | 발급 · 회수 · 보안 가이드 |
-| 로드맵 | [`roadmap.md`](roadmap.md) | 마일스톤 · 우선순위 · 마감 |
+| 로드맵 | [`roadmap.md`](roadmap.md) | 마일스톤 · 우선순위 · 마감 (Phase 4 현재) |
+
+### SDD 베이스라인 (2026-05-13 신규)
+
+| 문서 | 위치 | 설명 |
+|---|---|---|
+| 구현 현황 | [`specs/implementation-status.md`](specs/implementation-status.md) | 도메인 × 플랫폼 × 인프라 완성도 매트릭스 + 갭 |
+| 작업 backlog | [`tasks/backlog.md`](tasks/backlog.md) | 향후 작업 SDD (acceptance criteria + 우선순위 + 의존성) |
+| 기능 검증 | [`qa/feature-verification.md`](qa/feature-verification.md) | 도메인 × 페르소나 검증 매트릭스 |
+| UI/UX 검증 | [`qa/ui-ux-verification.md`](qa/ui-ux-verification.md) | 디자인 시스템 + a11y + 페르소나 동선 |
+| Infra 검증 | [`architecture/infra-verification.md`](architecture/infra-verification.md) | Terraform + CI + 관측 + DR + Release Readiness Gate |
 
 ### SOP 빠른 링크
 
@@ -46,6 +56,7 @@
 | ADR-003 Django REST + Channels | [`adr/ADR-003-django-rest-channels.md`](adr/ADR-003-django-rest-channels.md) |
 | ADR-004 PostgreSQL 단일 DB / 멀티 테넌트 v2 연기 | [`adr/ADR-004-postgres-single-db-multitenant-deferred.md`](adr/ADR-004-postgres-single-db-multitenant-deferred.md) |
 | ADR-005 디자인 토큰 = CSS 변수 + Tailwind 참조 | [`adr/ADR-005-design-tokens-css-vars-tailwind.md`](adr/ADR-005-design-tokens-css-vars-tailwind.md) |
+| ADR-006 Self-hosted push (Firebase 의존성 제거) | [`adr/ADR-006-self-hosted-push-no-firebase.md`](adr/ADR-006-self-hosted-push-no-firebase.md) |
 
 ## 작성 규칙
 
