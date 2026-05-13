@@ -250,6 +250,30 @@
 
 ---
 
+### B-NAT-01 · Home Native PoC W1 — BE 셋업 + Codegen 골격 ✅ 완료 (2026-05-13, `3d05c40..c8517d2`)
+
+- **우선순위**: P1
+- **갭 출처**: docs/superpowers/specs/2026-05-13-home-native-poc-design.md §3 In scope (W1)
+- **목적**: ADR-007 Phase A 사전 PoC 의 BE 토글 인프라 + Codegen 골격.
+
+W1 산출:
+- `User.use_native_home: BooleanField(default=False)` + migration `0007_user_use_native_home`
+- `GET / PATCH /v1/me/settings` function-based endpoint (DRF, JWT 보호)
+- `set_user_setting` management command (`--user-id` / `--bulk`, rollout/rollback 운영용)
+- `scripts/codegen/flutter-{tokens,api,i18n}.cjs` no-op 골격 + `scripts/codegen-check.sh` + `make codegen` / `make codegen-check` 타겟 (drift gate skeleton)
+- OpenAPI 스키마 + `apps/web/src/shared/api/openapi-types.ts` regen (drift check 통과)
+- pytest 11 case (model 2 + GET 2 + PATCH 4 + command 3) — 모두 PASS
+- curl smoke (GET 200 / PATCH 200 / unauth 401) PASS
+
+후속 (별도 plan):
+- B-NAT-02 (Plan-B W2-3): tokens / OpenAPI Dart / i18n codegen 본 구현
+- B-NAT-03 (Plan-C W4-5): `WMHomeScreen` + widgets + WS + Sentry mobile
+- B-NAT-04 (Plan-D W6-8): widget/integration/golden test + Beta launch + KPI
+
+(자세한 acceptance criteria: spec §5, Plan-A `docs/superpowers/plans/2026-05-13-home-native-poc-w1-be-setup.md`.)
+
+---
+
 ## 운영 작업 (코드 외)
 
 ### B-OPS-01 · Electron Setup.exe EV 코드사이닝

@@ -282,3 +282,4 @@ PoC 종료 시점 (2026-07-07) 의 결정:
 | Date | Author | 변경 |
 |---|---|---|
 | 2026-05-13 | @sungjun + Claude | 초안 (brainstorming 결과 정리) |
+| 2026-05-13 | @sungjun + Claude | W1 BE 셋업 + Codegen 골격 완료 (Plan-A, commits 3d05c40..c8517d2 — 11 pytest + curl smoke pass) |
