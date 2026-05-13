@@ -178,6 +178,16 @@ Provider 코드는 `apps/notification/providers/` 에 모드별로 분리되어 
 
 토글은 deploy 단계 환경변수만으로 완결된다. 코드 변경 없음. 시크릿 로테이션은 §8.1.
 
+### 5.5 푸시 디바이스 토큰 GC (B-CODE-08)
+
+`DeviceToken` 은 provider 가 410 / 404 / `BadDeviceToken` 등을 돌려주면 즉시 삭제된다. 그러나 사용자가 OS push 서버에 무통보로 앱을 삭제한 경우(또는 ntfy bearer 가 회전되어 더 이상 도달하지 않는 경우) 토큰은 silent 상태로 남는다. 미정리 시 outbox 가 dead 토큰에 재시도 → provider quota 낭비 + DB 부담.
+
+- **태스크**: `apps.notification.cleanup.cleanup_stale_device_tokens` (Celery beat)
+- **스케줄**: 매일 03:15 KST (= 18:15 UTC, off-peak). 마이그레이션 `notification/0004_seed_cleanup_beat.py` 가 등록.
+- **정책**: `DeviceToken.last_seen_at < now() - 60d` strict less-than → 삭제. `last_seen_at` 은 디바이스가 push 토큰 등록을 갱신할 때 자동 update (`POST /v1/notifications/devices` flow).
+- **운영 체크**: 매일 INFO 로그 `notification.cleanup: purged N stale device tokens` (Sentry / CloudWatch 에서 N 추이 monitoring 권장 — 평균 ± 3σ 이탈 시 알림)
+- **수동 호출**: `docker compose exec api python manage.py shell -c "from apps.notification.cleanup import purge_stale_device_tokens; print(purge_stale_device_tokens())"`
+
 ---
 
 ## 6. 데이터베이스 운영
