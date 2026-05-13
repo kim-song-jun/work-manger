@@ -44,8 +44,8 @@ class AdminSettingsController extends ChangeNotifier {
           final r =
               await dio.get<Map<String, dynamic>>('/v1/admin/settings');
           final data =
-              r.data?['data'] as Map<String, dynamic>? ?? r.data ?? {};
-          settings = CompanySettings.fromJson(data as Map<String, dynamic>);
+              r.data?['data'] as Map<String, dynamic>? ?? r.data ?? <String, dynamic>{};
+          settings = CompanySettings.fromJson(data);
         } on DioException catch (e) {
           error = e.message ?? 'settings load failed';
         } finally {

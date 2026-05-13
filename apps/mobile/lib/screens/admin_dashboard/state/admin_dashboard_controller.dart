@@ -40,8 +40,9 @@ class AdminDashboardController extends ChangeNotifier {
         try {
           final r =
               await dio.get<Map<String, dynamic>>('/v1/admin/dashboard');
-          final data = r.data?['data'] as Map<String, dynamic>? ?? r.data ?? {};
-          stats = DashboardStats.fromJson(data as Map<String, dynamic>);
+          final data =
+              r.data?['data'] as Map<String, dynamic>? ?? r.data ?? <String, dynamic>{};
+          stats = DashboardStats.fromJson(data);
         } on DioException catch (e) {
           error = e.message ?? 'dashboard load failed';
         } finally {

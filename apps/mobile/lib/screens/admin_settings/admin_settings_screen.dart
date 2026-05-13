@@ -67,23 +67,29 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
 
   List<Widget> _cards(CompanySettings s) {
     return [
-      _InfoCard(label: '회사명', child: Text(
-        s.companyName.isNotEmpty ? s.companyName : '—',
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: WMTokens.grey900,
+      _InfoCard(
+        label: '회사명',
+        child: Text(
+          s.companyName.isNotEmpty ? s.companyName : '—',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: WMTokens.grey900,
+          ),
         ),
-      )),
+      ),
       const SizedBox(height: WMTokens.sp3),
-      _InfoCard(label: '회계연도 시작', child: Text(
-        s.fiscalYearStart.isNotEmpty ? s.fiscalYearStart : '—',
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: WMTokens.grey900,
+      _InfoCard(
+        label: '회계연도 시작',
+        child: Text(
+          s.fiscalYearStart.isNotEmpty ? s.fiscalYearStart : '—',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: WMTokens.grey900,
+          ),
         ),
-      )),
+      ),
       const SizedBox(height: WMTokens.sp3),
       _InfoCard(
         label: '브랜드 컬러',
