@@ -257,8 +257,19 @@
 
 (자세한 task 분해 + commit range 는 docs/superpowers/plans/2026-05-13-home-native-poc-* 참조.)
 
+### B-NAT-05 · Plan-E openapi-generator Windows fix ✅ 완료 (2026-05-14, Plan-E)
+
+Plan-B Task 4 의 fallback stub 교체 — Java 17 JAR 직접 호출. dart-dio
+generated client 본 출력 (lib/api/openapi/ tracked).
+
+iOS 차단 (B-OPS-02 Mac signing) 은 여전히 본 host 불가 — Plan-F (Mac
+host 확보 후) 로 이관.
+
+후속:
+- B-NAT-06 / B-NAT-07 — ADR-007 Phase A~D (별도 plan)
+- Plan-F (Mac host): iOS 빌드 + TestFlight + 베타 5인 enrollment
+
 후속 (별도 plan 필요):
-- B-NAT-05 (Plan-E): openapi-generator Windows fix + iOS 차단 해소 (B-OPS-02 Mac signing) + TestFlight beta
 - B-NAT-06 (Phase A 본격): ADR-007 Phase A — Inbox / LeaveApply / LeaveBalance / Settings 페이지 native
 - B-NAT-07: WebView 셸 제거 (Phase D)
 
