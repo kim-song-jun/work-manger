@@ -292,6 +292,19 @@ PoC 종료 Go/No-Go 회의:
 * Plan-H: 잔여 19 페이지 native (트래픽 측정 결과 따라 우선순위)
 * Plan-J: WebView 셸 제거 (모든 페이지 native 후)
 
+### B-NAT-07 · 잔여 19 페이지 native ✅ 완료 (2026-05-14, Plan-H)
+
+* 19 페이지 (list 7 / detail 3 / form 3 / static 4 / chart 1 / map 1)
+* m-loc-picker 만 WebView fallback (네이티브 맵 plugin 보류)
+
+총 native 페이지: **35 페이지** (16 Plan-F/G + 19 Plan-H). `use_native_home=true`
+사용자는 거의 모든 페이지를 Flutter native 로 사용. m-loc-picker 의 맵 영역만
+WebView fallback (네이티브 맵 plugin 도입 시 별도 plan-K).
+
+후속:
+* Plan-J: WebView 셸 진입점 progressive removal (PoC 베타 14일 KPI 통과 후)
+* Plan-K (옵션): 네이티브 맵 plugin (loc-picker 완전 native)
+
 ---
 
 ## 운영 작업 (코드 외)
