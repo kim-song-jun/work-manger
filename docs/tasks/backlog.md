@@ -140,7 +140,7 @@
 
 ---
 
-### B-CODE-04 · Pre-existing test 정리
+### B-CODE-04 · Pre-existing test 정리 ✅ 완료 (2026-05-13, `e61758d`)
 
 - **우선순위**: P1
 - **갭 출처**: iter13 SESSION report, memory backlog
@@ -178,7 +178,7 @@
 
 ---
 
-### B-CODE-06 · admin_api + identity 백엔드 테스트 보강
+### B-CODE-06 · admin_api + identity 백엔드 테스트 보강 ✅ 완료 (2026-05-13)
 
 - **우선순위**: P1
 - **갭 출처**: implementation-status §6, 백엔드 50 tests 중 0건
@@ -200,7 +200,7 @@
 
 ---
 
-### B-CODE-07 · Web MSW 핸들러 확장
+### B-CODE-07 · Web MSW 핸들러 확장 ✅ 완료 (2026-05-13, `c19a06c`)
 
 - **우선순위**: P2
 - **갭 출처**: implementation-status §2.1
@@ -217,7 +217,7 @@
 
 ---
 
-### B-CODE-08 · 푸시 디바이스 토큰 garbage collection 정책
+### B-CODE-08 · 푸시 디바이스 토큰 garbage collection 정책 ✅ 완료 (2026-05-13, `e2181c5`)
 
 - **우선순위**: P2
 - **갭 출처**: implementation-status §7.1

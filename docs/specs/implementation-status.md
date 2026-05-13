@@ -33,7 +33,7 @@
 
 | 도메인 | App | Models | Endpoints | Tests | Background | 상태 |
 |---|---|---|---|---|---|---|
-| 인증/온보딩 | identity | User, Company, Department, Membership, Location, CompanyJoinCode, RecoveryCode | `/v1/auth/*`, `/v1/me`, `/v1/onboarding/*`, `/v1/admin/company-codes` | 🔴 0 | — | 구현 완료, 테스트 갭 |
+| 인증/온보딩 | identity | User, Company, Department, Membership, Location, CompanyJoinCode, RecoveryCode | `/v1/auth/*`, `/v1/me`, `/v1/onboarding/*`, `/v1/admin/company-codes` | 🟢 15 (B-CODE-06) | — | 구현 완료, auth flow 회귀 보호 |
 | OAuth | oauth | OAuthAccount | `/v1/auth/oauth/{authorize,callback,link,unlink}` | 🟢 2 | — | 완료 |
 | 출퇴근 | attendance | WorkSchedule, AttendanceRecord, BreakRecord, ManualClockInRequest, OvertimeRequest | `/v1/attendance/*`, `/v1/overtime/*` | 🟢 5 | `attendance.auto_clock_out` | 완료 |
 | 연차 | leave | LeavePolicy, LeaveBalance, LeaveRequest | `/v1/leave/*` | 🟢 4 | `leave.{grant_monthly,grant_annual,notify_expiring,expire_balances_task,promote_unused_leave}` | 완료 (COMP balance bucket 임시 ANNUAL 공유 — backlog 참조) |
@@ -45,7 +45,7 @@
 | 출장 | trip | TripRequest | `/v1/trips/*` | 🟢 1 | — | 완료 |
 | 공지 | notice | Notice | `/v1/notices/*` | 🟢 1 | — | 완료 |
 | 실시간 | realtime | (ephemeral) | WS `/v1/ws/{team,inbox,admin}` | 🟢 1 | — | 완료 |
-| 관리자 | admin_api | (view layer only) | `/v1/admin/*` (dashboard, employees, approvals, reports, expiring-leave, settings) | 🔴 0 | — | 구현 완료, 테스트 갭 |
+| 관리자 | admin_api | (view layer only) | `/v1/admin/*` (dashboard, employees, approvals, reports, expiring-leave, settings) | 🟢 14 (B-CODE-06) | — | RBAC + 권한 분리 회귀 보호 |
 | 빌링 | billing | SubscriptionPlan, CompanySubscription, Invoice | `/v1/billing/{plans,subscription,invoices}` | 🟡 1 (skeleton) | — | **스켈레톤** (F-OWNER-07, Stripe 통합 backlog) |
 
 **Push 프로바이더** (`services/api/apps/notification/providers/`):
