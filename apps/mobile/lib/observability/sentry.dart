@@ -21,3 +21,38 @@ Future<void> initSentry(Future<void> Function() runApp) async {
     appRunner: runApp,
   );
 }
+
+/// Wrap [fn] in a Sentry transaction measuring its latency (PoC KPI).
+///
+/// [name] becomes the transaction name (e.g. `home.boot`).
+/// [operation] is the Sentry op category (e.g. `app.start`, `http.client`).
+///
+/// If [fn] throws, the exception is captured and rethrown; the span is
+/// finished with status `internalError` so the failure is visible in the
+/// Performance tab.
+///
+/// On dev machines (no SENTRY_DSN), Sentry is a no-op — the span is still
+/// created but never uploaded.
+Future<T> wrapTransaction<T>(
+  String name,
+  String operation,
+  Future<T> Function() fn,
+) async {
+  final transaction = Sentry.startTransaction(
+    name,
+    operation,
+    bindToScope: true,
+  );
+  try {
+    final result = await fn();
+    transaction.status = const SpanStatus.ok();
+    return result;
+  } catch (e, st) {
+    transaction.status = const SpanStatus.internalError();
+    transaction.throwable = e;
+    await Sentry.captureException(e, stackTrace: st);
+    rethrow;
+  } finally {
+    await transaction.finish();
+  }
+}

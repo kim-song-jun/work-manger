@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../observability/sentry.dart';
 import '../../../realtime/ws_client.dart';
 
 class HomeState {
@@ -68,28 +69,28 @@ class HomeController extends ChangeNotifier {
   String? error;
   bool loading = false;
 
-  Future<void> load() async {
-    loading = true;
-    error = null;
-    notifyListeners();
-    try {
-      final r = await dio.get<Map<String, dynamic>>('/v1/me/dashboard');
-      final data = r.data?['data'] as Map<String, dynamic>? ?? {};
-      state = HomeState(
-        status: (data['status'] as String?) ?? 'OFF',
-        todayMinutes: (data['today_minutes'] as int?) ?? 0,
-        weekMinutes: (data['week_minutes'] as int?) ?? 0,
-        overtimeMinutes: (data['overtime_minutes'] as int?) ?? 0,
-        teamCount: Map<String, int>.from((data['team_count'] as Map?) ?? {}),
-        avatars: List<String>.from((data['avatars'] as List?) ?? []),
-      );
-    } on DioException catch (e) {
-      error = e.message ?? 'load failed';
-    } finally {
-      loading = false;
-      notifyListeners();
-    }
-  }
+  Future<void> load() => wrapTransaction('home.load', 'http.client', () async {
+        loading = true;
+        error = null;
+        notifyListeners();
+        try {
+          final r = await dio.get<Map<String, dynamic>>('/v1/me/dashboard');
+          final data = r.data?['data'] as Map<String, dynamic>? ?? {};
+          state = HomeState(
+            status: (data['status'] as String?) ?? 'OFF',
+            todayMinutes: (data['today_minutes'] as int?) ?? 0,
+            weekMinutes: (data['week_minutes'] as int?) ?? 0,
+            overtimeMinutes: (data['overtime_minutes'] as int?) ?? 0,
+            teamCount: Map<String, int>.from((data['team_count'] as Map?) ?? {}),
+            avatars: List<String>.from((data['avatars'] as List?) ?? []),
+          );
+        } on DioException catch (e) {
+          error = e.message ?? 'load failed';
+        } finally {
+          loading = false;
+          notifyListeners();
+        }
+      });
 
   /// POST /v1/attendance/clock-in with optimistic state update.
   ///

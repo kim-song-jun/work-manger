@@ -83,41 +83,43 @@ class _BootState extends State<_Boot> {
   }
 
   Future<void> _resolve() async {
-    // API base URL re-uses WEBVIEW_URL convention (same origin for PoC).
-    // Production may separate SPA origin from API origin; see dio_client.dart.
-    const baseUrl = String.fromEnvironment(
-      'WEBVIEW_URL',
-      defaultValue: 'http://localhost:4455',
-    );
-    _baseUrl = baseUrl;
-
-    // If user is not logged in yet, skip the settings call and go straight to
-    // WebView (login flow stays in WebView — see ADR-001).
-    final access = await JwtStore().readAccess();
-    if (access == null) {
-      if (mounted) setState(() => _useNativeHome = false);
-      return;
-    }
-
-    _dio = await createWMDio(baseUrl: baseUrl);
-    try {
-      final r = await _dio!.get<Map<String, dynamic>>('/v1/me/settings');
-      _useNativeHome = (r.data?['data']?['use_native_home'] as bool?) ?? false;
-    } catch (_) {
-      // Network error, 401, 5xx → fall back to WebView
-      _useNativeHome = false;
-    }
-
-    if (_useNativeHome == true) {
-      _ws = WsClient(
-        baseWsUrl: baseUrl.replaceFirst('http', 'ws'),
-        accessTokenProvider: () => JwtStore().readAccess(),
+    await wrapTransaction('home.boot', 'app.start', () async {
+      // API base URL re-uses WEBVIEW_URL convention (same origin for PoC).
+      // Production may separate SPA origin from API origin; see dio_client.dart.
+      const baseUrl = String.fromEnvironment(
+        'WEBVIEW_URL',
+        defaultValue: 'http://localhost:4455',
       );
-      unawaited(_ws!.connect());
-      _homeController = HomeController(dio: _dio!, wsClient: _ws!);
-    }
+      _baseUrl = baseUrl;
 
-    if (mounted) setState(() {});
+      // If user is not logged in yet, skip the settings call and go straight to
+      // WebView (login flow stays in WebView — see ADR-001).
+      final access = await JwtStore().readAccess();
+      if (access == null) {
+        if (mounted) setState(() => _useNativeHome = false);
+        return;
+      }
+
+      _dio = await createWMDio(baseUrl: baseUrl);
+      try {
+        final r = await _dio!.get<Map<String, dynamic>>('/v1/me/settings');
+        _useNativeHome = (r.data?['data']?['use_native_home'] as bool?) ?? false;
+      } catch (_) {
+        // Network error, 401, 5xx → fall back to WebView
+        _useNativeHome = false;
+      }
+
+      if (_useNativeHome == true) {
+        _ws = WsClient(
+          baseWsUrl: baseUrl.replaceFirst('http', 'ws'),
+          accessTokenProvider: () => JwtStore().readAccess(),
+        );
+        unawaited(_ws!.connect());
+        _homeController = HomeController(dio: _dio!, wsClient: _ws!);
+      }
+
+      if (mounted) setState(() {});
+    });
   }
 
   @override
