@@ -101,3 +101,42 @@ describe("m-inbox page (BE payload shape)", () => {
     expect(screen.getByText(/박지훈/)).toBeInTheDocument();
   });
 });
+
+describe("m-inbox page (default tab — manager race regression, 2026-05-13)", () => {
+  it("syncs default tab to 'to-approve' once useMe resolves a non-EMPLOYEE role", async () => {
+    // Why: pre-fix the page used `useState(defaultTab)` which froze the initial
+    // tab on first render. When `useMe()` was still loading, `myRole` fell back
+    // to EMPLOYEE → tab defaulted to "내 요청" (mine) and MANAGERs saw an empty
+    // inbox even though /v1/inbox returned PENDING items.
+    //
+    // The fix runs a useEffect that re-applies the default tab once myRole
+    // becomes known (unless the user has already picked a tab manually). This
+    // test exercises the path: render with `data: undefined` first, then have
+    // useMe yield a MANAGER membership, and assert the tab flipped.
+    const useMeMock = vi.mocked(
+      (await import("@entities/user")).useMe,
+    ) as unknown as ReturnType<typeof vi.fn>;
+    useMeMock.mockReturnValueOnce({ data: undefined } as never);
+    useMeMock.mockReturnValue({
+      data: {
+        id: "u-manager",
+        email: "manager@test.com",
+        name: "관리자",
+        locale: "ko",
+        is_email_verified: true,
+        memberships: [{ id: "m-1", role: "MANAGER", company: { id: "c-1", name: "Test" } }],
+      },
+    } as never);
+
+    renderPage();
+
+    await waitFor(() => {
+      const toApprove = screen.getByRole("tab", { name: /승인할 것|to approve/i });
+      expect(toApprove).toHaveAttribute("aria-selected", "true");
+    });
+    // PENDING items must be visible — proves filter + tab default both correct.
+    await waitFor(() => {
+      expect(screen.getAllByTestId("inbox-item")).toHaveLength(2);
+    });
+  });
+});

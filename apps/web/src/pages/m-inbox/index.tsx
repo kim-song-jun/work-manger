@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -60,10 +60,25 @@ export function InboxPage() {
   const nav = useNavigate();
   const me = useMe();
 
-  // F-EMPLOYEE-008: EMPLOYEE role defaults to "mine" tab; MANAGER/ADMIN/OWNER default to "to-approve"
-  const myRole = me.data?.memberships?.[0]?.role ?? "EMPLOYEE";
+  // F-EMPLOYEE-008: EMPLOYEE role defaults to "mine" tab; MANAGER/ADMIN/OWNER default to "to-approve".
+  // F-MANAGER-XX (2026-05-13 live-test): the original `useState(defaultTab)` froze the
+  // initial tab on first render — when `me.data` was still loading, `myRole` fell back
+  // to "EMPLOYEE" and MANAGER users landed on the empty "내 요청" tab. Switch to a
+  // role-aware default that re-syncs once /v1/me resolves (but only until the user
+  // explicitly picks a tab, tracked by `userPickedRef`).
+  const myRole = me.data?.memberships?.[0]?.role ?? null;
   const defaultTab: Tab = myRole === "EMPLOYEE" ? "mine" : "to-approve";
   const [tab, setTab] = useState<Tab>(defaultTab);
+  const userPickedRef = useRef(false);
+  useEffect(() => {
+    if (userPickedRef.current) return;
+    if (myRole === null) return;
+    setTab(myRole === "EMPLOYEE" ? "mine" : "to-approve");
+  }, [myRole]);
+  const handleTabChange = (next: Tab) => {
+    userPickedRef.current = true;
+    setTab(next);
+  };
   const q = useQuery({ queryKey: ["inbox"], queryFn: () => fetchInbox() });
 
   const items: InboxItem[] = useMemo(() => q.data?.items ?? [], [q.data?.items]);
@@ -83,7 +98,7 @@ export function InboxPage() {
       <div className="flex-1 overflow-y-auto" style={{ padding: "8px 20px 24px" }}>
         <SegmentedControl
           value={tab}
-          onChange={(v) => setTab(v as Tab)}
+          onChange={(v) => handleTabChange(v as Tab)}
           options={[
             { value: "to-approve", label: t("mobile.inbox.tab_to_approve") },
             { value: "mine", label: t("mobile.inbox.tab_mine") },
