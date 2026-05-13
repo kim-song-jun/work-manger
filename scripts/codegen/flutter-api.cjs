@@ -1,16 +1,85 @@
 #!/usr/bin/env node
 /**
- * flutter-api.cjs
- * ---------------
- * NO-OP skeleton (Plan-A). Real impl in Plan-B (W3): wraps
- * `openapi-generator-cli generate -g dart-dio -i <openapi.yaml> -o apps/mobile/lib/api/openapi/`.
+ * flutter-api.cjs — wraps openapi-generator-cli (dart-dio) against the live
+ * drf-spectacular schema. Mirrors `apps/web/scripts/gen-api-types.mjs` but
+ * for Dart.
+ *
+ * Requires:
+ *   - npx @openapitools/openapi-generator-cli (downloads ~80MB JAR on first run)
+ *   - Java 17+ on PATH or JAVA_HOME set
+ *   - API service reachable at VITE_API_URL (default http://localhost:4455)
+ *
+ * Output: apps/mobile/lib/api/openapi/
  *
  * Spec: docs/superpowers/specs/2026-05-13-home-native-poc-design.md §5
  */
 
-function main() {
-  process.stdout.write("[flutter-api] noop skeleton\n");
-  process.exit(0);
+const { spawnSync } = require("node:child_process");
+const fs = require("node:fs");
+const path = require("node:path");
+const http = require("node:http");
+const https = require("node:https");
+
+const ROOT = path.resolve(__dirname, "..", "..");
+const OUT_DIR = path.join(ROOT, "apps/mobile/lib/api/openapi");
+const BASE = (process.env.VITE_API_URL ?? "http://localhost:4455").replace(/\/$/, "");
+const SCHEMA_URL = `${BASE}/v1/schema/?format=json`;
+
+function fetchSchema(url) {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith("https") ? https : http;
+    mod.get(url, { headers: { Accept: "application/json" } }, (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`Schema fetch failed: ${res.statusCode} (${url})`));
+        return;
+      }
+      let data = "";
+      res.on("data", (chunk) => { data += chunk; });
+      res.on("end", () => {
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(new Error(`Schema JSON parse error: ${e.message}`)); }
+      });
+    }).on("error", reject);
+  });
 }
 
-main();
+async function main() {
+  process.stdout.write(`[flutter-api] fetching schema from ${SCHEMA_URL}\n`);
+  const schema = await fetchSchema(SCHEMA_URL);
+  const tmp = path.join(ROOT, ".cache/openapi-schema.json");
+  fs.mkdirSync(path.dirname(tmp), { recursive: true });
+  fs.writeFileSync(tmp, JSON.stringify(schema), "utf8");
+  process.stdout.write(`[flutter-api] schema written to ${tmp}\n`);
+
+  fs.rmSync(OUT_DIR, { recursive: true, force: true });
+
+  const args = [
+    "--yes",
+    "@openapitools/openapi-generator-cli",
+    "generate",
+    "-i", tmp,
+    "-g", "dart-dio",
+    "-o", OUT_DIR,
+    "--additional-properties=pubName=wm_api,nullableFields=true,useEnumExtension=true",
+    "--skip-validate-spec",
+  ];
+  const r = spawnSync("npx", args, { stdio: "pipe", env: process.env });
+  if (r.stdout) process.stdout.write(r.stdout);
+  if (r.stderr) process.stderr.write(r.stderr);
+  if (r.status !== 0) {
+    process.stderr.write("[flutter-api] openapi-generator-cli failed\n");
+    process.exit(r.status ?? 1);
+  }
+
+  // Clean up generator-emitted files that pollute the repo
+  for (const f of [".openapi-generator", ".openapi-generator-ignore", "pubspec.yaml", "README.md", ".gitignore"]) {
+    const p = path.join(OUT_DIR, f);
+    fs.rmSync(p, { recursive: true, force: true });
+  }
+  process.stdout.write(`[flutter-api] wrote ${OUT_DIR}\n`);
+}
+
+main().catch((e) => {
+  process.stderr.write(`[flutter-api] ${e.message}\n`);
+  process.exit(1);
+});
