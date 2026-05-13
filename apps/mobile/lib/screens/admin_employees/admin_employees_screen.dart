@@ -8,10 +8,15 @@ class AdminEmployeesScreen extends StatefulWidget {
     super.key,
     required this.controller,
     required this.onOpenWebView,
+    this.onOpenEmployee,
   });
 
   final AdminEmployeesController controller;
   final void Function(String path) onOpenWebView;
+
+  /// If provided, tapping an employee row pushes the native detail screen
+  /// instead of falling back to WebView.
+  final void Function(String id)? onOpenEmployee;
 
   @override
   State<AdminEmployeesScreen> createState() => _AdminEmployeesScreenState();
@@ -66,9 +71,14 @@ class _AdminEmployeesScreenState extends State<AdminEmployeesScreen> {
                       itemCount: c.items.length,
                       itemBuilder: (_, i) => _EmployeeTile(
                         item: c.items[i],
-                        onTap: () => widget.onOpenWebView(
-                          '/admin/employees/${c.items[i].id}',
-                        ),
+                        onTap: () {
+                          final id = c.items[i].id;
+                          if (widget.onOpenEmployee != null) {
+                            widget.onOpenEmployee!(id);
+                          } else {
+                            widget.onOpenWebView('/admin/employees/$id');
+                          }
+                        },
                       ),
                     ),
             ),
