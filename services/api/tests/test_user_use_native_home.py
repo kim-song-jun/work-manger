@@ -61,6 +61,7 @@ def test_me_settings_patch_sets_false():
     client = _auth_client(user)
     resp = client.patch("/v1/me/settings", data={"use_native_home": False}, format="json")
     assert resp.status_code == 200
+    assert resp.json() == {"data": {"use_native_home": False}}
     user.refresh_from_db()
     assert user.use_native_home is False
 
@@ -71,6 +72,7 @@ def test_me_settings_patch_rejects_invalid_type():
     client = _auth_client(user)
     resp = client.patch("/v1/me/settings", data={"use_native_home": "not-a-bool"}, format="json")
     assert resp.status_code == 400
+    assert "use_native_home" in resp.json()
 
 
 @pytest.mark.django_db
