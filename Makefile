@@ -1,4 +1,4 @@
-.PHONY: up down logs ps build api-shell migrate makemigrations test test-be test-fe test-desktop test-mobile test-e2e test-all package-desktop package-mobile package-all fe-shell precommit precommit-install audit
+.PHONY: up down logs ps build api-shell migrate makemigrations test test-be test-fe test-desktop test-mobile test-e2e test-all package-desktop package-mobile package-all fe-shell codegen codegen-check precommit precommit-install audit
 
 up:
 	docker compose up -d --build
@@ -71,6 +71,16 @@ gen-tokens:
 # B-NAT-02 (ADR-007): OpenAPI schema → Dart models codegen.
 gen-openapi-dart:
 	bash apps/mobile/tools/gen_openapi_dart.sh
+
+# Plan-A (ADR-007): Flutter codegen entrypoint (tokens, API, i18n).
+codegen:
+	node scripts/codegen/flutter-tokens.cjs
+	node scripts/codegen/flutter-api.cjs
+	node scripts/codegen/flutter-i18n.cjs
+
+# Plan-A (ADR-007): Codegen drift gate (CI + pre-commit).
+codegen-check:
+	bash scripts/codegen-check.sh
 
 # pre-commit 훅 설치 (개발자 1회용).
 precommit-install:
