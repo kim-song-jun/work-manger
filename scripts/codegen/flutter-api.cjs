@@ -1,87 +1,132 @@
 #!/usr/bin/env node
 /**
- * flutter-api.cjs — wraps openapi-generator-cli (dart-dio) against the live
- * drf-spectacular schema. Mirrors `apps/web/scripts/gen-api-types.mjs` but
- * for Dart.
+ * flutter-api.cjs — wraps openapi-generator JAR (Java) against the live
+ * drf-spectacular schema.
  *
- * Requires:
- *   - npx @openapitools/openapi-generator-cli (downloads ~80MB JAR on first run)
- *   - Java 17+ on PATH or JAVA_HOME set
- *   - API service reachable at VITE_API_URL (default http://localhost:4455)
+ * Plan-E rationale: `npx @openapitools/openapi-generator-cli` crashes on
+ * Windows (NestJS bundler runtime issue). Java JAR is cross-platform and
+ * deterministic. JAR is auto-downloaded on first run (~30MB) and cached
+ * under `scripts/codegen/_lib/`.
  *
- * Output: apps/mobile/lib/api/openapi/
+ * Requires: java 17+ on PATH, API service reachable at VITE_API_URL.
+ *
+ * Output: apps/mobile/lib/api/openapi/  (dart-dio layout)
  *
  * Spec: docs/superpowers/specs/2026-05-13-home-native-poc-design.md §5
  */
 
 const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
-const path = require("node:path");
 const http = require("node:http");
 const https = require("node:https");
+const path = require("node:path");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const OUT_DIR = path.join(ROOT, "apps/mobile/lib/api/openapi");
+const JAR_DIR = path.join(__dirname, "_lib");
+
+// Resolve java binary: prefer JAVA_HOME/bin/java, then PATH fallback
+const JAVA_BIN = (() => {
+  const jh = process.env.JAVA_HOME;
+  if (jh) {
+    const candidate = path.join(jh, "bin", process.platform === "win32" ? "java.exe" : "java");
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return "java";
+})();
+const JAR_VERSION = "7.10.0"; // pin — bump deliberately
+const JAR_PATH = path.join(JAR_DIR, `openapi-generator-cli-${JAR_VERSION}.jar`);
+const JAR_URL = `https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/${JAR_VERSION}/openapi-generator-cli-${JAR_VERSION}.jar`;
 const BASE = (process.env.VITE_API_URL ?? "http://localhost:4455").replace(/\/$/, "");
 const SCHEMA_URL = `${BASE}/v1/schema/?format=json`;
 
-function fetchSchema(url) {
+function downloadJar() {
   return new Promise((resolve, reject) => {
-    const mod = url.startsWith("https") ? https : http;
-    mod.get(url, { headers: { Accept: "application/json" } }, (res) => {
-      if (res.statusCode !== 200) {
-        reject(new Error(`Schema fetch failed: ${res.statusCode} (${url})`));
+    fs.mkdirSync(JAR_DIR, { recursive: true });
+    process.stdout.write(`[flutter-api] downloading JAR ${JAR_URL}\n`);
+    const file = fs.createWriteStream(JAR_PATH);
+    https.get(JAR_URL, (res) => {
+      if (res.statusCode === 302 || res.statusCode === 301) {
+        // follow redirect once
+        https.get(res.headers.location, (r2) => r2.pipe(file).on("finish", () => file.close(resolve)));
         return;
       }
-      let data = "";
-      res.on("data", (chunk) => { data += chunk; });
-      res.on("end", () => {
-        try { resolve(JSON.parse(data)); }
-        catch (e) { reject(new Error(`Schema JSON parse error: ${e.message}`)); }
-      });
+      if (res.statusCode !== 200) {
+        reject(new Error(`JAR fetch HTTP ${res.statusCode}`));
+        return;
+      }
+      res.pipe(file).on("finish", () => file.close(resolve));
+    }).on("error", reject);
+  });
+}
+
+function fetchJson(url) {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith("https") ? https : http;
+    lib.get(url, { headers: { Accept: "application/json" } }, (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`Schema HTTP ${res.statusCode} (${url})`));
+        return;
+      }
+      let buf = "";
+      res.setEncoding("utf8");
+      res.on("data", (c) => (buf += c));
+      res.on("end", () => resolve(JSON.parse(buf)));
     }).on("error", reject);
   });
 }
 
 async function main() {
-  process.stdout.write(`[flutter-api] fetching schema from ${SCHEMA_URL}\n`);
-  const schema = await fetchSchema(SCHEMA_URL);
-  const tmp = path.join(ROOT, ".cache/openapi-schema.json");
-  fs.mkdirSync(path.dirname(tmp), { recursive: true });
-  fs.writeFileSync(tmp, JSON.stringify(schema), "utf8");
-  process.stdout.write(`[flutter-api] schema written to ${tmp}\n`);
+  if (!fs.existsSync(JAR_PATH)) {
+    await downloadJar();
+  }
+  process.stdout.write(`[flutter-api] using JAR ${path.basename(JAR_PATH)}\n`);
+
+  const schema = await fetchJson(SCHEMA_URL);
+  const cacheDir = path.join(ROOT, ".cache");
+  fs.mkdirSync(cacheDir, { recursive: true });
+  const schemaFile = path.join(cacheDir, "openapi-schema.json");
+  fs.writeFileSync(schemaFile, JSON.stringify(schema), "utf8");
 
   fs.rmSync(OUT_DIR, { recursive: true, force: true });
 
   const args = [
-    "--yes",
-    "@openapitools/openapi-generator-cli",
+    "-jar", JAR_PATH,
     "generate",
-    "-i", tmp,
+    "-i", schemaFile,
     "-g", "dart-dio",
     "-o", OUT_DIR,
     "--additional-properties=pubName=wm_api,nullableFields=true,useEnumExtension=true",
     "--skip-validate-spec",
   ];
-  const r = spawnSync("npx", args, { stdio: "inherit", env: process.env });
-  let fallback = false;
+  process.stdout.write(`[flutter-api] java binary: ${JAVA_BIN}\n`);
+  const r = spawnSync(JAVA_BIN, args, { stdio: "pipe", env: process.env });
+  if (r.stdout) process.stdout.write(r.stdout.toString());
+  if (r.stderr) process.stderr.write(r.stderr.toString());
   if (r.status !== 0) {
-    // Fallback: create stub for Windows/CI compat (openapi-generator-cli has NestJS bundler issues)
-    // Plan-C will fix with proper JAR invocation or alternative codegen.
-    fs.mkdirSync(path.join(OUT_DIR, "lib/src"), { recursive: true });
-    fs.writeFileSync(
-      path.join(OUT_DIR, "lib/src/api_client.dart"),
-      "// Generated by openapi-generator-cli (stub due to CLI bootstrap issue)\n"
-    );
-    fallback = true;
+    process.stderr.write(`[flutter-api] java -jar failed (status ${r.status})\n`);
+    process.exit(r.status ?? 1);
   }
 
-  // Clean up generator-emitted files that pollute the repo
-  for (const f of [".openapi-generator", ".openapi-generator-ignore", "pubspec.yaml", "README.md", ".gitignore"]) {
+  // Clean up generator-emitted noise (pubspec.yaml, README, etc.)
+  for (const f of [".openapi-generator", ".openapi-generator-ignore", "pubspec.yaml", "README.md", ".gitignore", "analysis_options.yaml"]) {
     const p = path.join(OUT_DIR, f);
     fs.rmSync(p, { recursive: true, force: true });
   }
-  process.stdout.write(`[flutter-api] ${fallback ? "(fallback stub) " : ""}wrote ${OUT_DIR}\n`);
+  const dartCount = fs.existsSync(OUT_DIR)
+    ? walkDart(OUT_DIR).length
+    : 0;
+  process.stdout.write(`[flutter-api] wrote ${OUT_DIR} (${dartCount} .dart files)\n`);
+}
+
+function walkDart(dir) {
+  const out = [];
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) out.push(...walkDart(p));
+    else if (ent.name.endsWith(".dart")) out.push(p);
+  }
+  return out;
 }
 
 main().catch((e) => {
