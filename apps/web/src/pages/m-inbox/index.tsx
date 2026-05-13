@@ -9,6 +9,8 @@ import type { InboxItem, InboxTargetType } from "@entities/inbox";
 import { InboxQuickActions } from "@features/inbox-decide";
 import { useMe } from "@entities/user";
 
+import "./styles.css";
+
 type Tab = "to-approve" | "mine" | "system";
 
 const KIND_COLORS: Record<
@@ -116,9 +118,27 @@ export function InboxPage() {
             </Card>
           )}
           {!q.isLoading && !q.isError && filtered.length === 0 && (
-            <Card padding={20}>
-              <div className="text-[14px] text-center" style={{ color: "var(--grey-600)" }}>
-                {t("mobile.inbox.empty")}
+            <Card padding={0}>
+              <div className="wm-inbox-empty" role="status" aria-live="polite">
+                <svg
+                  className="wm-inbox-empty-illus"
+                  viewBox="0 0 80 80"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  {/* Inbox tray */}
+                  <path d="M16 38h12l4 6h16l4-6h12v18a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4z" />
+                  <path d="M22 38l4-18h28l4 18" />
+                  {/* checkmark badge */}
+                  <circle cx="58" cy="22" r="9" />
+                  <path d="M54 22l3 3 5-6" />
+                </svg>
+                <div className="wm-inbox-empty-title">{t("mobile.inbox.empty")}</div>
+                <div className="wm-inbox-empty-sub">{t("mobile.inbox.empty_sub", { defaultValue: "잠시 후 다시 확인해주세요." })}</div>
               </div>
             </Card>
           )}
@@ -134,6 +154,8 @@ export function InboxPage() {
                 key={it.id}
                 data-testid="inbox-item"
                 data-inbox-item-id={it.id}
+                data-status={it.status}
+                className="wm-inbox-card-wrapper"
               >
                 <Card padding={14}>
                   <div className="flex items-center gap-2">
@@ -149,15 +171,7 @@ export function InboxPage() {
                       {t(km.label_key)}
                     </span>
                     {it.urgent && (
-                      <span
-                        className="text-[10px] font-bold"
-                        style={{
-                          color: "#fff",
-                          background: "var(--warn, #E59700)",
-                          padding: "3px 7px",
-                          borderRadius: 999,
-                        }}
-                      >
+                      <span className="wm-inbox-urgent" aria-label="긴급">
                         URGENT
                       </span>
                     )}

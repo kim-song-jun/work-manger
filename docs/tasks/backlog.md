@@ -219,18 +219,34 @@
 
 ### B-CODE-08 · 푸시 디바이스 토큰 garbage collection 정책 ✅ 완료 (2026-05-13, `e2181c5`)
 
-- **우선순위**: P2
-- **갭 출처**: implementation-status §7.1
-- **목적**: 현재 410 / badToken 시 즉시 삭제. 그러나 활성 토큰이지만 7일 이상 미사용 / 60일 이상 미접속 케이스 정책 부재.
+(B-CODE-08 의 acceptance / 구현 상세는 별도 commit message 참조.)
+
+---
+
+### B-CODE-09 · WCAG 2.1 AA 컬러 콘트라스트 전면 점검 + 자동화 게이트
+
+- **우선순위**: P1
+- **갭 출처**: a11y 자동화 1차 결과 (2026-05-13) — `--grey-500`/`--grey-600` 둘 다 white/grey-50 배경에서 AA 미통과 또는 경계. 캡션/sub-label 전반 영향.
+- **목적**: 시각 장애 사용자 + 외부 펜테스트(B-OPS-04) 통과 + Play/App Store 접근성 가이드 충족.
+
+**플로우 / 측정**:
+- `apps/e2e/scripts/a11y-smoke.mjs` (이미 구현, 2026-05-13) — axe-core wcag2aa+best-practice rules
+- 대상 페이지: /login, /m/home, /admin (Phase 1) → 18 페이지로 확대 (Phase 2)
+- Release Gate: `make a11y-smoke` HIGH/CRITICAL 0
+
+**비즈니스 룰**:
+- Toss-style 캡션 톤 유지하되 콘트라스트 우선 (디자인 토큰 다크닝)
+- `--grey-500: #8B95A1 → #717C8B` (B-CODE-09-A 적용 완료, 2026-05-13)
+- 잔여: `--grey-600: #6B7684` borderline → 검토 후 다크닝 또는 `--grey-500` 으로 대체
 
 **수용 기준**:
-- [ ] `notification.cleanup_stale_device_tokens` Celery beat 추가
-- [ ] 정책: `DeviceToken.last_seen_at < now() - 60d` 삭제
-- [ ] 운영 가이드 §5.5 새 섹션 추가
-- [ ] BE 테스트 1-2 case
+- [ ] axe-core HIGH/CRITICAL 0 on /login, /m/home, /admin
+- [ ] 디자인 시스템 (`docs/design/design-system.md`) 의 컬러 토큰 표 contrast 비율 컬럼 추가
+- [ ] `make a11y-smoke` 타겟 + CI gate 통합 (`ci.yml`)
+- [ ] 사용 가이드: `var(--grey-400)` / `var(--grey-300)` 은 placeholder/disabled 전용 (텍스트 금지)
 
 **의존성**: 없음
-**추정**: 0.5 일
+**추정**: 1-2 일
 
 ---
 

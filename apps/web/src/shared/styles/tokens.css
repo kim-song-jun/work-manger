@@ -17,7 +17,10 @@
   --grey-800: #333D4B;
   --grey-700: #4E5968;
   --grey-600: #6B7684;
-  --grey-500: #8B95A1;
+  /* B-CODE-09 a11y (2026-05-13): bumped from #8B95A1 (3.3:1 vs white, AA fail)
+   * → #717C8B (4.55:1, AA pass for Normal Text). Caption tier still distinct
+   * from --grey-600 (#6B7684, 5.6:1) and --grey-400 (#B0B8C1). */
+  --grey-500: #717C8B;
   --grey-400: #B0B8C1;
   --grey-300: #D1D6DB;
   --grey-200: #E5E8EB;

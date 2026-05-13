@@ -1,0 +1,235 @@
+/* admin-dashboard polish — 2026-05-13
+ *
+ * 의도: ADMIN 진입 첫 페이지의 시각 계층 + 신호 강화.
+ *   1. Hero KPI (attendance_rate) 가 헤드라인 — 6/12 col, 큰 숫자 + progress bar.
+ *   2. 보조 KPI (absent / pending / overtime) 는 2/12 col 동급. 임계 시각화.
+ *   3. Quick actions: icon + label + arrow + tap feedback + urgent badge.
+ *
+ * 디자인 토큰만 사용. prefers-reduced-motion 존중.
+ */
+
+.wm-admin-dash {
+  /* 페이지 컨텐츠 spacing 표준화 */
+}
+
+.wm-admin-dash-header {
+  margin-bottom: 20px;
+}
+
+.wm-admin-dash-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--grey-900);
+  letter-spacing: -0.01em;
+}
+
+.wm-admin-dash-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--grey-600);
+}
+
+.wm-admin-dash-divider {
+  color: var(--grey-300);
+}
+
+/* KPI grid — 6+2+2+2 = 12 col 비율. Hero 가 attendance_rate. */
+.wm-admin-dash-kpi-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .wm-admin-dash-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .wm-admin-dash-hero {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Hero KPI 카드 */
+.wm-admin-dash-hero {
+  position: relative;
+  background: linear-gradient(135deg, var(--brand-softer) 0%, var(--white) 60%);
+  border: 1px solid var(--brand-soft);
+  overflow: hidden;
+}
+
+.wm-admin-dash-hero-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--grey-700);
+}
+
+.wm-admin-dash-hero-value {
+  margin-top: 10px;
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--grey-900);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.wm-admin-dash-hero-unit {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--grey-500);
+}
+
+.wm-admin-dash-hero-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--brand) 0%, var(--brand-hover) 100%);
+  border-radius: 0 var(--r-pill) 0 0;
+  transition: width var(--motion-slow) var(--ease-standard);
+}
+
+/* 보조 KPI 카드 */
+.wm-admin-dash-kpi {
+  position: relative;
+  transition: transform var(--motion-fast) var(--ease-standard),
+              box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.wm-admin-dash-kpi[data-urgent="true"] {
+  border: 1px solid var(--warn-soft);
+  background: linear-gradient(180deg, var(--warn-soft) 0%, var(--white) 60%);
+}
+
+.wm-admin-dash-kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--grey-700);
+  margin-bottom: 4px;
+}
+
+.wm-admin-dash-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warn);
+  box-shadow: 0 0 0 0 rgba(254, 152, 0, 0.5);
+  animation: wm-admin-dash-pulse 1.8s var(--ease-standard) infinite;
+}
+
+@keyframes wm-admin-dash-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(254, 152, 0, 0.5); }
+  70%  { box-shadow: 0 0 0 7px rgba(254, 152, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(254, 152, 0, 0); }
+}
+
+/* Section header */
+.wm-admin-dash-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 28px;
+  margin-bottom: 12px;
+  color: var(--grey-900);
+  letter-spacing: -0.01em;
+}
+
+/* Quick actions */
+.wm-admin-dash-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .wm-admin-dash-quick-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.wm-admin-dash-quick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  background: var(--white);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-1);
+  text-decoration: none;
+  color: var(--grey-900);
+  font-weight: 600;
+  font-size: 14px;
+  transition: transform var(--motion-fast) var(--ease-standard),
+              box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.wm-admin-dash-quick:hover {
+  box-shadow: var(--shadow-2);
+}
+
+.wm-admin-dash-quick:active {
+  transform: scale(0.985);
+}
+
+.wm-admin-dash-quick-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-md);
+  background: var(--brand-soft);
+  color: var(--brand);
+  flex-shrink: 0;
+}
+
+.wm-admin-dash-quick[data-urgent="true"] .wm-admin-dash-quick-icon {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.wm-admin-dash-quick-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.wm-admin-dash-quick-arrow {
+  color: var(--grey-400);
+  flex-shrink: 0;
+}
+
+/* Stagger entry */
+.wm-admin-dash-anim > * {
+  animation: wm-admin-dash-rise var(--motion-standard) var(--ease-enter) both;
+}
+.wm-admin-dash-anim > *:nth-child(2) { animation-delay: 50ms; }
+.wm-admin-dash-anim > *:nth-child(3) { animation-delay: 100ms; }
+.wm-admin-dash-anim > *:nth-child(4) { animation-delay: 150ms; }
+
+@keyframes wm-admin-dash-rise {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .wm-admin-dash-pulse,
+  .wm-admin-dash-anim > * {
+    animation: none;
+  }
+  .wm-admin-dash-hero-bar,
+  .wm-admin-dash-kpi,
+  .wm-admin-dash-quick {
+    transition: none;
+  }
+}

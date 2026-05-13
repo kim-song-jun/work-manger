@@ -1,0 +1,200 @@
+[
+  {
+    "id": "01-login",
+    "requestedUrl": "/login",
+    "finalUrl": "http://localhost:4444/login",
+    "persona": "anonymous",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/01-login.png"
+  },
+  {
+    "id": "02-signup",
+    "requestedUrl": "/signup",
+    "finalUrl": "http://localhost:4444/signup",
+    "persona": "anonymous",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/02-signup.png"
+  },
+  {
+    "id": "03-onboarding-welcome",
+    "requestedUrl": "/onboarding/welcome",
+    "finalUrl": "http://localhost:4444/onboarding/welcome",
+    "persona": "anonymous",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/03-onboarding-welcome.png"
+  },
+  {
+    "id": "04-m-home-employee",
+    "requestedUrl": "/m/home",
+    "finalUrl": "http://localhost:4444/m/home",
+    "persona": "employee",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/04-m-home-employee.png"
+  },
+  {
+    "id": "05-m-leave-employee",
+    "requestedUrl": "/m/leave",
+    "finalUrl": "http://localhost:4444/m/leave",
+    "persona": "employee",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/05-m-leave-employee.png"
+  },
+  {
+    "id": "06-m-leave-apply",
+    "requestedUrl": "/m/leave/apply",
+    "finalUrl": "http://localhost:4444/m/leave/apply",
+    "persona": "employee",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/06-m-leave-apply.png"
+  },
+  {
+    "id": "07-m-notifications",
+    "requestedUrl": "/m/notifications",
+    "finalUrl": "http://localhost:4444/m/notifications",
+    "persona": "employee",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/07-m-notifications.png"
+  },
+  {
+    "id": "08-m-notice",
+    "requestedUrl": "/m/notice",
+    "finalUrl": "http://localhost:4444/m/notice",
+    "persona": "employee",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/08-m-notice.png"
+  },
+  {
+    "id": "09-m-my",
+    "requestedUrl": "/m/my",
+    "finalUrl": "http://localhost:4444/m/my",
+    "persona": "employee",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/09-m-my.png"
+  },
+  {
+    "id": "10-m-inbox-manager",
+    "requestedUrl": "/m/inbox",
+    "finalUrl": "http://localhost:4444/m/inbox",
+    "persona": "manager",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/10-m-inbox-manager.png"
+  },
+  {
+    "id": "11-web-inbox-manager",
+    "requestedUrl": "/web/inbox",
+    "finalUrl": "http://localhost:4444/web/inbox",
+    "persona": "manager",
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/11-web-inbox-manager.png"
+  },
+  {
+    "id": "12-admin-dashboard",
+    "requestedUrl": "/admin",
+    "finalUrl": "http://localhost:4444/admin",
+    "persona": "admin",
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/12-admin-dashboard.png"
+  },
+  {
+    "id": "13-admin-approvals",
+    "requestedUrl": "/admin/approvals",
+    "finalUrl": "http://localhost:4444/admin/approvals",
+    "persona": "admin",
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/13-admin-approvals.png"
+  },
+  {
+    "id": "14-admin-employees",
+    "requestedUrl": "/admin/employees",
+    "finalUrl": "http://localhost:4444/admin/employees",
+    "persona": "admin",
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/14-admin-employees.png"
+  },
+  {
+    "id": "15-admin-audit",
+    "requestedUrl": "/admin/audit",
+    "finalUrl": "http://localhost:4444/admin/audit",
+    "persona": "admin",
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/15-admin-audit.png"
+  },
+  {
+    "id": "16-admin-compliance",
+    "requestedUrl": "/admin/compliance",
+    "finalUrl": "http://localhost:4444/admin/compliance",
+    "persona": "admin",
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/16-admin-compliance.png"
+  },
+  {
+    "id": "17-admin-settings",
+    "requestedUrl": "/admin/settings",
+    "finalUrl": "http://localhost:4444/admin/settings",
+    "persona": "admin",
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/17-admin-settings.png"
+  },
+  {
+    "id": "18-owner-billing",
+    "requestedUrl": "/owner/billing",
+    "finalUrl": "http://localhost:4444/owner/billing",
+    "persona": "owner",
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    },
+    "screenshot": "../../docs/qa/screenshots/baseline/18-owner-billing.png"
+  }
+]
