@@ -283,3 +283,6 @@ PoC 종료 시점 (2026-07-07) 의 결정:
 |---|---|---|
 | 2026-05-13 | @sungjun + Claude | 초안 (brainstorming 결과 정리) |
 | 2026-05-13 | @sungjun + Claude | W1 BE 셋업 + Codegen 골격 완료 (Plan-A, commits 3d05c40..c8517d2 — 11 pytest + curl smoke pass) |
+| 2026-05-13 | @sungjun + Claude | W2-3 codegen 본 구현 완료 (Plan-B). flutter-tokens 본 구현 + tokens.g.dart + WMTheme + dio_client + jwt_store + i18n ARB. openapi-generator Windows fallback stub. |
+| 2026-05-13 | @sungjun + Claude | W4-5 Flutter Home Native 완료 (Plan-C). Sentry/WsClient/HomeController + Hero/KPI/TeamCount/AvatarStack + WMHomeScreen + main.dart 분기 + NativeBridge handler + widget test 2 pass. |
+| 2026-05-13 | @sungjun + Claude | W6-8 Tests + Beta Build 완료 (Plan-D). onClockIn/onOpenWebView wire + Sentry transactions + integration test + golden test + flutter build apk debug 검증 + runbook R-PoC-01. iOS/openapi-generator는 Plan-E. |

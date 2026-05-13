@@ -250,27 +250,21 @@
 
 ---
 
-### B-NAT-01 · Home Native PoC W1 — BE 셋업 + Codegen 골격 ✅ 완료 (2026-05-13, `3d05c40..c8517d2`)
+### B-NAT-01 · Home Native PoC W1 — BE 셋업 + Codegen 골격 ✅ 완료 (2026-05-13, Plan-A)
+### B-NAT-02 · Home Native PoC W2-3 — Codegen 본 구현 ✅ 완료 (2026-05-13, Plan-B)
+### B-NAT-03 · Home Native PoC W4-5 — Flutter Home Native ✅ 완료 (2026-05-13, Plan-C)
+### B-NAT-04 · Home Native PoC W6-8 — Tests + Beta Build ✅ 완료 (2026-05-13, Plan-D)
 
-- **우선순위**: P1
-- **갭 출처**: docs/superpowers/specs/2026-05-13-home-native-poc-design.md §3 In scope (W1)
-- **목적**: ADR-007 Phase A 사전 PoC 의 BE 토글 인프라 + Codegen 골격.
+(자세한 task 분해 + commit range 는 docs/superpowers/plans/2026-05-13-home-native-poc-* 참조.)
 
-W1 산출:
-- `User.use_native_home: BooleanField(default=False)` + migration `0007_user_use_native_home`
-- `GET / PATCH /v1/me/settings` function-based endpoint (DRF, JWT 보호)
-- `set_user_setting` management command (`--user-id` / `--bulk`, rollout/rollback 운영용)
-- `scripts/codegen/flutter-{tokens,api,i18n}.cjs` no-op 골격 + `scripts/codegen-check.sh` + `make codegen` / `make codegen-check` 타겟 (drift gate skeleton)
-- OpenAPI 스키마 + `apps/web/src/shared/api/openapi-types.ts` regen (drift check 통과)
-- pytest 11 case (model 2 + GET 2 + PATCH 4 + command 3) — 모두 PASS
-- curl smoke (GET 200 / PATCH 200 / unauth 401) PASS
+후속 (별도 plan 필요):
+- B-NAT-05 (Plan-E): openapi-generator Windows fix + iOS 차단 해소 (B-OPS-02 Mac signing) + TestFlight beta
+- B-NAT-06 (Phase A 본격): ADR-007 Phase A — Inbox / LeaveApply / LeaveBalance / Settings 페이지 native
+- B-NAT-07: WebView 셸 제거 (Phase D)
 
-후속 (별도 plan):
-- B-NAT-02 (Plan-B W2-3): tokens / OpenAPI Dart / i18n codegen 본 구현
-- B-NAT-03 (Plan-C W4-5): `WMHomeScreen` + widgets + WS + Sentry mobile
-- B-NAT-04 (Plan-D W6-8): widget/integration/golden test + Beta launch + KPI
-
-(자세한 acceptance criteria: spec §5, Plan-A `docs/superpowers/plans/2026-05-13-home-native-poc-w1-be-setup.md`.)
+PoC 종료 Go/No-Go 회의:
+- 데이터 수집 위치: Sentry 대시보드 `home.boot` / `home.load` / `home.clock-in` transactions
+- 베타 14일 종료 후 spec §11 결정 분기 표 적용
 
 ---
 

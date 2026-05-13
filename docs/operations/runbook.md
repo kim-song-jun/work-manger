@@ -245,3 +245,44 @@
 ### 재발 방지
 - 2FA 강제 정책 (관리자/오너부터)
 - 비정상 로그인 자동 알림 강화
+
+---
+
+## R-PoC-01 · Home Native PoC 베타 토글 운영
+
+### 베타 사용자 enable
+
+```bash
+# 특정 사용자 enable
+docker compose exec api python manage.py set_user_setting \
+  --user-id=<UUID> --key=use_native_home --value=true
+
+# 전체 active 사용자 enable (대량 베타)
+docker compose exec api python manage.py set_user_setting \
+  --bulk --key=use_native_home --value=true
+```
+
+다음 앱 부팅 시 `_BootState._resolve` 가 `GET /v1/me/settings` → `use_native_home=true` 확인 → `WMHomeScreen` 으로 분기.
+
+### 회귀 발생 시 disable
+
+```bash
+docker compose exec api python manage.py set_user_setting \
+  --bulk --key=use_native_home --value=false
+```
+
+다음 부팅 시 WebView 로 전체 fallback. 즉시 끄기가 필요하면 React SPA settings 화면에서 사용자에게 PATCH `/v1/me/settings` 안내.
+
+### KPI 수집
+
+Sentry 대시보드:
+- `home.boot` transaction → cold start 측정 (p50/p95)
+- `home.load` transaction → GET /v1/me/dashboard latency
+- `home.clock-in` transaction → POST /v1/attendance/clock-in latency
+
+베타 5인 × 14일 라이브 종료 시 Sentry 에서 numbers 추출 → spec §9 KPI 표 채움.
+
+### 회의 SOP
+- Go/No-Go 회의 — Plan-A spec §11 분기 표 따름
+- Go: ADR-007 Accepted 승격, B-NAT-03/04 backlog active 등록
+- No-Go: ADR-007 보류, WebView polish 검토
