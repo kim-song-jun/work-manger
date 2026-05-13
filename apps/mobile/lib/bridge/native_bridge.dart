@@ -68,6 +68,17 @@ class NativeBridge {
       handlerName: 'registerGeofences',
       callback: (args) => _registerGeofences(args),
     );
+    _controller.addJavaScriptHandler(
+      handlerName: 'notifySettingsChanged',
+      callback: (_) {
+        // Trigger app rebuild when settings change (e.g. use_native_home toggled).
+        // PoC: no-op return; Plan-D will wire to a top-level SettingsModel
+        // ChangeNotifier so the app can re-evaluate the native/WebView branch
+        // without a full restart.
+        // TODO Plan-D: wire to top-level state
+        return {'ok': true};
+      },
+    );
   }
 
   // --- Widget bridges ------------------------------------------------------
