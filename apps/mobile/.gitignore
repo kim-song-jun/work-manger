@@ -13,6 +13,8 @@ build/
 *.freezed.dart
 # Codegen outputs — tracked intentionally for drift detection (Plan-B)
 !lib/theme/tokens.g.dart
+!lib/l10n/generated/
+!lib/l10n/app_*.arb
 ios/Pods/
 ios/Flutter/Generated.xcconfig
 ios/Flutter/flutter_export_environment.sh
