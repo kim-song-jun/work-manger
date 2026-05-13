@@ -81,6 +81,42 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  codegen-check:
+    name: Codegen Drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Java 17 (openapi-generator-cli)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+
+      - name: Boot API for schema fetch
+        run: |
+          docker compose up -d db redis api
+          timeout 60 bash -c 'until curl -sf http://localhost:4455/v1/health; do sleep 2; done'
+
+      - name: Install Flutter dependencies
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Run codegen + drift check
+        env:
+          VITE_API_URL: http://localhost:4455
+        run: make codegen-check
+
   frontend:
     name: frontend (vite + vitest)
     runs-on: ubuntu-latest
