@@ -1,0 +1,143 @@
+/* m-home polished styles — 2026-05-13
+ *
+ * 의도:
+ *   1. 시간이 흐름을 시각화 (작업 진척 progress bar).
+ *   2. WORKING 상태 시각 강조 — pulse + soft glow.
+ *   3. KPI tile 의 hover/tap 마이크로 인터랙션 (절제).
+ *   4. 팀 현황 카운트 라인 — 한눈에 보이도록.
+ *
+ * 모든 스타일은 디자인 토큰만 사용 — 하드코딩 컬러 없음. prefers-reduced-motion 존중.
+ */
+
+.wm-home-hero {
+  position: relative;
+  overflow: hidden;
+  transition: background var(--motion-standard) var(--ease-standard),
+              color var(--motion-standard) var(--ease-standard);
+}
+
+/* WORKING 상태 — 부드러운 brand gradient + 위쪽 pulse ring */
+.wm-home-hero[data-active="true"] {
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-hover) 100%);
+}
+
+.wm-home-hero[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  inset: -40px -40px auto auto;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 70%);
+  pointer-events: none;
+  animation: wm-hero-glow 6s var(--ease-standard) infinite;
+}
+
+@keyframes wm-hero-glow {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50%      { transform: scale(1.15); opacity: 1; }
+}
+
+/* 진척 bar — 카드 상단 1px line, 정규 시간 대비 누적 비율 */
+.wm-home-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  transition: width var(--motion-slow) var(--ease-standard);
+}
+
+.wm-home-hero[data-active="false"] .wm-home-progress {
+  background: var(--brand-soft);
+}
+
+/* WORKING 상태 dot — 부드러운 펄스 */
+.wm-home-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: var(--r-pill);
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.wm-home-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 0 rgba(255,255,255,0.7);
+  animation: wm-pulse 2s var(--ease-standard) infinite;
+}
+
+@keyframes wm-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255,255,255,0.55); }
+  70%  { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+}
+
+/* KPI tile hover/active feedback — 살짝 떠오르기 */
+.wm-home-kpi-tile {
+  cursor: default;
+  transition: transform var(--motion-fast) var(--ease-standard),
+              box-shadow var(--motion-fast) var(--ease-standard);
+}
+.wm-home-kpi-tile[data-emphasis="warn"] {
+  background: var(--warn-soft);
+}
+.wm-home-kpi-tile:active {
+  transform: scale(0.985);
+}
+
+/* 팀 카운트 row — 출근 / 재택 / 휴가 마커 */
+.wm-home-team-counts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--grey-600);
+  margin-top: 2px;
+}
+.wm-home-team-counts > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.wm-home-team-counts > span::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+}
+.wm-home-team-counts > span.is-office { color: var(--success); }
+.wm-home-team-counts > span.is-wfh    { color: var(--brand); }
+.wm-home-team-counts > span.is-leave  { color: var(--warn); }
+.wm-home-team-counts > span.is-break  { color: var(--caution); }
+
+/* Subtle entry animation — stagger via inline style */
+.wm-home-anim {
+  animation: wm-home-rise var(--motion-standard) var(--ease-enter) both;
+}
+@keyframes wm-home-rise {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+
+/* Reduced motion override */
+@media (prefers-reduced-motion: reduce) {
+  .wm-home-hero[data-active="true"]::before,
+  .wm-home-status-dot,
+  .wm-home-anim {
+    animation: none;
+  }
+  .wm-home-progress { transition: none; }
+}

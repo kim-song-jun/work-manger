@@ -36,3 +36,4 @@
 | [ADR-004](ADR-004-postgres-single-db-multitenant-deferred.md) | PostgreSQL 단일 DB / 멀티 테넌트 v2 연기 | Accepted | 2026-05-04 |
 | [ADR-005](ADR-005-design-tokens-css-vars-tailwind.md) | 디자인 토큰 = CSS 변수 + Tailwind 참조 | Accepted | 2026-05-04 |
 | [ADR-006](ADR-006-self-hosted-push-no-firebase.md) | Self-hosted push (Firebase 의존성 제거 — Web Push VAPID / APNs HTTP/2 / ntfy) | Accepted | 2026-05-04 |
+| [ADR-007](ADR-007-native-mobile-shift.md) | WebView 셸 → Flutter native UI 전환 (점진 Phase A-D) | Proposed | 2026-05-13 |

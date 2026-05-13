@@ -20,6 +20,8 @@ import { fetchToday, fetchWeeklyStats } from "@entities/attendance";
 import { fetchBalance } from "@entities/leave";
 import { fetchTeamGrid } from "@entities/team";
 
+import "./styles.css";
+
 function buildTodayDateLabel(t: (k: string, opts?: Record<string, unknown>) => string): string {
   const d = new Date();
   const dayKeys = [
@@ -60,6 +62,9 @@ function fmtHoursOneDecimal(min: number): string {
   const hours = min / 60;
   return hours.toFixed(1);
 }
+
+/** Regular work day = 8h (= 480m). Polish (2026-05-13): 정규 시간 대비 진척률 0-100. */
+const REGULAR_WORK_MINUTES = 480;
 
 export function HomePage() {
   const { t } = useTranslation();
@@ -116,6 +121,9 @@ export function HomePage() {
     weeklyData != null
       ? fmtHoursOneDecimal(weeklyData.overtime_minutes)
       : "—";
+  const overtimeMinutes = weeklyData?.overtime_minutes ?? 0;
+  // Polish: 절대치 30분 이상 — KPI 카드에 caution 강조.
+  const overtimeIsHot = overtimeMinutes >= 30;
 
   // F-EMPLOYEE-002: clock-in mutation — use server response clock_in_at
   const clockInMutation = useMutation({
@@ -162,6 +170,20 @@ export function HomePage() {
   // Derive regular hours label from server data (fall back to dash)
   const regularLabel = "09–18"; // company schedule — would come from settings eventually
 
+  // Polish: 진척률 (정규 8h 대비 누적 분 비율). 0-100, 초과 시 100 cap.
+  const progressPct = clockedIn
+    ? Math.min(100, Math.round((workedMinutes / REGULAR_WORK_MINUTES) * 100))
+    : 0;
+
+  // Polish: 팀 status 카운트 그룹화 — "5명 출근 · 2명 재택" 형태.
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { office: 0, wfh: 0, leave: 0, break: 0 };
+    for (const m of teamMembers) {
+      if (m.status && counts[m.status] !== undefined) counts[m.status] += 1;
+    }
+    return counts;
+  }, [teamMembers]);
+
   return (
     <>
       <PageHeader date={dateLabel} title={greeting} hasBadge />
@@ -169,19 +191,42 @@ export function HomePage() {
         className="flex-1 overflow-y-auto"
         style={{ padding: "4px 20px 16px", background: "var(--grey-50)" }}
       >
-        {/* Big stat card */}
+        {/* Hero stat card — "한 화면, 한 행동": 오늘 근무 + 시간 + 상태 */}
         <Card
           padding="24px 20px"
+          className="wm-home-hero wm-home-anim"
+          data-active={clockedIn ? "true" : "false"}
           style={{
             background: clockedIn ? "var(--brand)" : "var(--white)",
             color: clockedIn ? "#fff" : undefined,
+            boxShadow: clockedIn ? "var(--shadow-2)" : "var(--shadow-1)",
           }}
         >
-          <div
-            className="text-[12px] font-semibold"
-            style={{ color: clockedIn ? "rgba(255,255,255,0.85)" : "var(--grey-500)" }}
-          >
-            {t("home.today_work")}
+          {/* Subtle progress bar across top — 정규 시간 대비 누적 (clocked-in 일 때만) */}
+          {clockedIn && (
+            <div
+              className="wm-home-progress"
+              style={{ width: `${progressPct}%` }}
+              role="progressbar"
+              aria-valuenow={progressPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={t("home.progress_label")}
+            />
+          )}
+          <div className="flex items-center justify-between">
+            <div
+              className="text-[12px] font-semibold"
+              style={{ color: clockedIn ? "rgba(255,255,255,0.85)" : "var(--grey-500)" }}
+            >
+              {t("home.today_work")}
+            </div>
+            {clockedIn && (
+              <span className="wm-home-status">
+                <span className="wm-home-status-dot" />
+                {t("home.status_working")}
+              </span>
+            )}
           </div>
           <div
             className="num-tab text-[40px] font-bold leading-tight mt-2"
@@ -203,7 +248,7 @@ export function HomePage() {
         </Card>
 
         {/* Location chip */}
-        <Card padding={0} style={{ marginTop: 10 }}>
+        <Card padding={0} style={{ marginTop: 10 }} className="wm-home-anim">
           <ListRow
             divider={false}
             leading={
@@ -242,7 +287,7 @@ export function HomePage() {
         </Card>
 
         {/* Slide */}
-        <div style={{ marginTop: 14 }}>
+        <div style={{ marginTop: 14 }} className="wm-home-anim">
           <SlideToClockIn
             onCommit={() => {
               if (clockedIn) {
@@ -261,7 +306,7 @@ export function HomePage() {
 
         {/* F-EMPLOYEE-004: break button when clocked in */}
         {clockedIn && (
-          <div style={{ marginTop: 10 }}>
+          <div style={{ marginTop: 10 }} className="wm-home-anim">
             <BreakButton
               onBreaking={onBreaking}
               onBreakStart={() => setOnBreaking(true)}
@@ -270,24 +315,54 @@ export function HomePage() {
           </div>
         )}
 
-        {/* Quick stats — F-EMPLOYEE-012: real data from BE */}
-        <div className="grid grid-cols-3 gap-2 mt-3.5">
-          <Card padding={12}>
+        {/* Quick stats — Polish: overtime hot 상태 시 caution-soft 배경 + 마이크로 인터랙션 */}
+        <div className="grid grid-cols-3 gap-2 mt-3.5 wm-home-anim">
+          <Card padding={12} className="wm-home-kpi-tile">
             <KPIStat label={t("home.week_label")} value={weeklyLabel} unit="h" />
           </Card>
-          <Card padding={12}>
+          <Card padding={12} className="wm-home-kpi-tile">
             <KPIStat label={t("home.leave_balance")} value={remainingDays} unit={t("leave.days_unit")} />
           </Card>
-          <Card padding={12}>
+          <Card
+            padding={12}
+            className="wm-home-kpi-tile"
+            data-emphasis={overtimeIsHot ? "warn" : undefined}
+          >
             <KPIStat label={t("home.overtime_label")} value={overtimeLabel} unit="h" />
           </Card>
         </div>
 
-        {/* Team preview — F-EMPLOYEE-012: real team data from BE */}
-        <Card padding={14} style={{ marginTop: 10 }} onClick={() => {}}>
+        {/* Team preview — Polish: status group counts above the avatar stack */}
+        <Card padding={14} style={{ marginTop: 10 }} className="wm-home-anim" onClick={() => {}}>
           <div className="flex items-center justify-between">
-            <div className="text-[14px] font-semibold text-ink-900">
-              {t("home.team_status")}
+            <div>
+              <div className="text-[14px] font-semibold text-ink-900">
+                {t("home.team_status")}
+              </div>
+              {teamMembers.length > 0 && (
+                <div className="wm-home-team-counts">
+                  {statusCounts.office > 0 && (
+                    <span className="is-office">
+                      {t("home.team_count_office", { n: statusCounts.office })}
+                    </span>
+                  )}
+                  {statusCounts.wfh > 0 && (
+                    <span className="is-wfh">
+                      {t("home.team_count_wfh", { n: statusCounts.wfh })}
+                    </span>
+                  )}
+                  {statusCounts.leave > 0 && (
+                    <span className="is-leave">
+                      {t("home.team_count_leave", { n: statusCounts.leave })}
+                    </span>
+                  )}
+                  {statusCounts.break > 0 && (
+                    <span className="is-break">
+                      {t("home.team_count_break", { n: statusCounts.break })}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             <Icon.chevR width={16} height={16} style={{ color: "var(--grey-400)" }} />
           </div>
