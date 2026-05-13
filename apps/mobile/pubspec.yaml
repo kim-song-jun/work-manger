@@ -41,6 +41,13 @@ dependencies:
 
   cupertino_icons: ^1.0.8
 
+  # Plan-B — generated API client + JWT auth
+  dio: ^5.7.0
+  # Plan-B — Material 3 + i18n
+  intl: ^0.19.0
+  # Plan-C — observability
+  sentry_flutter: ^8.9.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -50,3 +57,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true   # enable gen-l10n (Plan-B Task 5)
